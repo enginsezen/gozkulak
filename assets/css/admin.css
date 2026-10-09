@@ -1,0 +1,9 @@
+.gozkulak-admin .gozkulak-feature {
+	display: block;
+	margin: 0 0 6px;
+}
+
+.gozkulak-admin .gozkulak-inline {
+	display: inline-block;
+	margin: 0 16px 6px 0;
+}
