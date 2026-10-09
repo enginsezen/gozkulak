@@ -4,7 +4,7 @@ Tags: accessibility, erişilebilirlik, text-to-speech, sesli okuma
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 0.2.1
+Stable tag: 0.2.2
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -21,6 +21,11 @@ GözKulak, temadan bağımsız bir erişilebilirlik menüsü ekler. Menü Shadow
 Ayarlar: Ayarlar → GözKulak.
 
 == Changelog ==
+
+= 0.2.2 =
+* Yüksek kontrast: renk geçişli zeminler (ör. Listeo ilan başlığı) siyaha döner; açık renkli ::before / ::after görsel katmanları (Listeo manşeti, Elementor kapsayıcıları) yarı saydam siyaha çevrilir; fotoğraf zeminleri korunur.
+* Yüksek kontrast: SVG simgeler (Elementor, Blocksy) beyaz görünür, arkalarında siyah kutu oluşmaz.
+* Satır aralığı: başlıklarda daha ölçülü değer (1,45 / 1,7).
 
 = 0.2.1 =
 * Satır ve harf aralığı yalnızca metin bloklarına uygulanır; site başlığı ve menü hariç (simgeler ve logo kaymaz).

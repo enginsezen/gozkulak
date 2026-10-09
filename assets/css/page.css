@@ -6,6 +6,7 @@
 /*
  * Satır, harf ve sözcük aralığı yalnızca metin öğelerine uygulanır; sitenin başlığı ve
  * gezinme menüsü hariç tutulur (simgeler kaymasın, logo yerinden oynamasın).
+ * Büyük puntolu başlıklarda satır aralığı daha az artırılır.
  */
 html.gk-lh1 body :is(p, li, dt, dd, td, th, caption, blockquote, figcaption, label, address, pre, h1, h2, h3, h4, h5, h6):not(:is(header, nav, [role="banner"], [role="navigation"], #Header_wrapper, #Header_creative, #Top_bar, #masthead, .lhb-frontend-header, .elementor-location-header) *) {
 	line-height: 1.75 !important;
@@ -13,6 +14,14 @@ html.gk-lh1 body :is(p, li, dt, dd, td, th, caption, blockquote, figcaption, lab
 
 html.gk-lh2 body :is(p, li, dt, dd, td, th, caption, blockquote, figcaption, label, address, pre, h1, h2, h3, h4, h5, h6):not(:is(header, nav, [role="banner"], [role="navigation"], #Header_wrapper, #Header_creative, #Top_bar, #masthead, .lhb-frontend-header, .elementor-location-header) *) {
 	line-height: 2.2 !important;
+}
+
+html.gk-lh1 body :is(h1, h2, h3, h4, h5, h6):not(:is(header, nav, [role="banner"], [role="navigation"], #Header_wrapper, #Header_creative, #Top_bar, #masthead, .lhb-frontend-header, .elementor-location-header) *) {
+	line-height: 1.45 !important;
+}
+
+html.gk-lh2 body :is(h1, h2, h3, h4, h5, h6):not(:is(header, nav, [role="banner"], [role="navigation"], #Header_wrapper, #Header_creative, #Top_bar, #masthead, .lhb-frontend-header, .elementor-location-header) *) {
+	line-height: 1.7 !important;
 }
 
 html.gk-ls1 body :is(p, li, dt, dd, td, th, caption, blockquote, figcaption, label, address, pre, h1, h2, h3, h4, h5, h6):not(:is(header, nav, [role="banner"], [role="navigation"], #Header_wrapper, #Header_creative, #Top_bar, #masthead, .lhb-frontend-header, .elementor-location-header) *),
@@ -29,13 +38,15 @@ html.gk-ls2 body :is(p, li, dt, dd, td, th, caption, blockquote, figcaption, lab
 
 /*
  * Yüksek kontrast: siyah zemin, beyaz yazı, sarı bağlantı.
- * Opak zeminler siyaha döner. Betik, zemini saydam olan öğeleri (gk-c0) saydam, yarı saydam
- * katmanları (gk-c1) yarı saydam siyah bırakır; böylece manşet görselleri ve slaytlar kaybolmaz.
+ * Opak zeminler siyaha döner, renk geçişleri ve sayfa desenleri kaldırılır. Betik şu işaretleri koyar:
+ *   gk-cimg  fotoğraf zemini korunur (manşet, slayt, kart görseli)
+ *   gk-c0    zemini saydam öğe saydam kalır (alttaki görsel örtülmez)
+ *   gk-c1    yarı saydam katman ya da renk geçişi yarı saydam siyaha döner
+ *   gk-cpb / gk-cpa  büyük ::before / ::after katmanı yarı saydam siyaha döner
  * Görsellerin üstündeki yazılar siyah bir hale ile okunur kalır.
  */
 html.gk-contrast,
-html.gk-contrast body,
-html.gk-contrast body .gk-cbg {
+html.gk-contrast body {
 	background-color: #000000 !important;
 	background-image: none !important;
 	color: #ffffff !important;
@@ -46,7 +57,11 @@ html.gk-contrast body :not(gozkulak-root):not(gozkulak-overlay) {
 	color: #ffffff !important;
 	border-color: #ffffff !important;
 	box-shadow: none !important;
-	text-shadow: 0 0 2px #000000, 0 0 4px #000000 !important;
+	text-shadow: 0 0 2px #000000, 0 0 4px #000000, 0 0 6px #000000 !important;
+}
+
+html.gk-contrast body :not(gozkulak-root):not(gozkulak-overlay):not(.gk-cimg) {
+	background-image: none !important;
 }
 
 html.gk-contrast body .gk-c0 {
@@ -54,7 +69,28 @@ html.gk-contrast body .gk-c0 {
 }
 
 html.gk-contrast body .gk-c1 {
-	background-color: rgba(0, 0, 0, 0.65) !important;
+	background-color: rgba(0, 0, 0, 0.6) !important;
+}
+
+html.gk-contrast body .gk-cpb::before,
+html.gk-contrast body .gk-cpa::after {
+	background-color: rgba(0, 0, 0, 0.5) !important;
+	background-image: none !important;
+	opacity: 1 !important;
+}
+
+/* SVG'lerin zemini saydam kalır (simgelerin arkasında siyah kutu oluşmaz) */
+html.gk-contrast body :is(svg, svg *):not(gozkulak-root):not(gozkulak-overlay) {
+	background-color: transparent !important;
+}
+
+/* Simge olarak kullanılan SVG'ler yazı rengini alır (Elementor, Blocksy vb.); çizgi simgelerinde çizgi rengi */
+html.gk-contrast body :is([class*="icon"] > svg, svg[class*="icon"]):not([fill="none"]) {
+	fill: currentColor !important;
+}
+
+html.gk-contrast body :is([class*="icon"] > svg, svg[class*="icon"])[fill="none"] {
+	stroke: currentColor !important;
 }
 
 html.gk-contrast a,
@@ -169,7 +205,7 @@ html.gk-noanim {
 }
 
 /* Görselleri gizleme: yer korunur, içerik akışı bozulmaz (Slider Revolution katmanları dahil) */
-html.gk-noimg :is(img, picture, video, canvas, figure > svg, rs-sbg-wrap, rs-sbg, rs-sbg-px, rs-bgvideo, .rev-slidebg, sr7-bg) {
+html.gk-noimg :is(img, picture, video, canvas, figure > svg, rs-sbg-px, rs-sbg-wrap, rs-sbg-effectwrap, rs-sbg, rs-bgvideo, .rev-slidebg, sr7-bg) {
 	visibility: hidden !important;
 }
 

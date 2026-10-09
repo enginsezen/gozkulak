@@ -297,9 +297,12 @@
 		doc.head.append(pageCss);
 	}
 
-	// Satır aralığı düzeyleri ve kapsamı (page.css ile aynı): yalnızca metin blokları, site başlığı ve menü hariç
+	// Satır aralığı düzeyleri ve kapsamı (page.css ile aynı): yalnızca metin blokları, site başlığı ve menü hariç.
+	// Büyük puntolu başlıklarda daha küçük değerler kullanılır; yoksa satırlar birbirinden kopuk görünür.
 	const LH_VALUES = [0, 1.75, 2.2];
-	const TEXT_SEL = "p, li, dt, dd, td, th, caption, blockquote, figcaption, label, address, pre, h1, h2, h3, h4, h5, h6";
+	const LH_HEADING = [0, 1.45, 1.7];
+	const HEADING_SEL = "h1, h2, h3, h4, h5, h6";
+	const TEXT_SEL = "p, li, dt, dd, td, th, caption, blockquote, figcaption, label, address, pre, " + HEADING_SEL;
 	const HEADER_SEL = 'header, nav, [role="banner"], [role="navigation"], #Header_wrapper, #Header_creative, #Top_bar, #masthead, .lhb-frontend-header, .elementor-location-header';
 
 	/**
@@ -348,10 +351,12 @@
 
 		function remember(el, size, lh) {
 			const st = el.style;
+			const text = !el.closest(HEADER_SEL) && !!el.closest(TEXT_SEL);
 			records.set(el, {
 				px: size,
 				lh,
-				text: !el.closest(HEADER_SEL) && !!el.closest(TEXT_SEL),
+				text,
+				heading: text && !!el.closest(HEADING_SEL),
 				fs: st.getPropertyValue("font-size"),
 				fsPrio: st.getPropertyPriority("font-size"),
 				lhInline: st.getPropertyValue("line-height"),
@@ -377,7 +382,7 @@
 
 		function apply(el, rec) {
 			el.style.setProperty("font-size", (rec.px * factor).toFixed(2) + "px", "important");
-			if (lineLevel > 0 && rec.text) el.style.setProperty("line-height", String(LH_VALUES[lineLevel]), "important");
+			if (lineLevel > 0 && rec.text) el.style.setProperty("line-height", String((rec.heading ? LH_HEADING : LH_VALUES)[lineLevel]), "important");
 			else if (rec.lh) el.style.setProperty("line-height", lineHeightFor(rec).toFixed(2) + "px", "important");
 			else restoreLineHeight(el, rec);
 		}
@@ -445,14 +450,16 @@
 	 * ---------- sayfa işaretleri ----------
 	 * Koyu mod: CSS ile verilmiş arka plan görselleri (ör. Elementor bölümleri) gk-bgimg ile işaretlenir
 	 * ve tekrar çevrilerek özgün renklerinde kalır.
-	 * Yüksek kontrast: zemini saydam olan öğeler gk-c0, yarı saydam katmanlar gk-c1 alır; böylece
-	 * manşet görselleri ve slaytların üstündeki katmanlar opak siyaha dönüp görseli örtmez.
-	 * Sayfanın tamamını saran zemin desenleri (gk-cbg) yüksek kontrastta kaldırılır.
+	 * Yüksek kontrast: zemini saydam olan öğeler gk-c0, yarı saydam katmanlar ve renk geçişleri gk-c1
+	 * alır; böylece manşet görselleri ve slaytların üstündeki katmanlar opak siyaha dönüp görseli
+	 * örtmez. Fotoğraf zeminleri (gk-cimg) korunur, renk geçişleri ve sayfa desenleri kaldırılır.
+	 * Büyük öğelerin ::before / ::after katmanları (ör. Listeo ve Elementor görsel katmanları) açık
+	 * renkliyse yazı okunmaz olur; bunlar gk-cpb / gk-cpa ile yarı saydam siyaha çevrilir.
 	 */
 	const marks = (() => {
 		const XHTML = "http://www.w3.org/1999/xhtml";
 		const SKIP = new Set(["SCRIPT", "STYLE", "NOSCRIPT", "TEMPLATE", "LINK", "META", "BR", "GOZKULAK-ROOT", "GOZKULAK-OVERLAY"]);
-		const OURS = ["gk-bgimg", "gk-c0", "gk-c1", "gk-cbg"];
+		const OURS = ["gk-bgimg", "gk-cimg", "gk-c0", "gk-c1", "gk-cpb", "gk-cpa"];
 		const marked = new Set();
 		let wantImages = false;
 		let wantColors = false;
@@ -473,6 +480,22 @@
 			return parts.length >= 4 ? parseFloat(parts[3]) : 1;
 		}
 
+		/**
+		 * Öğeyi büyük ölçüde kaplayan, renk geçişli ya da yarı saydam bir ::before / ::after katmanı var mı?
+		 * Fotoğraf içeren katmanlar ve küçük süsler (çizgi, madde imi, simge) dokunulmadan kalır.
+		 */
+		function overlayPseudo(el, which, r) {
+			const ps = getComputedStyle(el, which);
+			if (!ps.content || ps.content === "none" || ps.content === "normal" || ps.display === "none") return false;
+			if (/url\(/.test(ps.backgroundImage)) return false;
+			const w = parseFloat(ps.width);
+			const hgt = parseFloat(ps.height);
+			if (!(w >= 0.5 * r.width && hgt >= 0.5 * r.height)) return false;
+			const alpha = alphaOf(ps.backgroundColor);
+			const opacity = parseFloat(ps.opacity);
+			return /gradient\(/.test(ps.backgroundImage) || (alpha > 0 && (alpha < 1 || opacity < 1));
+		}
+
 		function elementsOf(root, deep, out) {
 			if (root.nodeType !== 1 || !usable(root)) return;
 			out.push(root);
@@ -489,26 +512,34 @@
 			// Özgün değerler okunur, sonra işaretler tek seferde yazılır.
 			const found = measureOriginal(() => {
 				const root = doc.documentElement;
-				// Sayfanın tamamını saran zemin desenleri görsel sayılmaz; yoksa koyu mod tüm sayfada geri alınır.
-				const wrapper = (el) => {
-					if (el === doc.body) return true;
-					const r = el.getBoundingClientRect();
-					return r.height >= 0.75 * root.scrollHeight && r.width >= 0.9 * root.clientWidth;
-				};
+				const pageH = root.scrollHeight;
+				const pageW = root.clientWidth;
 				return list.map((el) => {
 					const cs = getComputedStyle(el);
-					const url = /url\(/.test(cs.backgroundImage);
-					const page = url && wrapper(el);
-					return [url && !page, page, alphaOf(cs.backgroundColor)];
+					const bg = cs.backgroundImage;
+					const url = /url\(/.test(bg);
+					const r = url || wantColors ? el.getBoundingClientRect() : null;
+					// Sayfanın tamamını saran zemin desenleri görsel sayılmaz; yoksa koyu mod tüm sayfada geri alınır.
+					const page = url && (el === doc.body || (r.height >= 0.75 * pageH && r.width >= 0.9 * pageW));
+					const out = { image: url && !page, gradient: !url && /gradient\(/.test(bg), alpha: alphaOf(cs.backgroundColor), before: false, after: false };
+					if (wantColors && r.width >= 150 && r.height >= 80) {
+						out.before = overlayPseudo(el, "::before", r);
+						out.after = overlayPseudo(el, "::after", r);
+					}
+					return out;
 				});
 			});
 			list.forEach((el, i) => {
-				const [image, page, alpha] = found[i];
+				const f = found[i];
 				const add = [];
-				if (wantImages && image) add.push("gk-bgimg");
-				if (wantColors && page) add.push("gk-cbg");
-				if (wantColors && alpha === 0) add.push("gk-c0");
-				if (wantColors && alpha > 0 && alpha < 1) add.push("gk-c1");
+				if (wantImages && f.image) add.push("gk-bgimg");
+				if (wantColors) {
+					if (f.image) add.push("gk-cimg");
+					if (f.gradient || (f.alpha > 0 && f.alpha < 1)) add.push("gk-c1");
+					else if (f.alpha === 0) add.push("gk-c0");
+					if (f.before) add.push("gk-cpb");
+					if (f.after) add.push("gk-cpa");
+				}
 				for (const c of OURS) if (!add.includes(c) && el.classList.contains(c)) el.classList.remove(c);
 				if (add.length) {
 					for (const c of add) if (!el.classList.contains(c)) el.classList.add(c);
