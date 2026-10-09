@@ -1,0 +1,1665 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="color-scheme" content="light dark">
+<title>GözKulak · Faz 0 ses ölçümü</title>
+<style>
+:root {
+  --bg: #f3f5f8; --card: #ffffff; --ink: #18212b; --muted: #5b6673; --line: #d8dde3;
+  --accent: #085e9d; --accent-ink: #ffffff; --accent-soft: #e2edf7;
+  --ok: #1c7a45; --warn: #8f5400; --bad: #b3261e; --hl: #ffeaa0; --hl-ink: #18212b;
+  --radius: 12px;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #10151b; --card: #18202a; --ink: #e7ecf1; --muted: #9ba7b3; --line: #2c3743;
+    --accent: #6cb4ec; --accent-ink: #062238; --accent-soft: #15314a;
+    --ok: #63cf90; --warn: #f2b45c; --bad: #ff8b80; --hl: #5a4a00; --hl-ink: #fff6d6;
+  }
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--ink);
+  font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", sans-serif; }
+header { background: var(--accent); color: var(--accent-ink); padding: 18px 16px 16px; }
+header h1 { margin: 0; font-size: 1.25rem; letter-spacing: .01em; }
+header p { margin: 4px 0 0; opacity: .9; font-size: .9rem; }
+main { max-width: 860px; margin: 0 auto; padding: 12px 12px 48px; }
+section.card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 14px 14px 16px; margin: 12px 0; }
+h2 { font-size: 1.05rem; margin: 0 0 10px; }
+h3 { font-size: .98rem; margin: 14px 0 8px; }
+label { display: block; font-weight: 600; font-size: .9rem; margin: 10px 0 4px; }
+.hint, small { color: var(--muted); font-size: .85rem; }
+input[type=text], select, textarea {
+  width: 100%; font: inherit; color: var(--ink); background: var(--bg);
+  border: 1px solid var(--line); border-radius: 8px; padding: 9px 10px; min-height: 44px; }
+textarea { min-height: 150px; resize: vertical; line-height: 1.45; }
+.grid { display: grid; gap: 0 12px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+.row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; align-items: center; }
+button { font: inherit; font-weight: 600; min-height: 44px; padding: 8px 16px; border-radius: 10px;
+  border: 1px solid var(--accent); background: var(--accent); color: var(--accent-ink); cursor: pointer; }
+button.secondary { background: transparent; color: var(--accent); }
+button.danger { background: transparent; color: var(--bad); border-color: var(--bad); }
+button:disabled { opacity: .45; cursor: not-allowed; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.seg { display: inline-flex; border: 1px solid var(--accent); border-radius: 10px; overflow: hidden; }
+.seg input { position: absolute; opacity: 0; pointer-events: none; }
+.seg label { margin: 0; padding: 9px 18px; font-weight: 600; cursor: pointer; color: var(--accent); min-height: 44px; display: flex; align-items: center; }
+.seg input:checked + label { background: var(--accent); color: var(--accent-ink); }
+.seg input:focus-visible + label { outline: 3px solid var(--accent); outline-offset: -3px; }
+.engine { border-top: 1px solid var(--line); margin-top: 14px; padding-top: 4px; }
+.ai-note { font-size: .8rem; color: var(--muted); margin-top: 6px; }
+#status { min-height: 1.5em; font-weight: 600; margin: 0; }
+#status[data-kind=ok] { color: var(--ok); }
+#status[data-kind=warn] { color: var(--warn); }
+#status[data-kind=bad] { color: var(--bad); }
+progress { width: 100%; height: 14px; margin-top: 8px; accent-color: var(--accent); }
+.pieces { position: relative; max-height: 220px; overflow: auto; border: 1px solid var(--line);
+  border-radius: 8px; padding: 8px 10px; background: var(--bg); font-size: .95rem; }
+.pieces:empty::before { content: "Okuma başlayınca burada görünür."; color: var(--muted); }
+.piece { border-radius: 4px; padding: 1px 2px; }
+.piece.on { background: var(--hl); color: var(--hl-ink); }
+.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; }
+table { border-collapse: collapse; font-size: .82rem; min-width: 760px; width: 100%; }
+th, td { border-bottom: 1px solid var(--line); padding: 6px 8px; text-align: left; vertical-align: top; }
+th { background: var(--accent-soft); position: sticky; top: 0; }
+tbody tr:last-child td { border-bottom: 0; }
+td.empty { color: var(--muted); text-align: center; padding: 14px; }
+#md { font: .78rem/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; min-height: 120px; }
+details { margin-top: 10px; }
+summary { cursor: pointer; font-weight: 600; min-height: 32px; }
+pre#log { white-space: pre-wrap; word-break: break-word; font: .75rem/1.4 ui-monospace, Menlo, Consolas, monospace;
+  background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px; max-height: 260px; overflow: auto; }
+.info { margin: 0; padding-left: 18px; font-size: .9rem; }
+.info li { margin: 2px 0; }
+.sticky-stop { position: sticky; bottom: 0; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 8px 12px; margin: 12px 0; box-shadow: 0 -4px 14px rgba(0,0,0,.08); z-index: 2; }
+.sticky-stop .bar { display: flex; align-items: center; gap: 10px; }
+.sticky-stop #status { flex: 1; font-size: .92rem; line-height: 1.35; }
+.sticky-stop button { flex: none; }
+#progressText:empty { display: none; }
+[hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<header>
+  <h1>GözKulak · Faz 0 ses ölçümü</h1>
+  <p>EMA Lightning (tarayıcıda ONNX), tarayıcının kendi sesi ve isteğe bağlı Kokoro karşılaştırması</p>
+</header>
+<main>
+
+<section class="card" aria-labelledby="h-how">
+  <h2 id="h-how">Nasıl kullanılır</h2>
+  <ol class="info">
+    <li>Cihazın adını yazın (ör. “iPhone 13”).</li>
+    <li>Dili ve metni seçin, sonra motorlardan biriyle “Oku”ya basın. İlk EMA denemesi modeli indirir (WASM ile yaklaşık 50 MB).</li>
+    <li>Aynı metni tarayıcı sesiyle de okutun. İkinci kez basmak modeli bellekte bulur; “Motorları kapat” sonrası basmak önbellekten yüklemeyi ölçer.</li>
+    <li>“Ön işleme sonrası (örnek)” metinleri, Faz 2'de yazılacak düzeltmelerin elle uygulanmış hâlidir. EMA'yı ham metinle ve bunlarla ayrı ayrı dinleyin.</li>
+    <li>Bitince “Tabloyu kopyala”ya basıp sonucu sohbete yapıştırın.</li>
+  </ol>
+  <p class="hint">iPhone'da ses gelmiyorsa yan taraftaki sessiz anahtarını kontrol edin.</p>
+</section>
+
+<section class="card" aria-labelledby="h-device">
+  <h2 id="h-device">Cihaz</h2>
+  <label for="deviceName">Cihaz adı</label>
+  <input id="deviceName" type="text" autocomplete="off" placeholder="ör. Samsung A52" maxlength="60">
+  <ul class="info" id="deviceInfo" aria-live="polite"></ul>
+</section>
+
+<section class="card" aria-labelledby="h-text">
+  <h2 id="h-text">Metin</h2>
+  <div class="seg" role="radiogroup" aria-label="Dil">
+    <input type="radio" name="lang" id="lang-tr" value="tr" checked><label for="lang-tr">Türkçe</label>
+    <input type="radio" name="lang" id="lang-en" value="en"><label for="lang-en">İngilizce</label>
+  </div>
+  <label for="preset">Hazır metin</label>
+  <select id="preset"></select>
+  <p class="hint">Kaynak: <span id="presetSrc"></span>. Kutuya kendi metninizi de yapıştırabilirsiniz.</p>
+  <label for="text">Okunacak metin</label>
+  <textarea id="text" spellcheck="false"></textarea>
+  <p class="hint" id="charCount"></p>
+  <div class="grid">
+    <div>
+      <label for="speed">Hız: <output id="speedOut" for="speed">1,00</output></label>
+      <input id="speed" type="range" min="0.75" max="1.5" step="0.05" value="1" style="width:100%">
+    </div>
+    <div>
+      <label for="runMode">Çalışma yeri (EMA ve Kokoro)</label>
+      <select id="runMode">
+        <option value="worker">Web Worker (eklentideki plan)</option>
+        <option value="main">Ana iş parçacığı</option>
+      </select>
+    </div>
+  </div>
+
+  <div id="panel-tr">
+    <div class="engine">
+      <h3>EMA Lightning</h3>
+      <div class="grid">
+        <div>
+          <label for="emaBackend">Arka uç</label>
+          <select id="emaBackend">
+            <option value="wasm">WASM (işlemci)</option>
+            <option value="webgpu">WebGPU (ekran kartı)</option>
+          </select>
+        </div>
+        <div>
+          <label for="emaPrecision">Ses grafiği</label>
+          <select id="emaPrecision">
+            <option value="fp32">fp32 (18,1 MB)</option>
+            <option value="fp16">fp16 (9,6 MB; yalnızca WebGPU'da ölçülmüş)</option>
+          </select>
+        </div>
+      </div>
+      <div class="row"><button id="btnEma" type="button">EMA ile oku</button></div>
+      <p class="ai-note">Bu ses yapay zekâ ile üretilmiştir.</p>
+    </div>
+    <div class="engine">
+      <h3>Tarayıcının Türkçe sesi</h3>
+      <label for="voiceTr">Ses</label>
+      <select id="voiceTr"></select>
+      <div class="row"><button id="btnVoiceTr" type="button" class="secondary">Tarayıcı sesiyle oku</button></div>
+    </div>
+  </div>
+
+  <div id="panel-en" hidden>
+    <div class="engine">
+      <h3>Tarayıcının İngilizce sesi</h3>
+      <label for="voiceEn">Ses</label>
+      <select id="voiceEn"></select>
+      <div class="row"><button id="btnVoiceEn" type="button">Tarayıcı sesiyle oku</button></div>
+    </div>
+    <div class="engine">
+      <details id="kokoroBox">
+        <summary>İsteğe bağlı: Kokoro-82M testi (büyük indirme)</summary>
+        <div class="grid">
+          <div>
+            <label for="kDevice">Arka uç</label>
+            <select id="kDevice">
+              <option value="wasm">WASM (işlemci)</option>
+              <option value="webgpu">WebGPU (ekran kartı)</option>
+            </select>
+          </div>
+          <div>
+            <label for="kDtype">Hassasiyet</label>
+            <select id="kDtype">
+              <option value="q8" data-mb="92">q8 · 92 MB (WASM için önerilen)</option>
+              <option value="q4f16" data-mb="155">q4f16 · 155 MB</option>
+              <option value="fp16" data-mb="163">fp16 · 163 MB</option>
+              <option value="fp32" data-mb="326">fp32 · 326 MB (WebGPU için önerilen)</option>
+            </select>
+          </div>
+          <div>
+            <label for="kVoice">Ses</label>
+            <select id="kVoice">
+              <option value="af_heart">Heart · ABD, kadın</option>
+              <option value="af_bella">Bella · ABD, kadın</option>
+              <option value="am_michael">Michael · ABD, erkek</option>
+              <option value="am_fenrir">Fenrir · ABD, erkek</option>
+              <option value="bf_emma">Emma · İngiliz, kadın</option>
+              <option value="bm_george">George · İngiliz, erkek</option>
+            </select>
+          </div>
+        </div>
+        <div class="row"><button id="btnKokoro" type="button" class="secondary">Kokoro ile oku</button></div>
+        <p class="ai-note">Bu ses yapay zekâ ile üretilmiştir. Kokoro yüklenirken EMA motoru bellekten çıkarılır.</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<div class="sticky-stop" role="region" aria-label="Durum">
+  <div class="bar">
+    <p id="status" role="status" aria-live="polite">Hazır.</p>
+    <button id="btnStop" type="button" class="danger" disabled>Durdur</button>
+  </div>
+  <progress id="progress" hidden value="0" max="1" aria-describedby="progressText"></progress>
+  <small id="progressText"></small>
+</div>
+
+<section class="card" aria-labelledby="piecesLabel">
+  <h2 id="piecesLabel">Okunan metin</h2>
+  <div id="pieces" class="pieces"></div>
+  <p class="hint">EMA'da burada modelin gerçekte okuduğu, normalleştirilmiş metin görünür (sayılar, saatler, kısaltmalar).</p>
+</section>
+
+<section class="card" aria-labelledby="h-results">
+  <h2 id="h-results">Sonuçlar</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr id="resultsHead"></tr></thead>
+      <tbody id="resultsBody"></tbody>
+    </table>
+  </div>
+  <div class="row">
+    <button id="btnCopy" type="button">Tabloyu kopyala</button>
+    <button id="btnShare" type="button" class="secondary" hidden>Paylaş</button>
+    <button id="btnClearRows" type="button" class="danger">Sonuçları sil</button>
+  </div>
+  <details>
+    <summary>Sütunlar ne anlatıyor</summary>
+    <ul class="info">
+      <li><b>Önbellek</b>: soğuk = her şey ağdan indi; sıcak = cihaz önbelleğinden açıldı; bellekte = model zaten yüklüydü.</li>
+      <li><b>İndirilen</b>: bu denemede ağdan gelen veri. Parantezdeki “ağ” değeri, sıkıştırma sonrası aktarılan miktardır (ölçülebildiyse).</li>
+      <li><b>Yükleme</b>: indirme, SHA-256 doğrulaması ve ONNX oturumlarının kurulması dahil, modelin hazır olma süresi.</li>
+      <li><b>İlk ses</b>: model hazırken “Oku”dan ilk sesin duyulmasına kadar geçen süre. İlk kullanımda ziyaretçinin beklediği süre = Yükleme + İlk ses.</li>
+      <li><b>Üretim hızı</b>: kaç kat gerçek zamandan hızlı üretildiği; RTF 1'in altındaysa ses okunduğundan hızlı üretiliyor.</li>
+      <li><b>Takılma</b>: çalma sırasında sıradaki ses hazır olmadığı için oluşan boşluklar.</li>
+    </ul>
+  </details>
+  <label for="md">Yapıştırılacak metin (Markdown)</label>
+  <textarea id="md" readonly></textarea>
+</section>
+
+<section class="card" aria-labelledby="h-adv">
+  <h2 id="h-adv">Gelişmiş</h2>
+  <div class="grid">
+    <div>
+      <label for="modelSrc">EMA model dosyaları</label>
+      <select id="modelSrc">
+        <option value="hf">Hugging Face (sabit commit)</option>
+        <option value="local">Bu klasör (./ema/)</option>
+        <option value="custom">Özel adres</option>
+      </select>
+      <input id="modelCustom" type="text" placeholder="https://…/ema/" hidden>
+    </div>
+    <div>
+      <label for="ortSrc">ONNX Runtime 1.30.0</label>
+      <select id="ortSrc">
+        <option value="cdn">jsDelivr (sürüme sabit)</option>
+        <option value="local">Bu klasör (./ort/)</option>
+        <option value="custom">Özel adres</option>
+      </select>
+      <input id="ortCustom" type="text" placeholder="https://…/ort/" hidden>
+    </div>
+  </div>
+  <p class="hint">Hangi kaynak seçilirse seçilsin dosyalar SHA-256 ile doğrulanır; tutmazsa motor çalışmaz.</p>
+  <div class="row">
+    <button id="btnRelease" type="button" class="secondary">Motorları kapat</button>
+    <button id="btnClearCache" type="button" class="danger">Önbelleği temizle</button>
+  </div>
+  <p class="hint">“Motorları kapat” modeli bellekten atar; sonraki deneme önbellekten yüklemeyi ölçer. “Önbelleği temizle” sonrası deneme soğuk yüklemedir. Ana iş parçacığı modunda tam soğuk ölçüm için sayfayı da yenileyin.</p>
+  <details>
+    <summary>Ayrıntılı kayıt</summary>
+    <pre id="log" aria-live="off"></pre>
+    <div class="row"><button id="btnCopyLog" type="button" class="secondary">Kaydı kopyala</button></div>
+  </details>
+  <p class="hint" id="pageInfo"></p>
+</section>
+
+</main>
+
+<script type="text/plain" id="engine-src">
+// GözKulak Faz 0 · ses motoru modülü. Web Worker içinde ya da ana iş parçacığında çalışır.
+// EMA bölümü, ozcancelik/ema-lightning-onnx deposundaki web/tts.js ve web/normalizer.js dosyalarından
+// uyarlanmıştır (Apache-2.0, commit 13c431db0356b2f7fafb1247cd823ec0d777c820).
+// Model: canberkkkkkk/ema-lightning (Apache-2.0). Metin normalleştirme: normalizer-tr, Erdem Tuna (Apache-2.0).
+
+const IN_WORKER = typeof WorkerGlobalScope !== "undefined" && self instanceof WorkerGlobalScope;
+let emit = () => {};
+export function attach(fn) { emit = fn; }
+if (IN_WORKER) {
+  emit = (m, transfer) => self.postMessage(m, transfer || []);
+  self.onmessage = (e) => { handle(e.data); };
+}
+
+// Olay döngüsüne kısa bir nefes: "Durdur" mesajı işlenebilsin.
+const chan = new MessageChannel();
+const waiters = [];
+chan.port1.onmessage = () => { const r = waiters.shift(); if (r) r(); };
+const yieldNow = () => new Promise((r) => { waiters.push(r); chan.port2.postMessage(0); });
+
+let stopToken = 0;
+
+export async function handle(msg) {
+  const { cmd, id } = msg;
+  if (cmd === "stop") { stopToken++; return; }
+  try {
+    let data;
+    if (cmd === "ema-load") data = await emaLoad(msg.cfg, id);
+    else if (cmd === "ema-speak") data = await emaSpeak(msg, id);
+    else if (cmd === "kokoro-load") data = await kokoroLoad(msg.cfg, id);
+    else if (cmd === "kokoro-speak") data = await kokoroSpeak(msg, id);
+    else throw new Error("Bilinmeyen komut: " + cmd);
+    emit({ ev: "result", id, data });
+  } catch (err) {
+    emit({ ev: "error", id, message: errText(err) });
+  }
+}
+
+function errText(e) {
+  if (e === undefined || e === null) return "Bilinmeyen hata";
+  if (typeof e === "string") return e;
+  if (typeof e === "number") return "ONNX Runtime hata kodu " + e;
+  return e.message || String(e);
+}
+
+function adapterText(a) {
+  const i = (a && a.info) || {};
+  return [i.vendor, i.architecture, i.device, i.description].filter(Boolean).join(" ") || "bilgi yok";
+}
+
+async function needWebGPU() {
+  if (!navigator.gpu) {
+    throw new Error("WebGPU bu tarayıcıda" + (IN_WORKER ? " Worker içinde" : "") + " yok. WASM'ı seçin" +
+      (IN_WORKER ? " ya da Çalışma yeri: Ana iş parçacığı ile deneyin." : "."));
+  }
+  const a = await navigator.gpu.requestAdapter().catch(() => null);
+  if (!a) throw new Error("WebGPU bağdaştırıcısı alınamadı. WASM'ı seçin.");
+  const f16 = !!(a.features && a.features.has("shader-f16"));
+  return { text: adapterText(a) + (f16 ? ", shader-f16 var" : ", shader-f16 yok"), f16 };
+}
+const NO_F16 = "Bu ekran kartının WebGPU sürücüsü fp16'yı (shader-f16) desteklemiyor; fp32 seçin.";
+
+// ---------- doğrulanmış dosya indirme (Cache Storage + SHA-256) ----------
+
+const CACHE = "gozkulak-faz0-v1";
+const hex = (buf) => Array.from(new Uint8Array(buf), (b) => b.toString(16).padStart(2, "0")).join("");
+const shortName = (url) => url.split("?")[0].split("/").slice(-2).join("/");
+const blobUrl = (buf) => URL.createObjectURL(new Blob([buf], { type: "text/javascript" }));
+
+async function openCache() {
+  try { return await caches.open(CACHE); } catch { return null; }
+}
+
+async function getFile(url, sha, acct) {
+  if (!(self.crypto && crypto.subtle)) throw new Error("crypto.subtle yok: sayfa HTTPS üzerinden açılmalı.");
+  const rec = { name: shortName(url), bytes: 0, net: false, ms: 0, verifyMs: 0, cacheSaved: false };
+  const t0 = performance.now();
+  const cache = await openCache();
+  let buf = null;
+  if (cache) {
+    const hit = await cache.match(url).catch(() => null);
+    if (hit) buf = await hit.arrayBuffer().catch(() => null);
+  }
+  if (buf) acct(buf.byteLength);
+  else {
+    if (!/^https?:/.test(url)) throw new Error(rec.name + ": dosya olarak açılan sayfadan yerel dosya okunamaz. “Bu klasör” kaynağı için sayfayı https adresinden açın.");
+    const netFail = (e) => new Error(rec.name + " indirilemedi (" + new URL(url).host + "): " + errText(e) + ". Adres: " + url);
+    let res;
+    try { res = await fetch(url, { cache: "no-store", credentials: "omit" }); } catch (e) { throw netFail(e); }
+    if (!res.ok) throw new Error(rec.name + ": HTTP " + res.status + ". Adres: " + url);
+    rec.net = true;
+    try {
+      if (res.body && res.body.getReader) {
+        const reader = res.body.getReader();
+        const parts = [];
+        let n = 0;
+        for (;;) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          parts.push(value); n += value.byteLength; acct(value.byteLength);
+        }
+        const u8 = new Uint8Array(n);
+        let o = 0;
+        for (const p of parts) { u8.set(p, o); o += p.byteLength; }
+        buf = u8.buffer;
+      } else { buf = await res.arrayBuffer(); acct(buf.byteLength); }
+    } catch (e) { throw netFail(e); }
+  }
+  rec.ms = performance.now() - t0;
+  rec.bytes = buf.byteLength;
+  const t1 = performance.now();
+  const got = hex(await crypto.subtle.digest("SHA-256", buf));
+  rec.verifyMs = performance.now() - t1;
+  if (got !== sha) {
+    if (!rec.net && cache) await cache.delete(url).catch(() => {});
+    throw new Error(rec.name + ": SHA-256 doğrulaması tutmadı (beklenen " + sha.slice(0, 12) + "…, gelen " +
+      got.slice(0, 12) + "…). Motor çalıştırılmadı.");
+  }
+  if (rec.net && cache) {
+    try {
+      await cache.put(url, new Response(buf, { headers: { "content-type": "application/octet-stream" } }));
+      rec.cacheSaved = true;
+    } catch { rec.cacheSaved = false; }
+  }
+  return { buf, rec };
+}
+
+// ---------- sabitlenmiş dosyalar ----------
+
+const ORT_FILES = {
+  wasm: [
+    { name: "ort.wasm.min.mjs", size: 50126, sha: "219e6a1fc8a9938268d18efca3c91d310bd2f4a59bbd13744df5b2b7fc6cee3b" },
+    { name: "ort-wasm-simd-threaded.mjs", size: 24381, sha: "e13f7f94fc51b4ca72b12faeb1ee95f4ace6dfbc8939bc718aabdc0a27c4299b" },
+    { name: "ort-wasm-simd-threaded.wasm", size: 14239897, sha: "3398c10d07d229bd91b364548e130e0e51a8e5704b88c7c083ebbeb78842dee2" },
+  ],
+  webgpu: [
+    { name: "ort.webgpu.min.mjs", size: 66349, sha: "3dffff71811bc13a3a3d9591c57ca5ee5735b8f5f3eaf789510b02bb040ae3a0" },
+    { name: "ort-wasm-simd-threaded.asyncify.mjs", size: 53057, sha: "3d1c85995364bb643302fc6fd877a0c3ba5ae72401815e0f24828a53d9191e28" },
+    { name: "ort-wasm-simd-threaded.asyncify.wasm", size: 26781914, sha: "39f9f0894d478800487ed9f7dbe92618498db320cf55c8e3d89adff8dce658da" },
+  ],
+};
+const EMA_FILES = {
+  meta: { name: "meta.json", size: 357, sha: "76627201405723633f5319a208ed7dea63c42acbf3ca997671bccdca9d9186b2" },
+  normalizer: { name: "normalizer.wasm", size: 1211738, sha: "2614bcf15b4546249d49474c029420a4a611daf9e9a0c596cc852bd16cdecc89" },
+  text: { name: "text.onnx", size: 4806400, sha: "ad5d4885b5d218f63d976a6e562334ea0194aec54847a6c6482d328e784089f0" },
+  sound: { name: "sound.onnx", size: 18120655, sha: "958364217360cecaa92dc5ff2170d19f3c9f6995fd5e61241ea4068971a46a59" },
+  soundFp16: { name: "fp16/sound.onnx", size: 9635325, sha: "db50477b8693ca87155b0316d3ac2e5ae644c1a9346d77079287d455b615ff28" },
+  decoder: { name: "decoder.onnx", size: 12031945, sha: "396c06a8e5711fd40bfd2c3f4f33851feb2ad07a86485833844e0ae8ff637b17" },
+};
+
+// ---------- EMA yükleme ----------
+
+let ort = null, ortBuild = null, ema = null, emaKey = null;
+
+async function emaLoad(cfg, id) {
+  const build = cfg.backend === "webgpu" ? "webgpu" : "wasm";
+  const key = [build, cfg.precision, cfg.modelBase, cfg.ortBase].join("|");
+  if (ema && emaKey === key) return { already: true };
+  if (ema) { await ema.release(); ema = null; emaKey = null; }
+  if (ortBuild && ortBuild !== build) {
+    throw new Error("Bu iş parçacığında başka bir ONNX Runtime derlemesi yüklü (" + ortBuild + "). Sayfayı yenileyip yeniden deneyin.");
+  }
+  const gpu = build === "webgpu" ? await needWebGPU() : null;
+  if (gpu && cfg.precision === "fp16" && !gpu.f16) throw new Error(NO_F16);
+  const adapter = gpu && gpu.text;
+  try { performance.clearResourceTimings(); } catch {}
+
+  const T0 = performance.now();
+  const soundFile = cfg.precision === "fp16" ? EMA_FILES.soundFp16 : EMA_FILES.sound;
+  const ortList = ort ? [] : ORT_FILES[build].map((f) => ({ ...f, url: cfg.ortBase + f.name }));
+  const modelList = [EMA_FILES.meta, EMA_FILES.normalizer, EMA_FILES.text, soundFile, EMA_FILES.decoder]
+    .map((f) => ({ ...f, url: cfg.modelBase + f.name }));
+  const list = [...ortList, ...modelList];
+  const total = list.reduce((a, f) => a + f.size, 0);
+  let done = 0, last = 0;
+  emit({ ev: "progress", id, done: 0, total, label: "İndiriliyor" });
+  const acct = (n) => {
+    done += n;
+    const now = performance.now();
+    if (now - last > 150 || done >= total) { last = now; emit({ ev: "progress", id, done, total, label: "İndiriliyor" }); }
+  };
+  const got = await Promise.all(list.map((f) => getFile(f.url, f.sha, acct)));
+  const T1 = performance.now();
+  const buf = (f) => got[list.indexOf(f)].buf;
+
+  emit({ ev: "stage", id, text: "ONNX Runtime hazırlanıyor…" });
+  if (!ort) {
+    const [main, glue, wasm] = ortList;
+    const mod = await import(blobUrl(buf(main)));
+    mod.env.wasm.numThreads = 1; // COOP/COEP yok: tek çekirdekli WASM
+    mod.env.wasm.proxy = false;
+    mod.env.wasm.wasmPaths = { mjs: blobUrl(buf(glue)) };
+    mod.env.wasm.wasmBinary = buf(wasm);
+    mod.env.logLevel = "error";
+    ort = mod; ortBuild = build;
+  }
+  const T2 = performance.now();
+  const meta = JSON.parse(new TextDecoder().decode(buf(modelList[0])));
+  const normalize = await loadNormalizer(buf(modelList[1]));
+  const opts = { executionProviders: build === "webgpu" ? ["webgpu", "wasm"] : ["wasm"], graphOptimizationLevel: "all",
+    logSeverityLevel: 3 };
+  const sessions = {}, sessionMs = {};
+  for (const [name, f] of [["text", modelList[2]], ["sound", modelList[3]], ["decoder", modelList[4]]]) {
+    emit({ ev: "stage", id, text: name + " oturumu kuruluyor…" });
+    const t = performance.now();
+    sessions[name] = await ort.InferenceSession.create(new Uint8Array(buf(f)), opts);
+    sessionMs[name] = performance.now() - t;
+  }
+  const T3 = performance.now();
+  ema = new EMA(meta, sessions, build, normalize);
+  emaKey = key;
+
+  const files = got.map((g) => g.rec);
+  const netFiles = files.filter((r) => r.net);
+  let netKnown = netFiles.length > 0, netTransfer = 0;
+  list.forEach((f, i) => {
+    if (!got[i].rec.net) return;
+    const e = performance.getEntriesByName(f.url).pop();
+    if (e && e.transferSize > 0) netTransfer += e.transferSize; else netKnown = false;
+  });
+  return {
+    already: false, build, adapter,
+    totalMs: T3 - T0, downloadMs: T1 - T0, ortMs: T2 - T1, setupMs: T3 - T1, sessionMs,
+    verifyMs: files.reduce((a, r) => a + r.verifyMs, 0),
+    bodyBytes: netFiles.reduce((a, r) => a + r.bytes, 0),
+    netBytes: netKnown ? netTransfer : null,
+    cache: netFiles.length === 0 ? "sıcak" : netFiles.length === files.length ? "soğuk" : "kısmi",
+    cacheSaveFailed: netFiles.some((r) => !r.cacheSaved),
+    files,
+  };
+}
+
+async function emaSpeak({ text, speed, seed }, id) {
+  if (!ema) throw new Error("EMA modeli yüklü değil.");
+  const token = stopToken;
+  const stats = {};
+  const t0 = performance.now();
+  let firstChunk = null, samples = 0, chunks = 0, stopped = false;
+  const gen = ema.stream(text, {
+    speed, seed, stats,
+    onPlan: (pieces) => emit({ ev: "plan", id, pieces }),
+    onPiece: (p) => emit({ ev: "piece", id, index: p.index }),
+  });
+  for await (const wav of gen) {
+    if (firstChunk === null) firstChunk = performance.now() - t0;
+    samples += wav.length; chunks++;
+    emit({ ev: "audio", id, pcm: wav, rate: RATE }, [wav.buffer]);
+    await yieldNow();
+    if (token !== stopToken) { stopped = true; break; }
+  }
+  return {
+    firstChunkMs: firstChunk, synthMs: performance.now() - t0, audioSec: samples / RATE, chunks, stopped,
+    pieces: (stats.pieces || []).length, textMs: stats.text, soundMs: stats.sound, decodeMs: stats.decode,
+  };
+}
+
+// ---------- normalizer.js (normalizer-tr, WebAssembly) ----------
+
+const enc = new TextEncoder(), dec = new TextDecoder();
+async function loadNormalizer(bytes) {
+  const { instance } = await WebAssembly.instantiate(bytes, {});
+  const w = instance.exports;
+  return (text) => {
+    const input = enc.encode(text);
+    const ptr = w.alloc(input.length);
+    new Uint8Array(w.memory.buffer, ptr, input.length).set(input);
+    w.normalize(ptr, input.length);
+    w.dealloc(ptr, input.length);
+    return dec.decode(new Uint8Array(w.memory.buffer, w.result_ptr(), w.result_len()));
+  };
+}
+
+// ---------- tts.js (değişiklikler: onPlan, parça sırası, ort modül değişkeni) ----------
+
+const RATE = 48000;
+const FIRST_WINDOW = 25;
+const WINDOW = 100;
+const CONTEXT = 8;
+const MAX_WORD_FRAMES = 250;
+const MAX_FRAMES = 3000;
+
+const TURKISH = new Set("çğıöşüÇĞİÖŞÜ");
+const TYPOGRAPHY = { "’": "'", "‘": "'", "ʼ": "'", "´": "'", "`": "'", "“": '"', "”": '"', "„": '"',
+  "«": '"', "»": '"', "–": "-", "—": "-", "−": "-", "…": "..." };
+const UNSAFE = /[\x00-\x08\x0b-\x1f\x7f-\x9f؜‎‏‪-‮⁦-⁩]/g;
+const BLOCK_BYTES = 8 * 1024;
+
+function blocks(text) {
+  const out = [];
+  let block = [], size = 0;
+  for (const word of text.split(/\s+/).filter(Boolean)) {
+    const n = new TextEncoder().encode(word).length + 1;
+    if (block.length && size + n > BLOCK_BYTES) { out.push(block.join(" ")); block = []; size = 0; }
+    block.push(word); size += n;
+  }
+  if (block.length) out.push(block.join(" "));
+  return out;
+}
+
+function frontend(text, vocab, normalize) {
+  text = text.replace(UNSAFE, " ");
+  if (!text.trim()) return "";
+  return alphabet(blocks(text).map(normalize).join(" "), vocab);
+}
+
+function alphabet(text, vocab) {
+  text = text.replace(UNSAFE, " ");
+  text = [...text].map((ch) => TYPOGRAPHY[ch] ?? ch).join("");
+  text = text.replace(/İ/g, "i").replace(/I/g, "ı").toLocaleLowerCase("tr");
+  let out = "";
+  for (let ch of text) {
+    if (!TURKISH.has(ch)) ch = ch.normalize("NFKD").replace(/\p{M}/gu, "");
+    out += ch && [...ch].every((c) => vocab.has(c)) ? ch : " ";
+  }
+  return out.replace(/\s+/g, " ").trim();
+}
+
+const LETTERS_PER_SECOND = 18, MAX_SECONDS = 10, MAX_LETTERS = 250;
+const SENTENCE_PAUSE = 0.25, CLAUSE_PAUSE = 0.12;
+const CUTS = [[/[.!?]+["')]*(?= )/g, SENTENCE_PAUSE], [/[,;:](?= )/g, CLAUSE_PAUSE], [/\S(?= )/g, CLAUSE_PAUSE]];
+
+function finish(piece) {
+  if (/[.!?]$/.test(piece.replace(/["')]+$/, ""))) return piece;
+  return piece.replace(/[,;:\- ]+$/, "") + ".";
+}
+
+function chunk(text, speed) {
+  const limit = Math.floor(Math.min(MAX_LETTERS, LETTERS_PER_SECOND * MAX_SECONDS * speed));
+  const pieces = [];
+  let rest = text.trim();
+  while (rest) {
+    let cut = rest.length, pause = 0;
+    if (rest.length > limit) {
+      cut = limit;
+      const head = rest.slice(0, limit + 1);
+      for (const [pattern, gap] of CUTS) {
+        const ends = [...head.matchAll(pattern)].map((m) => m.index + m[0].length);
+        if (ends.length) { cut = ends.at(-1); pause = gap; break; }
+      }
+    }
+    const piece = rest.slice(0, cut).trim();
+    rest = rest.slice(cut).trim();
+    if (/\p{L}/u.test(piece)) pieces.push([finish(piece), pause]);
+  }
+  if (pieces.length) pieces.at(-1)[1] = 0;
+  return pieces;
+}
+
+function gaussian(seed) {
+  let a = seed >>> 0;
+  const uniform = () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+  return (n) => {
+    const out = new Float32Array(n);
+    for (let i = 0; i < n; i += 2) {
+      const r = Math.sqrt(-2 * Math.log(1 - uniform())), th = 2 * Math.PI * uniform();
+      out[i] = r * Math.cos(th);
+      if (i + 1 < n) out[i + 1] = r * Math.sin(th);
+    }
+    return out;
+  };
+}
+
+function words(text) {
+  const starts = [];
+  for (let i = 0; i < text.length; i++) if (text[i] !== " " && (i === 0 || text[i - 1] === " ")) starts.push(i);
+  if (!starts.length) starts.push(0);
+  const bounds = [0, ...starts.slice(1), text.length];
+  const cw = [], wstart = [];
+  for (let w = 0; w + 1 < bounds.length; w++)
+    for (let i = bounds[w]; i < bounds[w + 1]; i++) { cw.push(w); wstart.push(bounds[w]); }
+  return { cw, wstart };
+}
+
+function plan(cw, wstart, dur, speed) {
+  const L = cw.length, nWords = cw[L - 1] + 1;
+  const d = Float32Array.from(dur, (x) => x / speed);
+  const sums = new Float64Array(nWords);
+  for (let i = 0; i < L; i++) sums[cw[i]] += d[i];
+  const counts = Array.from(sums, (s) => Math.min(MAX_WORD_FRAMES, Math.max(1, Math.round(s))));
+  const T = Math.min(counts.reduce((a, b) => a + b, 0), MAX_FRAMES);
+  const fw = new Int32Array(T), fp = new Float32Array(T), start = [];
+  for (let w = 0, f = 0; w < nWords; w++) {
+    start.push(f);
+    for (let j = 0; j < counts[w] && f < T; j++, f++) { fw[f] = w; fp[f] = j / counts[w]; }
+  }
+  const c = Float32Array.from(d, (x) => Math.max(x, 1e-4));
+  const done = new Float32Array(L), total = new Float32Array(nWords);
+  for (let i = 0, acc = 0; i < L; i++) { acc += c[i]; done[i] = acc; total[cw[i]] += c[i]; }
+  const before = (i) => done[i] - c[i];
+  const wlen = new Float32Array(nWords);
+  for (const w of cw) wlen[w] += 1;
+  const woff = new Float32Array(nWords);
+  for (let w = 1; w < nWords; w++) woff[w] = woff[w - 1] + Math.max(wlen[w - 1], 1);
+  const cg = new Float32Array(L), fg = new Float32Array(T);
+  for (let i = 0; i < L; i++) {
+    const cp = Math.min(1, Math.max(0, (done[i] - before(wstart[i]) - 0.5 * c[i]) / Math.max(total[cw[i]], 1e-8)));
+    cg[i] = woff[cw[i]] + cp * Math.max(wlen[cw[i]], 1);
+  }
+  for (let f = 0; f < T; f++) fg[f] = woff[fw[f]] + fp[f] * Math.max(wlen[fw[f]], 1);
+  return { T, fw, cg, fg };
+}
+
+function windows(frames, first) {
+  const spans = [];
+  for (let s = 0; s < frames;) {
+    const e = Math.min(frames, s + (s === 0 ? first : WINDOW));
+    spans.push([s, e]);
+    s = e;
+  }
+  return spans;
+}
+
+const i64 = (arr) => new ort.Tensor("int64", BigInt64Array.from(arr, (x) => BigInt(x)), [1, arr.length]);
+const f32 = (arr, dims) => new ort.Tensor("float32", arr, dims);
+
+class EMA {
+  constructor(meta, sessions, backend, normalize) {
+    Object.assign(this, sessions);
+    this.normalize = normalize;
+    this.backend = backend;
+    this.meta = meta;
+    this.stoi = new Map(meta.vocab.map((ch, i) => [ch, i]));
+    this.alpha = new Set(meta.vocab.filter((v) => v.length === 1));
+  }
+
+  async release() {
+    for (const s of [this.text, this.sound, this.decoder]) await s?.release().catch(() => {});
+  }
+
+  pieces(text, speed) {
+    return chunk(frontend(text, this.alpha, this.normalize), speed);
+  }
+
+  async *stream(text, { speed = 1, seed = 0, stats = {}, onPlan = () => {}, onPiece = () => {} } = {}) {
+    const pieces = this.pieces(text, speed);
+    stats.pieces = pieces.map(([p]) => p);
+    stats.text = stats.sound = stats.decode = 0;
+    onPlan(stats.pieces);
+    const nSteps = this.meta.times.length, D = this.meta.latent_dim, hop = this.meta.hop;
+    for (let k = 0; k < pieces.length; k++) {
+      const [piece, pause] = pieces[k];
+      let t0 = performance.now();
+      const ids = [...piece].map((ch) => this.stoi.get(ch) ?? 1);
+      const { cw, wstart } = words(piece);
+      const { h, dur } = await this.text.run({ ids: i64(ids) });
+      const durArr = await dur.getData();
+      const { T, fw, cg, fg } = plan(cw, wstart, durArr, speed);
+      stats.text += performance.now() - t0;
+
+      t0 = performance.now();
+      const noise = gaussian(seed * 1000003 + k)(nSteps * T * D);
+      const { latents } = await this.sound.run({
+        h, cg: f32(cg, [1, cg.length]), fg: f32(fg, [1, T]), cw: i64(cw), fw: i64(fw),
+        noise: f32(noise, [1, nSteps, T, D]) });
+      const lat = await latents.getData();
+      stats.sound += performance.now() - t0;
+      onPiece({ index: k, text: piece, seconds: (T * hop) / RATE });
+
+      for (const [s, e] of windows(T, k === 0 ? FIRST_WINDOW : WINDOW)) {
+        t0 = performance.now();
+        const a = Math.max(0, s - CONTEXT), b = Math.min(T, e + CONTEXT), n = b - a;
+        const z = new Float32Array(D * n);
+        for (let f = 0; f < n; f++) for (let d = 0; d < D; d++) z[d * n + f] = lat[(a + f) * D + d];
+        const { audio } = await this.decoder.run({ z: f32(z, [1, D, n]) });
+        const wav = (await audio.getData()).slice((s - a) * hop, (e - a) * hop);
+        stats.decode += performance.now() - t0;
+        yield wav;
+      }
+      if (pause) yield new Float32Array(Math.round(pause * RATE));
+    }
+  }
+}
+
+// ---------- Kokoro (isteğe bağlı, İngilizce) ----------
+
+const KOKORO_REPO = "onnx-community/Kokoro-82M-v1.0-ONNX";
+let kokoroMod = null, kokoro = null, kokoroKey = null, kokoroNet = 0, fetchPatched = false;
+
+// kokoro-js model dosyalarını "main" dalından ister; burada sabit commit'e yönlendirilir ve ağdan gelen bayt sayılır.
+function patchFetch(rev) {
+  if (fetchPatched) return;
+  fetchPatched = true;
+  const real = self.fetch.bind(self);
+  const from = "https://huggingface.co/" + KOKORO_REPO + "/resolve/main/";
+  const to = "https://huggingface.co/" + KOKORO_REPO + "/resolve/" + rev + "/";
+  self.fetch = async (input, init) => {
+    let url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+    if (url.startsWith(from)) {
+      url = to + url.slice(from.length);
+      input = typeof input === "string" || input instanceof URL ? url : new Request(url, input);
+    }
+    const res = await real(input, init);
+    if (!res.body || !url.startsWith("https://")) return res;
+    try {
+      const count = new TransformStream({ transform(c, ctl) { kokoroNet += c.byteLength; ctl.enqueue(c); } });
+      return new Response(res.body.pipeThrough(count), { status: res.status, statusText: res.statusText, headers: res.headers });
+    } catch { return res; }
+  };
+}
+
+async function kokoroLoad(cfg, id) {
+  const key = cfg.device + "|" + cfg.dtype;
+  if (kokoro && kokoroKey === key) return { already: true };
+  if (kokoro) { try { await kokoro.model.dispose(); } catch {} kokoro = null; kokoroKey = null; }
+  const gpu = cfg.device === "webgpu" ? await needWebGPU() : null;
+  if (gpu && /16/.test(cfg.dtype) && !gpu.f16) throw new Error(NO_F16.replace("fp32 seçin", "q8 ya da fp32 seçin"));
+  const adapter = gpu && gpu.text;
+  patchFetch(cfg.rev);
+  try { performance.clearResourceTimings(); } catch {}
+  const net0 = kokoroNet;
+  const T0 = performance.now();
+  if (!kokoroMod) {
+    emit({ ev: "stage", id, text: "kokoro-js yükleniyor…" });
+    kokoroMod = await import(cfg.url);
+  }
+  const T1 = performance.now();
+  const prog = new Map();
+  emit({ ev: "stage", id, text: "Kokoro modeli hazırlanıyor…" });
+  kokoro = await kokoroMod.KokoroTTS.from_pretrained(KOKORO_REPO, {
+    dtype: cfg.dtype, device: cfg.device,
+    progress_callback: (p) => {
+      if (p && p.status === "progress" && p.total) {
+        prog.set(p.file, [p.loaded, p.total]);
+        let a = 0, b = 0;
+        for (const [l, t] of prog.values()) { a += l; b += t; }
+        emit({ ev: "progress", id, done: a, total: b, label: "Kokoro indiriliyor" });
+      }
+    },
+  });
+  kokoroKey = key;
+  const T2 = performance.now();
+  let bundle = 0;
+  const e = performance.getEntriesByName(cfg.url).pop();
+  if (e && e.transferSize > 0) bundle = e.transferSize;
+  const body = kokoroNet - net0 + bundle;
+  return { already: false, adapter, totalMs: T2 - T0, importMs: T1 - T0, modelMs: T2 - T1,
+    bodyBytes: body, netBytes: null, cache: body > 1e6 ? "soğuk" : "sıcak" };
+}
+
+async function kokoroSpeak({ text, voice, speed }, id) {
+  if (!kokoro) throw new Error("Kokoro yüklü değil.");
+  const token = stopToken;
+  const net0 = kokoroNet;
+  const t0 = performance.now();
+  const splitter = new kokoroMod.TextSplitterStream();
+  splitter.push(text);
+  splitter.close();
+  let first = null, samples = 0, rate = 24000, k = 0, stopped = false;
+  for await (const out of kokoro.stream(splitter, { voice, speed })) {
+    if (first === null) first = performance.now() - t0;
+    rate = out.audio.sampling_rate;
+    const pcm = out.audio.audio.slice();
+    samples += pcm.length;
+    emit({ ev: "piece", id, index: k, text: out.text });
+    emit({ ev: "audio", id, pcm, rate }, [pcm.buffer]);
+    k++;
+    await yieldNow();
+    if (token !== stopToken) { stopped = true; break; }
+  }
+  return { firstChunkMs: first, synthMs: performance.now() - t0, audioSec: samples / rate, pieces: k, stopped,
+    netBytes: kokoroNet - net0 };
+}
+
+// Modül sonuna kadar hatasız değerlendirildiyse Worker hazırdır.
+if (IN_WORKER) self.postMessage({ ev: "ready" });
+</script>
+
+<script type="module">
+// ---------- sabitler ----------
+const PAGE_VERSION = "faz0-v4 (2026-10-09)";
+const EMA_COMMIT = "13c431db0356b2f7fafb1247cd823ec0d777c820";
+const KOKORO_REV = "1939ad2a8e416c0acfeecc08a694d14ef25f2231";
+const SOURCES = {
+  model: { hf: "https://huggingface.co/ozcancelik/ema-lightning-onnx/resolve/" + EMA_COMMIT + "/", local: "./ema/" },
+  ort: { cdn: "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.30.0/dist/", local: "./ort/" },
+  kokoro: { cdn: "https://cdn.jsdelivr.net/npm/kokoro-js@1.2.1/dist/kokoro.web.js", local: "./kokoro/kokoro.web.js" },
+};
+const K = { rows: "gozkulak-faz0-rows", device: "gozkulak-faz0-device", pending: "gozkulak-faz0-pending" };
+const LEAD = 0.05;
+
+const PRESETS = {
+  tr: [
+    { id: "kisa", label: "Kısa cümle",
+      src: "genel",
+      text: "Merhaba, GözKulak sesli okuma denemesine hoş geldiniz. Bu cümle temel telaffuzu dinlemek için." },
+    { id: "isletme", label: "İşletme sayfası (Kaymakamlar Gezi Evi)",
+      src: "karabuk78.com/rehber/kaymakamlar-gezi-evi/",
+      text: "Kaymakamlar Gezi Evi\nSafranbolu Eski Çarşı’da bulunan Kaymakamlar Gezi Evi, geleneksel Safranbolu ev yaşamını ziyaretçilere tanıtmak amacıyla müzeye dönüştürülmüş tarihi bir konaktır. 19. yüzyıl başlarında inşa edildiği kabul edilen yapı, dönemin aile yaşamını, odalarını, mutfağını ve günlük kullanım eşyalarını yansıtan önemli kültürel miras örneklerinden biridir.\nMusalla Mahallesi, Hıdırlık Sokak No:6, Safranbolu / Karabük" },
+    { id: "saat", label: "Çalışma saatleri",
+      src: "karabuk78.com/rehber/kaymakamlar-gezi-evi/",
+      text: "Şimdi Kapalı\nÇalışma Saatleri\nPazartesi 09:00 - 17:30\nSalı 09:00 - 17:30\nÇarşamba 09:00 - 17:30\nPerşembe 09:00 - 17:30\nCuma 09:00 - 17:30\nCumartesi 09:00 - 17:30\nPazar 09:00 - 17:30" },
+    { id: "adres", label: "Adresler ve telefonlar",
+      src: "karabuk78.com/kesfet/, rehber sayfaları, sezen.pro, mzademiryolu.com",
+      text: "Musalla Mahallesi, Hıdırlık Sokak No:6, Safranbolu / Karabük\nÇeşme, Arasta Arkası Sk., 78600 Safranbolu/Karabük, Türkiye\nKarabük-Kastamonu Karayolu 7. km Çevrikköprü Mevkii Safranbolu-Karabük\nHürriyet Mah. Özkan Sok. No 7 Merkez/Karabük\nAkyol, Mencilis Mağara Sk. Bulak/Merkez/Karabük\nBayır Mah. Sümer caddesi Nur iş hanı No:1\nKat:1 Merkez/Karabük\n+90 549 737 20 21\n+905015887878\nTel: +90 555 899 35 39\nTel: +90 370 415 61 90\nFax: +90 370 412 10 06" },
+    { id: "buyuk", label: "Büyük harf ve kısaltmalar (derleme)",
+      src: "mzademiryolu.com, sezen.pro, karabuk78.com",
+      text: "DEMİRYOLU MAKASI İMALATI\nTEKLİF AL\nMZA Demiryolu, Yıldıray SEZEN ortaklığıyla kuruldu. Fabrika OSB Kavşağı Karşısı No:11 adresindedir ve TCDD ile özel sektöre makas üretir. Hosting ve SSL desteği, temel SEO ayarları, alan adı kaydı ve DNS yönetimi. KVKK Aydınlatma Metni. Safranbolu, UNESCO Dünya Mirası Listesi'ndedir." },
+    { id: "blog", label: "Blog yazısı, uzun (akıcılık)",
+      src: "karabuk78.com/arasta-carsisi-yemeniciler-arastasi-safranbolunun-tarihi-carsisi/",
+      text: "Arasta Çarşısı (Yemeniciler Arastası) Safranbolu’nun Tarihi Çarşısı\nSafranbolu denildiğinde akla ilk olarak tarihi konaklar, taş sokaklar ve yüzyıllardır korunan Osmanlı şehir dokusu gelir. Ancak bu tarihi atmosferi en iyi hissedebileceğiniz yerlerden biri de hiç şüphesiz Arasta Çarşısı’dır. Yemeniciler Arastası olarak da bilinen bu tarihi çarşı, yalnızca alışveriş yapılan bir yer değil; Safranbolu’nun ticaret kültürünü, zanaatkârlık geleneğini ve geçmişten günümüze ulaşan yaşam biçimini yansıtan önemli bir kültür mirasıdır.\nArasta Çarşısı, Tarihi Çarşı bölgesinde, Köprülü Mehmet Paşa Camii’nin hemen yanında yer alır. 17. yüzyılda kurulan çarşı, Osmanlı döneminde lonca düzenine göre faaliyet gösteren esnafların merkeziydi. Özellikle “yemeni” adı verilen el yapımı deri ayakkabıların üretildiği ve satıldığı bu çarşı, yıllarca Safranbolu’nun ekonomik hayatında önemli bir rol üstlendi.\nTarihi kaynaklara göre Arasta Çarşısı, dönemin ticaret yolları üzerinde bulunan Safranbolu’nun gelişmesinde büyük katkı sağlamış, bölgenin en hareketli ticaret merkezlerinden biri olmuştur. Kurtuluş Savaşı yıllarında ise burada üretilen yemeniler, Türk ordusunun ayakkabı ihtiyacının karşılanmasına destek vermiştir.\nArasta Çarşısı’nın en dikkat çekici özelliklerinden biri, geleneksel mimarisini günümüze kadar koruyabilmiş olmasıdır. Birbirine bitişik şekilde sıralanmış tarihi dükkânlar, ziyaretçilere adeta geçmişe açılan bir kapı sunar." },
+    { id: "kvkk", label: "KVKK aydınlatma metni (bölüm)",
+      src: "sezen.pro/kvkk-aydinlatma-metni/",
+      text: "KVKK Aydınlatma Metni\nSon Güncelleme Tarihi: 20 Haziran 2026\nBu Aydınlatma Metni, 6698 Sayılı Kişisel Verilerin Korunması Kanunu (“KVKK”) kapsamında, Sezen Pro tarafından kişisel verilerinizin işlenmesine ilişkin olarak sizleri bilgilendirmek amacıyla hazırlanmıştır.\n1. Veri Sorumlusu\nKVKK uyarınca kişisel verileriniz, veri sorumlusu sıfatıyla Sezen Pro tarafından işlenebilmektedir.\n2. İşlenen Kişisel Veriler\nWeb sitemizi ziyaret etmeniz, iletişim formunu doldurmanız veya bizimle iletişime geçmeniz halinde aşağıdaki kişisel veriler işlenebilir:\nAd ve soyad\nTelefon numarası\nE-posta adresi\nFirma adı\nMesaj ve talep içerikleri\nIP adresi\nTarayıcı bilgileri\nCihaz bilgileri\nSite kullanım ve trafik verileri\n7. KVKK Kapsamındaki Haklarınız\nKVKK’nın 11. maddesi kapsamında aşağıdaki haklara sahipsiniz:\nKişisel verilerinizin işlenip işlenmediğini öğrenme\nİşlenmişse buna ilişkin bilgi talep etme" },
+    { id: "hizmet", label: "Hizmet sayfası (MZA, Türkçe)",
+      src: "mzademiryolu.com/demiryolu-makasi-imalati/",
+      text: "DEMİRYOLU MAKASI İMALATI\nProje ve Tasarım\nSektörde 20 yılı aşkın tecrübeye sahip deneyimli mühendisler ve teknikerlerle birlikte en son teknoloji kullanarak müşterilermizin tüm isteklerine cevap vermekteyiz. Ürettiğimiz tüm demiryolu makaslarının dizaynı deneyimli mühendislerimiz tarafından yapılmaktadır.\nTalaşlı İmalat\nÜretilecek olan makasa uygun dil rayları ve vignol raylar üretim sürecine girdikten sonra kesim aşamasında numaralandırılarak ürün takip formuna kaydedilir. Kesilen bu raylar özel form takımlar ile işlenir. Ardından kurp yarıçaplarına göre pres işlemleri tamamlanır." },
+    { id: "isletme-sonra", label: "İşletme + saatler, ön işleme sonrası (örnek)",
+      src: "Kaymakamlar Gezi Evi metninin Faz 2 kurallarıyla elle düzeltilmiş hâli",
+      text: "Kaymakamlar Gezi Evi.\nSafranbolu Eski Çarşı'da bulunan Kaymakamlar Gezi Evi, geleneksel Safranbolu ev yaşamını ziyaretçilere tanıtmak amacıyla müzeye dönüştürülmüş tarihi bir konaktır. 19'uncu yüzyıl başlarında inşa edildiği kabul edilen yapı, dönemin aile yaşamını, odalarını, mutfağını ve günlük kullanım eşyalarını yansıtan önemli kültürel miras örneklerinden biridir.\nMusalla Mahallesi, Hıdırlık Sokak, numara 6, Safranbolu, Karabük.\nŞimdi kapalı.\nÇalışma saatleri.\nPazartesi, 09:00 ile 17:30.\nSalı, 09:00 ile 17:30.\nÇarşamba, 09:00 ile 17:30.\nPerşembe, 09:00 ile 17:30.\nCuma, 09:00 ile 17:30.\nCumartesi, 09:00 ile 17:30.\nPazar, 09:00 ile 17:30.\nTelefon: artı 90, 501, 588, 78, 78." },
+    { id: "buyuk-sonra", label: "Büyük harf + KVKK, ön işleme sonrası (örnek)",
+      src: "Büyük harf ve KVKK metinlerinin Faz 2 kurallarıyla elle düzeltilmiş hâli",
+      text: "Demiryolu makası imalatı.\nTeklif al.\nMZA Demiryolu, Yıldıray Sezen ortaklığıyla kuruldu. Fabrika OSB Kavşağı Karşısı, numara 11 adresindedir ve TCDD ile özel sektöre makas üretir. Safranbolu, Unesco Dünya Mirası Listesi'ndedir.\nBu Aydınlatma Metni, 6698 Sayılı Kişisel Verilerin Korunması Kanunu (KVKK) kapsamında, Sezen Pro tarafından kişisel verilerinizin işlenmesine ilişkin olarak sizleri bilgilendirmek amacıyla hazırlanmıştır.\n1, Veri sorumlusu.\nKVKK nın 11'inci maddesi kapsamında aşağıdaki haklara sahipsiniz:\nAd ve soyad,\nTelefon numarası,\nE-posta adresi,\nip adresi." },
+  ],
+  en: [
+    { id: "short", label: "Short sentence",
+      src: "genel",
+      text: "Hello, and welcome to the GözKulak read-aloud test. This sentence checks basic pronunciation." },
+    { id: "service", label: "Service page (MZA)",
+      src: "mzademiryolu.com/en/railway-turnouts-manufacturing/",
+      text: "Railway Turnouts Manufacturing\nProject and Design\nMZA Turnouts Company can respond to all the request of the customers using the latest technology with experienced engineers and technicians who have over 20 years experience in the industry.\nMachining\nTongue rails and vignol rails, suitable for the production of turnouts are recorded by numbering in the product follow-up form during cutting stage when they have taken into the production process. These cut off rails are processed with special form tools. Then press operations are completed according to the radius of curves." },
+    { id: "about", label: "About us + contact (Turkish names)",
+      src: "mzademiryolu.com/en/about-us/",
+      text: "MZA Railway Machinery Manufacturing Construction Contracting Ind. and Foreign Trade. Co. Ltd. company was founded in 2014 by partnership of \"Emas Iron Stell Ind. and Foreign Trade. Co. Ltd.\", railway equipment supplier for TCDD and private sector companies for over 40 years and \"Yıldıray SEZEN\" who has been active for 30 years in public and private sectors for the production of turnouts. The production of railway turnouts takes place in our factory which has 10.000 m² closed area and 60.000 m² open area, located in Karabük.\nOffice\nTel: +90 370 415 61 90\nFax: +90 370 412 10 06\nBayır Mah. Sümer caddesi Nur iş hanı No:1\nKat:1 Merkez/Karabük\nFactory\nTel: +90 370 442 23 53\nHamzalar Mevkii\nOSB Kavşağı Karşısı No:11\nKarabük/Turkey" },
+  ],
+};
+
+// ---------- yardımcılar ----------
+const $ = (id) => document.getElementById(id);
+const LS = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
+  del(k) { try { localStorage.removeItem(k); } catch {} },
+};
+const nf = (x, d = 1) => Number(x).toLocaleString("tr-TR", { minimumFractionDigits: d, maximumFractionDigits: d });
+const fmtMs = (ms) => (ms == null || !isFinite(ms)) ? "—" : ms < 1000 ? Math.round(ms) + " ms" : nf(ms / 1000, 2) + " sn";
+const fmtSec = (s) => (s == null || !isFinite(s)) ? "—" : nf(s, 1) + " sn";
+const fmtMB = (b) => b == null ? "—" : nf(b / 1e6, 1) + " MB";
+const join = (a, b) => [a, b].filter(Boolean).join("; ");
+const abs = (u) => new URL(u, location.href).href;
+const ensureSlash = (u) => (u && !u.endsWith("/") ? u + "/" : u);
+const ua = navigator.userAgent;
+const isApple = () => /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+
+function browserText() {
+  const m = (re) => (ua.match(re) || [])[1];
+  let os = "?";
+  if (/iPhone|iPad|iPod/.test(ua)) os = "iOS " + (m(/OS (\d+[_\d]*)/) || "").replace(/_/g, ".");
+  else if (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1) os = "iPadOS";
+  else if (/Android/.test(ua)) os = "Android " + (m(/Android ([\d.]+)/) || "");
+  else if (/Windows NT/.test(ua)) os = "Windows";
+  else if (/Mac OS X/.test(ua)) os = "macOS";
+  else if (/Linux/.test(ua)) os = "Linux";
+  let br = "?";
+  if (m(/SamsungBrowser\/([\d.]+)/)) br = "Samsung Internet " + m(/SamsungBrowser\/([\d.]+)/);
+  else if (m(/EdgA?\/([\d.]+)/)) br = "Edge " + m(/EdgA?\/([\d.]+)/);
+  else if (m(/OPR\/([\d.]+)/)) br = "Opera " + m(/OPR\/([\d.]+)/);
+  else if (m(/CriOS\/([\d.]+)/)) br = "Chrome (iOS) " + m(/CriOS\/([\d.]+)/);
+  else if (m(/FxiOS\/([\d.]+)/)) br = "Firefox (iOS) " + m(/FxiOS\/([\d.]+)/);
+  else if (m(/Firefox\/([\d.]+)/)) br = "Firefox " + m(/Firefox\/([\d.]+)/);
+  else if (m(/Chrome\/([\d.]+)/)) br = "Chrome " + m(/Chrome\/([\d.]+)/);
+  else if (m(/Version\/([\d.]+).*Safari/)) br = "Safari " + m(/Version\/([\d.]+).*Safari/);
+  return br + " · " + os;
+}
+
+function log(line) {
+  const el = $("log");
+  const t = new Date().toLocaleTimeString("tr-TR");
+  el.append(t + "  " + line + "\n");
+  while (el.childNodes.length > 400) el.removeChild(el.firstChild);
+  el.scrollTop = el.scrollHeight;
+}
+
+function status(text, kind) { $("status").textContent = text; $("status").dataset.kind = kind || ""; }
+function showProgress(done, total, label) {
+  const p = $("progress");
+  p.hidden = false; p.max = total || 1; p.value = Math.min(done, total || 1);
+  $("progressText").textContent = label + ": " + fmtMB(done) + " / " + fmtMB(total);
+}
+function hideProgress() { $("progress").hidden = true; $("progressText").textContent = ""; }
+
+// ---------- durum ----------
+const S = {
+  lang: "tr", ctx: null, player: null, busy: null, stopRequested: false, onStop: null,
+  hosts: { ema: null, kokoro: null }, rows: LS.get(K.rows, []), voices: { tr: [], en: [] }, gpu: "denetleniyor…",
+  csp: [], workerBroken: null, workerProbe: "denetleniyor…",
+};
+
+// Sayfanın güvenlik başlığı (CSP) bir şeyi engellerse kaydedilir; Worker hatalarının nedenini gösterir.
+document.addEventListener("securitypolicyviolation", (e) => {
+  const v = (e.effectiveDirective || e.violatedDirective) + " → " + (e.blockedURI || "satır içi");
+  if (!S.csp.includes(v)) S.csp.push(v);
+  log("CSP ihlali: " + v);
+});
+
+// ---------- ses çalar (Web Audio) ----------
+class Player {
+  constructor(ctx) {
+    Object.assign(this, { ctx, next: 0, started: false, firstPerf: null, stalls: 0, stallSec: 0, maxStall: 0,
+      srcs: new Set(), timers: [], pendingPiece: null, onPiece: null, closed: false });
+    this.out = ctx.createGain();
+    this.out.connect(ctx.destination);
+  }
+  push(pcm, rate) {
+    if (this.closed || !pcm.length) return;
+    const ctx = this.ctx, now = ctx.currentTime;
+    const buf = ctx.createBuffer(1, pcm.length, rate);
+    if (buf.copyToChannel) buf.copyToChannel(pcm, 0); else buf.getChannelData(0).set(pcm);
+    let at;
+    if (!this.started) { this.started = true; at = now + LEAD; this.firstPerf = performance.now() + LEAD * 1000; }
+    else if (this.next < now) {
+      const stall = now - this.next + LEAD;
+      this.stalls++; this.stallSec += stall; this.maxStall = Math.max(this.maxStall, stall);
+      at = now + LEAD;
+    } else at = this.next;
+    const src = ctx.createBufferSource();
+    src.buffer = buf; src.connect(this.out);
+    src.onended = () => { this.srcs.delete(src); };
+    src.start(at);
+    this.srcs.add(src);
+    this.next = at + buf.duration;
+    if (this.pendingPiece !== null) {
+      const i = this.pendingPiece;
+      this.pendingPiece = null;
+      this.timers.push(setTimeout(() => { if (this.onPiece) this.onPiece(i); }, Math.max(0, (at - now) * 1000)));
+    }
+  }
+  stop() {
+    this.closed = true;
+    for (const t of this.timers) clearTimeout(t);
+    for (const s of this.srcs) { try { s.onended = null; s.stop(); } catch {} }
+    this.srcs.clear();
+    try { this.out.disconnect(); } catch {}
+  }
+}
+
+function ensureAudio() {
+  try { if (navigator.audioSession) navigator.audioSession.type = "playback"; } catch {}
+  if (!S.ctx) {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    S.ctx = new AC();
+  }
+  if (S.ctx.state !== "running") S.ctx.resume().catch(() => {});
+  // iOS: kullanıcı dokunuşu içinde sessiz bir örnek çalarak sesi aç
+  const b = S.ctx.createBuffer(1, 1, 22050), s = S.ctx.createBufferSource();
+  s.buffer = b; s.connect(S.ctx.destination); s.start(0);
+}
+
+function stopPlayback() {
+  if (S.player) { S.player.stop(); S.player = null; }
+  if ("speechSynthesis" in window) speechSynthesis.cancel();
+}
+
+// ---------- motor sunucusu (Worker ya da ana iş parçacığı) ----------
+const ENGINE_SRC = $("engine-src").textContent;
+const engineUrl = () => URL.createObjectURL(new Blob([ENGINE_SRC], { type: "text/javascript" }));
+
+class Host {
+  constructor(kind, mode, build) {
+    Object.assign(this, { kind, mode, build, seq: 0, pending: new Map(), worker: null, mod: null, dead: null });
+  }
+  async start() {
+    const url = engineUrl();
+    if (this.mode === "worker") {
+      // Worker, modülü hatasız değerlendirince "ready" gönderir; gelmezse başlatma başarısız sayılır.
+      await new Promise((resolve, reject) => {
+        let w;
+        try { w = new Worker(url, { type: "module", name: "gozkulak-" + this.kind }); }
+        catch (e) { reject(new Error("Worker oluşturulamadı: " + (e.message || e))); return; }
+        this.worker = w;
+        let ready = false;
+        const timer = setTimeout(() => { if (!ready) { w.terminate(); reject(new Error("Worker 10 sn içinde başlamadı")); } }, 10000);
+        w.onmessage = (e) => {
+          if (!ready && e.data && e.data.ev === "ready") { ready = true; clearTimeout(timer); resolve(); return; }
+          this.onEvent(e.data);
+        };
+        w.onerror = (e) => {
+          if (e.preventDefault) e.preventDefault();
+          const why = workerErrorText(e, ready);
+          clearTimeout(timer);
+          this.dead = why;
+          this.fail(why);
+          if (!ready) reject(new Error(why));
+        };
+        w.onmessageerror = () => this.fail("Worker mesajı okunamadı.");
+      });
+    } else {
+      this.mod = await import(url);
+      this.mod.attach((m) => this.onEvent(m));
+    }
+  }
+  call(msg, onEvent) {
+    if (this.dead) return Promise.reject(new Error(this.dead));
+    const id = ++this.seq;
+    return new Promise((resolve, reject) => {
+      this.pending.set(id, { resolve, reject, onEvent });
+      const m = Object.assign({}, msg, { id });
+      if (this.worker) this.worker.postMessage(m); else this.mod.handle(m);
+    });
+  }
+  stop() {
+    if (this.worker) this.worker.postMessage({ cmd: "stop" });
+    else if (this.mod) this.mod.handle({ cmd: "stop" });
+  }
+  onEvent(m) {
+    const p = this.pending.get(m.id);
+    if (!p) return;
+    if (m.ev === "result") { this.pending.delete(m.id); p.resolve(m.data); }
+    else if (m.ev === "error") { this.pending.delete(m.id); p.reject(new Error(m.message)); }
+    else if (p.onEvent) p.onEvent(m);
+  }
+  fail(message) { for (const p of this.pending.values()) p.reject(new Error(message)); this.pending.clear(); }
+  terminate() {
+    if (this.worker) this.worker.terminate();
+    this.fail("Motor kapatıldı.");
+    this.worker = null; this.mod = null; this.dead = "Motor kapatıldı.";
+  }
+}
+
+function workerErrorText(e, started) {
+  if (!/^https?:$/.test(location.protocol)) return "sayfa dosya olarak (" + location.protocol + "//) açıldı; Worker için https adresinden açın";
+  let t = e && e.message ? e.message + (e.filename ? " (" + String(e.filename).split("/").pop() + ":" + e.lineno + ")" : "")
+    : (started ? "Worker çöktü (tarayıcı neden bildirmedi)" : "Worker yüklenemedi (tarayıcı neden bildirmedi)");
+  if (S.csp.length) t += "; güvenlik başlığı (CSP) engelledi: " + S.csp[S.csp.length - 1];
+  return t;
+}
+
+// Worker açılamazsa aynı denemeyi ana iş parçacığında sürdürür ve bunu satıra not düşer.
+async function getHost(kind, mode, build) {
+  const other = kind === "ema" ? "kokoro" : "ema";
+  if (S.hosts[other]) { S.hosts[other].terminate(); S.hosts[other] = null; log(other + " motoru bellekten çıkarıldı."); }
+  let note = "";
+  if (mode === "worker" && S.workerBroken) { mode = "main"; note = "Worker açılamıyor (" + S.workerBroken + "), ana iş parçacığında çalıştı"; }
+  let h = S.hosts[kind];
+  if (h && (h.mode !== mode || h.build !== build || h.dead)) {
+    if (h.mode === "main" && mode === "main" && h.build !== build) log("Ana iş parçacığında ikinci bir ONNX Runtime derlemesi yükleniyor; telefonda bellek için sayfayı yenilemek daha iyi.");
+    h.terminate(); h = null;
+  }
+  if (!h) {
+    h = new Host(kind, mode, build);
+    try { await h.start(); }
+    catch (e) {
+      if (mode !== "worker") throw e;
+      S.workerBroken = e.message;
+      log("Worker açılamadı: " + e.message);
+      renderDevice();
+      note = "Worker açılamadı (" + e.message + "), ana iş parçacığında çalıştı";
+      h = new Host(kind, "main", build);
+      await h.start();
+    }
+    S.hosts[kind] = h;
+  }
+  return { host: h, note };
+}
+
+function releaseEngines() {
+  for (const k of ["ema", "kokoro"]) if (S.hosts[k]) { S.hosts[k].terminate(); S.hosts[k] = null; }
+}
+
+// ---------- metin ----------
+function fillPresets() {
+  const sel = $("preset");
+  sel.replaceChildren();
+  for (const p of PRESETS[S.lang]) {
+    const o = document.createElement("option");
+    o.value = p.id; o.textContent = p.label;
+    sel.append(o);
+  }
+  const o = document.createElement("option");
+  o.value = "custom"; o.textContent = S.lang === "tr" ? "Kendi metnim" : "Kendi metnim (İngilizce)";
+  sel.append(o);
+  sel.value = PRESETS[S.lang][0].id;
+  $("text").value = PRESETS[S.lang][0].text;
+  $("text").lang = S.lang;
+  countChars();
+  showSrc();
+}
+function showSrc() {
+  const p = PRESETS[S.lang].find((x) => x.id === $("preset").value);
+  $("presetSrc").textContent = p ? p.src : "kendi metniniz";
+}
+function countChars() { $("charCount").textContent = $("text").value.length.toLocaleString("tr-TR") + " karakter"; }
+function currentText() { return $("text").value.trim(); }
+function textLabel() {
+  const t = currentText();
+  const p = PRESETS[S.lang].find((x) => x.text === t);
+  return S.lang.toUpperCase() + " · " + (p ? p.label : "özel metin") + " (" + t.length.toLocaleString("tr-TR") + " kr.)";
+}
+// Tarayıcı sesi için cümlelere bölme: "1.250,50", "2. kat" ve "Dr. Ayşe" cümleyi bölmez.
+const ABBR = new Set(["dr", "av", "prof", "doç", "öğr", "mah", "cad", "sok", "no", "tel", "vb", "vs", "bkz", "st", "mr", "mrs", "ms"]);
+function splitSentences(text) {
+  const t = text.replace(/\s+/g, " ").trim();
+  const out = [];
+  const re = /[.!?…]+["'”’)»]*\s+/g;
+  let start = 0, m;
+  while ((m = re.exec(t))) {
+    const end = m.index + m[0].length;
+    if (!/[A-ZÇĞİÖŞÜ0-9"“(]/.test(t[end] || "")) continue;
+    const word = t.slice(start, m.index).split(" ").pop().toLocaleLowerCase("tr");
+    if (m[0][0] === "." && ABBR.has(word)) continue;
+    out.push(t.slice(start, end).trim());
+    start = end;
+  }
+  if (start < t.length) out.push(t.slice(start).trim());
+  return out.filter((s) => /\p{L}/u.test(s));
+}
+
+// ---------- okunan parçalar ----------
+function showPieces(list) { $("pieces").replaceChildren(); list.forEach((t, i) => addPiece(t, i)); }
+function addPiece(text, i) {
+  const s = document.createElement("span");
+  s.className = "piece"; s.dataset.i = String(i); s.textContent = text;
+  $("pieces").append(s, " ");
+}
+function highlight(i) {
+  const box = $("pieces");
+  for (const el of box.querySelectorAll(".piece.on")) el.classList.remove("on");
+  const el = box.querySelector('.piece[data-i="' + i + '"]');
+  if (el) { el.classList.add("on"); box.scrollTop = Math.max(0, el.offsetTop - 24); }
+}
+
+// ---------- sonuç tablosu ----------
+const COLS = [["n", "#"], ["time", "Saat"], ["engine", "Motor"], ["setting", "Ayar"], ["cache", "Önbellek"],
+  ["dl", "İndirilen"], ["load", "Yükleme"], ["first", "İlk ses"], ["audio", "Ses süresi"], ["speed", "Üretim hızı"],
+  ["stall", "Takılma"], ["text", "Metin"], ["note", "Not"]];
+
+function newRow(engine, setting) {
+  return { n: 0, time: new Date().toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" }), engine, setting,
+    cache: "—", dl: "—", load: "—", first: "—", audio: "—", speed: "—", stall: "—", text: textLabel(), note: "" };
+}
+function addRow(row) {
+  row.n = S.rows.length + 1;
+  S.rows.push(row);
+  LS.set(K.rows, S.rows);
+  renderRows();
+}
+function renderRows() {
+  const head = $("resultsHead");
+  if (!head.childElementCount) for (const [, t] of COLS) { const th = document.createElement("th"); th.scope = "col"; th.textContent = t; head.append(th); }
+  const body = $("resultsBody");
+  body.replaceChildren();
+  if (!S.rows.length) {
+    const tr = document.createElement("tr"), td = document.createElement("td");
+    td.colSpan = COLS.length; td.className = "empty"; td.textContent = "Henüz ölçüm yok.";
+    tr.append(td); body.append(tr);
+  }
+  for (const r of S.rows) {
+    const tr = document.createElement("tr");
+    for (const [k] of COLS) { const td = document.createElement("td"); td.textContent = r[k] == null || r[k] === "" ? "—" : String(r[k]); tr.append(td); }
+    body.append(tr);
+  }
+  $("md").value = markdown();
+}
+function deviceLines() {
+  const name = $("deviceName").value.trim() || "(cihaz adı girilmedi)";
+  const mem = navigator.deviceMemory ? navigator.deviceMemory + " GB" : "bilinmiyor";
+  const scr = screen.width + "×" + screen.height + " @" + (window.devicePixelRatio || 1) + "x";
+  const v = (l) => S.voices[l].length + (S.voices[l].length ? " (" + S.voices[l].slice(0, 3).map((x) => x.name).join(", ") + (S.voices[l].length > 3 ? ", …" : "") + ")" : "");
+  const src = $("modelSrc").value === "hf" ? "Hugging Face" : $("modelSrc").value === "local" ? "bu klasör" : "özel";
+  return [
+    "**Cihaz:** " + name + " · " + browserText(),
+    "**Donanım:** " + (navigator.hardwareConcurrency || "?") + " çekirdek · bellek: " + mem + " · ekran " + scr + " · WebGPU: " + S.gpu,
+    "**Çalışma ortamı:** Web Worker: " + S.workerProbe + " · CSP: " + (S.csp.length ? "engelledi (" + S.csp.join("; ") + ")" : "engel yok") +
+      " · adres: " + location.origin + location.pathname,
+    "**Tarayıcı sesleri:** TR " + v("tr") + " · EN " + v("en"),
+    "**Sayfa:** " + PAGE_VERSION + " · EMA " + EMA_COMMIT.slice(0, 7) + " · ORT 1.30.0 · kokoro-js 1.2.1 · model kaynağı: " + src,
+  ];
+}
+function markdown() {
+  const esc = (v) => (String(v == null ? "" : v).replace(/\|/g, "/").replace(/\s+/g, " ").trim() || "—");
+  const lines = deviceLines().map((l) => l + "  ");
+  lines.push("", "| " + COLS.map((c) => c[1]).join(" | ") + " |", "|" + COLS.map(() => "---").join("|") + "|");
+  for (const r of S.rows) lines.push("| " + COLS.map(([k]) => esc(r[k])).join(" | ") + " |");
+  return lines.join("\n");
+}
+function renderDevice() {
+  const ul = $("deviceInfo");
+  ul.replaceChildren();
+  for (const l of deviceLines().slice(0, 4)) {
+    const li = document.createElement("li");
+    li.textContent = l.replace(/\*\*/g, "");
+    ul.append(li);
+  }
+  $("md").value = markdown();
+}
+
+// yarıda kalan deneme (ör. iPhone'da sekme çöktüyse) bir sonraki açılışta tabloya eklenir
+function setPending(row) { LS.set(K.pending, Object.assign({}, row, { note: join(row.note, "YARIDA KALDI: sekme kapandı, çöktü ya da sayfa yenilendi") })); }
+function clearPending() { LS.del(K.pending); }
+
+// ---------- tarayıcı sesleri ----------
+function loadVoices() {
+  if (!("speechSynthesis" in window)) return;
+  const all = speechSynthesis.getVoices() || [];
+  for (const lang of ["tr", "en"]) {
+    const list = all.filter((v) => (v.lang || "").toLowerCase().replace("_", "-").startsWith(lang));
+    list.sort((a, b) => (b.default - a.default) || (b.localService - a.localService) || a.name.localeCompare(b.name));
+    S.voices[lang] = list;
+    const sel = $(lang === "tr" ? "voiceTr" : "voiceEn");
+    const prev = sel.value;
+    sel.replaceChildren();
+    if (!list.length) {
+      const o = document.createElement("option");
+      o.value = ""; o.textContent = "Bu cihazda " + (lang === "tr" ? "Türkçe" : "İngilizce") + " ses listelenmiyor";
+      sel.append(o);
+    }
+    list.forEach((v, i) => {
+      const o = document.createElement("option");
+      o.value = String(i);
+      o.textContent = v.name + " (" + v.lang + ", " + (v.localService ? "cihazda" : "çevrimiçi") + (v.default ? ", varsayılan" : "") + ")";
+      sel.append(o);
+    });
+    if (prev && list[+prev]) sel.value = prev;
+  }
+  renderDevice();
+}
+function voiceLabel(v) { return v.name + " (" + v.lang + ", " + (v.localService ? "cihazda" : "çevrimiçi") + ")"; }
+
+// ---------- çalıştırma ----------
+function setBusy(kind) {
+  S.busy = kind;
+  for (const id of ["btnEma", "btnVoiceTr", "btnVoiceEn", "btnKokoro", "btnRelease", "btnClearCache", "btnClearRows"]) $(id).disabled = !!kind;
+  if (!("speechSynthesis" in window)) { $("btnVoiceTr").disabled = true; $("btnVoiceEn").disabled = true; }
+  $("btnStop").disabled = !kind;
+}
+
+function modelBase() { const v = $("modelSrc").value; return v === "custom" ? ensureSlash($("modelCustom").value.trim()) : SOURCES.model[v]; }
+function ortBase() { const v = $("ortSrc").value; return v === "custom" ? ensureSlash($("ortCustom").value.trim()) : SOURCES.ort[v]; }
+function kokoroUrl() { return S.kokoroSrc || SOURCES.kokoro.cdn; }
+const modeLabel = (m) => (m === "worker" ? "Worker" : "ana iş parçacığı");
+function srcTag() {
+  const name = (v) => (v === "local" ? "bu klasör" : "özel adres");
+  const m = $("modelSrc").value, o = $("ortSrc").value;
+  const parts = [m !== "hf" ? "model: " + name(m) : "", o !== "cdn" ? "ORT: " + name(o) : ""].filter(Boolean);
+  return parts.length ? " · " + parts.join(", ") : "";
+}
+
+async function runEngine(kind) {
+  if (S.busy) return;
+  const text = currentText();
+  if (!text) { status("Okunacak metin boş.", "bad"); return; }
+  stopPlayback();
+  ensureAudio();
+  const mode = $("runMode").value;
+  const speed = +$("speed").value;
+  let cfg, row, build, voice;
+  if (kind === "ema") {
+    cfg = { backend: $("emaBackend").value, precision: $("emaPrecision").value, modelBase: abs(modelBase()), ortBase: abs(ortBase()) };
+    build = cfg.backend;
+    if (build === "webgpu" && isApple() &&
+        !confirm("iPhone/iPad'de WebGPU sürümü Safari sekmesini çökertebilir. Yine de denensin mi?\n\nÇökerse deneme bir sonraki açılışta tabloya “yarıda kaldı” olarak eklenir.")) return;
+    row = newRow("EMA Lightning", (build === "webgpu" ? "WebGPU" : "WASM") + " · " + cfg.precision + " · " + modeLabel(mode) + srcTag());
+  } else {
+    voice = $("kVoice").value;
+    cfg = { device: $("kDevice").value, dtype: $("kDtype").value, url: abs(kokoroUrl()), rev: KOKORO_REV };
+    build = cfg.device + "-" + cfg.dtype;
+    const h = S.hosts.kokoro;
+    if (!(h && h.build === build && h.loaded)) {
+      const mb = $("kDtype").selectedOptions[0].dataset.mb;
+      if (!confirm("Kokoro, önbellekte yoksa yaklaşık " + mb + " MB model ile ONNX Runtime dosyalarını indirir. Devam edilsin mi?")) return;
+    }
+    row = newRow("Kokoro-82M", (cfg.device === "webgpu" ? "WebGPU" : "WASM") + " · " + cfg.dtype + " · " + voice + " · " + modeLabel(mode));
+  }
+  S.stopRequested = false;
+  setPending(row);
+  setBusy(kind);
+  const player = new Player(S.ctx);
+  S.player = player;
+  player.onPiece = highlight;
+  try {
+    const got = await getHost(kind, mode, build);
+    const host = got.host;
+    if (got.note) {
+      row.setting = row.setting.replace("Worker", "ana iş parçacığı");
+      row.note = join(row.note, got.note);
+    }
+    status(kind === "ema" ? "EMA hazırlanıyor…" : "Kokoro hazırlanıyor…");
+    const load = await host.call({ cmd: kind + "-load", cfg }, (m) => {
+      if (m.ev === "progress") showProgress(m.done, m.total, m.label);
+      else if (m.ev === "stage") status(m.text);
+    });
+    host.loaded = true;
+    hideProgress();
+    applyLoad(row, load, kind);
+    if (S.stopRequested) { row.note = join(row.note, "okumadan önce durduruldu"); status("Durduruldu.", "warn"); return; }
+
+    status("Okunuyor…");
+    $("piecesLabel").textContent = kind === "ema" ? "Modelin okuduğu metin (normalleştirilmiş)" : "Cümleler";
+    $("pieces").replaceChildren();
+    const t0 = performance.now();
+    const msg = kind === "ema" ? { cmd: "ema-speak", text, speed, seed: 0 } : { cmd: "kokoro-speak", text, voice, speed };
+    const res = await host.call(msg, (m) => {
+      if (m.ev === "plan") showPieces(m.pieces);
+      else if (m.ev === "piece") { if (m.text != null) addPiece(m.text, m.index); player.pendingPiece = m.index; }
+      else if (m.ev === "audio") player.push(m.pcm, m.rate);
+    });
+    row.first = player.firstPerf ? fmtMs(player.firstPerf - t0) : "—";
+    row.audio = fmtSec(res.audioSec);
+    if (res.audioSec > 0 && res.synthMs > 0) {
+      row.speed = nf(res.audioSec / (res.synthMs / 1000), 1) + "× (RTF " + nf(res.synthMs / 1000 / res.audioSec, 2) + ")";
+    }
+    row.stall = player.stalls ? player.stalls + " kez, " + nf(player.stallSec, 1) + " sn (en uzun " + nf(player.maxStall, 1) + ")" : "yok";
+    if (res.stopped) row.note = join(row.note, "durduruldu");
+    log(row.engine + " okuma: " + res.pieces + " parça, ses " + fmtSec(res.audioSec) + ", üretim " + fmtMs(res.synthMs) +
+      ", ilk parça üretimi " + fmtMs(res.firstChunkMs) +
+      (kind === "ema" ? " (text " + fmtMs(res.textMs) + ", sound " + fmtMs(res.soundMs) + ", decoder " + fmtMs(res.decodeMs) + ")" : "") +
+      (res.netBytes ? ", okuma sırasında indirilen " + fmtMB(res.netBytes) : ""));
+    status(res.stopped ? "Durduruldu." : "Üretim bitti; ses çalmaya devam ediyor olabilir.", res.stopped ? "warn" : "ok");
+  } catch (e) {
+    let msg = e.message || String(e);
+    if (/failed to fetch|load failed|networkerror/i.test(msg)) msg += " (ağ hatası: dosya sunucusuna erişilemedi; bağlantıyı ya da Gelişmiş'teki kaynak adresini kontrol edin)";
+    row.note = join(row.note, "HATA: " + msg);
+    status("Hata: " + msg, "bad");
+    log("HATA: " + msg);
+  } finally {
+    hideProgress();
+    clearPending();
+    addRow(row);
+    setBusy(null);
+  }
+}
+
+function applyLoad(row, load, kind) {
+  if (load.already) { row.cache = "bellekte"; row.dl = "0"; row.load = "—"; return; }
+  row.cache = load.cache;
+  row.dl = load.bodyBytes ? fmtMB(load.bodyBytes) + (load.netBytes ? " (ağ " + fmtMB(load.netBytes) + ")" : "") : "0";
+  row.load = fmtMs(load.totalMs);
+  if (kind === "ema") {
+    row.note = join(row.note, "indirme+doğrulama " + fmtMs(load.downloadMs) + ", kurulum " + fmtMs(load.setupMs));
+    if (load.cacheSaveFailed) row.note = join(row.note, "önbelleğe yazılamadı");
+    for (const f of load.files) log("  " + f.name + ": " + fmtMB(f.bytes) + ", " + (f.net ? "ağdan" : "önbellekten") + " " + fmtMs(f.ms) + ", SHA-256 " + fmtMs(f.verifyMs));
+    log("EMA kurulum: ORT " + fmtMs(load.ortMs) + ", text " + fmtMs(load.sessionMs.text) + ", sound " + fmtMs(load.sessionMs.sound) + ", decoder " + fmtMs(load.sessionMs.decoder) + ", toplam doğrulama " + fmtMs(load.verifyMs));
+  } else {
+    row.note = join(row.note, "kütüphane " + fmtMs(load.importMs) + ", model " + fmtMs(load.modelMs));
+    log("Kokoro yükleme: kütüphane " + fmtMs(load.importMs) + ", model " + fmtMs(load.modelMs) + ", ağdan " + fmtMB(load.bodyBytes));
+  }
+  if (load.adapter) row.note = join(row.note, "GPU: " + load.adapter);
+  if (navigator.storage && navigator.storage.estimate) {
+    navigator.storage.estimate().then((e) => log("Depolama: " + fmtMB(e.usage) + " kullanılıyor, kota " + fmtMB(e.quota))).catch(() => {});
+  }
+}
+
+// Tarayıcı sesi: kullanıcı dokunuşunun içinde, beklemeden konuşmaya başlar (iOS bunu ister).
+function runBrowser(lang) {
+  if (S.busy) return;
+  const text = currentText();
+  if (!text) { status("Okunacak metin boş.", "bad"); return; }
+  if (!("speechSynthesis" in window)) {
+    const r = newRow("Tarayıcı sesi", "—"); r.note = "Web Speech API yok"; addRow(r);
+    status("Bu tarayıcıda Web Speech API yok.", "bad");
+    return;
+  }
+  stopPlayback();
+  const sel = $(lang === "tr" ? "voiceTr" : "voiceEn");
+  const voice = S.voices[lang][+sel.value] || null;
+  const speed = +$("speed").value;
+  const row = newRow("Tarayıcı sesi", voice ? voiceLabel(voice) : "listede ses yok, dil " + (lang === "tr" ? "tr-TR" : "en-US"));
+  row.dl = "0"; row.load = "—";
+  if (!voice) {
+    row.note = "Bu cihazda bu dilde tarayıcı sesi listelenmiyor";
+    if (/Linux/.test(ua) && !/Android/.test(ua)) row.note += " (Linux'ta Chrome genellikle ses içermez; telefonda ve Windows'ta ölçün)";
+  }
+  const sentences = splitSentences(text);
+  $("piecesLabel").textContent = "Cümleler";
+  showPieces(sentences);
+  setBusy("browser");
+  const t0 = performance.now();
+  let first = null, lastEnd = null, finished = false;
+  const errors = new Set();
+  const finish = (why) => {
+    if (finished) return;
+    finished = true;
+    clearTimeout(watch);
+    S.onStop = null;
+    row.first = first ? fmtMs(first - t0) : "—";
+    row.audio = first ? fmtSec(((lastEnd || performance.now()) - first) / 1000) : "—";
+    if (why) row.note = join(row.note, why);
+    if (errors.size) row.note = join(row.note, "hata: " + [...errors].join(", "));
+    addRow(row);
+    setBusy(null);
+    status(why ? "Tarayıcı sesi: " + why : "Tarayıcı sesi bitti.", why ? "warn" : "ok");
+  };
+  S.onStop = () => { speechSynthesis.cancel(); finish("durduruldu"); };
+  const watch = setTimeout(() => { if (first === null) { speechSynthesis.cancel(); finish("10 sn içinde ses başlamadı"); } }, 10000);
+  speechSynthesis.cancel();
+  sentences.forEach((s, i) => {
+    const u = new SpeechSynthesisUtterance(s);
+    u.lang = voice ? voice.lang : (lang === "tr" ? "tr-TR" : "en-US");
+    if (voice) u.voice = voice;
+    u.rate = speed;
+    u.onstart = () => { if (first === null) first = performance.now(); highlight(i); };
+    u.onend = () => { lastEnd = performance.now(); if (i === sentences.length - 1) finish(); };
+    u.onerror = (e) => {
+      if (e.error && e.error !== "interrupted" && e.error !== "canceled") errors.add(e.error);
+      if (i === sentences.length - 1) finish();
+    };
+    speechSynthesis.speak(u);
+  });
+  status("Tarayıcı sesi okunuyor…");
+}
+
+function stopAll() {
+  S.stopRequested = true;
+  stopPlayback();
+  for (const k of ["ema", "kokoro"]) if (S.hosts[k]) S.hosts[k].stop();
+  if (S.onStop) S.onStop();
+  status("Durduruluyor…", "warn");
+}
+
+async function clearCaches() {
+  stopPlayback();
+  releaseEngines();
+  let n = 0;
+  try {
+    for (const k of await caches.keys()) {
+      if (k.startsWith("gozkulak-faz0") || k === "transformers-cache" || k === "kokoro-voices") { await caches.delete(k); n++; }
+    }
+  } catch {}
+  status("Önbellek temizlendi (" + n + " depo). Sonraki deneme soğuk yükleme olacak.", "ok");
+  log("Önbellek temizlendi: " + n + " depo.");
+}
+
+async function copyMd() {
+  const t = markdown();
+  $("md").value = t;
+  try { await navigator.clipboard.writeText(t); status("Tablo panoya kopyalandı.", "ok"); return; } catch {}
+  $("md").focus(); $("md").select();
+  try { document.execCommand("copy"); status("Tablo kopyalandı.", "ok"); }
+  catch { status("Kopyalanamadı; aşağıdaki kutudan elle kopyalayın.", "warn"); }
+}
+
+// ---------- WebGPU (ana iş parçacığı) ve Worker denetimi ----------
+async function probeGpu() {
+  if (!navigator.gpu) { S.gpu = "yok"; renderDevice(); return; }
+  try {
+    const a = await navigator.gpu.requestAdapter();
+    const i = (a && a.info) || {};
+    const info = [i.vendor, i.architecture].filter(Boolean).join(" ");
+    const f16 = a && a.features && a.features.has("shader-f16") ? "shader-f16 var" : "shader-f16 yok";
+    S.gpu = a ? "var (" + [info, f16].filter(Boolean).join(", ") + ")" : "API var, bağdaştırıcı yok";
+  } catch { S.gpu = "denetlenemedi"; }
+  renderDevice();
+  if (S.gpu.startsWith("var") && !isApple()) $("emaBackend").value = "webgpu";
+}
+
+// Küçük bir modül Worker'ı açmayı dener; açılmazsa ölçümler ana iş parçacığına alınır.
+function probeWorker() {
+  if (typeof Worker === "undefined") { S.workerProbe = "yok"; S.workerBroken = "Web Worker desteklenmiyor"; renderDevice(); return; }
+  const url = URL.createObjectURL(new Blob(["self.postMessage('ok');"], { type: "text/javascript" }));
+  let w, done = false;
+  const finish = (ok, why) => {
+    if (done) return;
+    done = true;
+    try { w && w.terminate(); } catch {}
+    S.workerProbe = ok ? "çalışıyor" : "açılamıyor: " + why;
+    if (!ok) {
+      S.workerBroken = why;
+      $("runMode").value = "main";
+      status("Bu tarayıcıda Web Worker açılamıyor (" + why + "). Ölçümler ana iş parçacığında yapılacak.", "warn");
+      log("Worker denetimi: " + why);
+    }
+    renderDevice();
+  };
+  try {
+    w = new Worker(url, { type: "module" });
+    w.onmessage = () => finish(true);
+    w.onerror = (e) => { if (e.preventDefault) e.preventDefault(); setTimeout(() => finish(false, workerErrorText(e, false)), 50); };
+    setTimeout(() => finish(false, "3 sn içinde yanıt yok"), 3000);
+  } catch (e) { finish(false, "oluşturulamadı: " + (e.message || e)); }
+}
+
+// ---------- başlangıç ----------
+function init() {
+  const q = new URLSearchParams(location.search);
+  const pick = (param, sel, input) => {
+    const v = q.get(param);
+    if (!v) return;
+    if (["hf", "cdn", "local"].includes(v)) $(sel).value = v;
+    else { $(sel).value = "custom"; $(input).hidden = false; $(input).value = v; }
+  };
+  pick("model", "modelSrc", "modelCustom");
+  pick("ort", "ortSrc", "ortCustom");
+  if (q.get("kokoro")) S.kokoroSrc = q.get("kokoro") === "local" ? SOURCES.kokoro.local : q.get("kokoro");
+  if (q.get("mode") === "main" || typeof Worker === "undefined") $("runMode").value = "main";
+
+  $("deviceName").value = q.get("device") || LS.get(K.device, "");
+  $("deviceName").addEventListener("input", () => { LS.set(K.device, $("deviceName").value); renderDevice(); });
+
+  for (const r of document.querySelectorAll('input[name="lang"]')) {
+    r.addEventListener("change", () => {
+      S.lang = r.value;
+      $("panel-tr").hidden = S.lang !== "tr";
+      $("panel-en").hidden = S.lang !== "en";
+      fillPresets();
+    });
+  }
+  $("preset").addEventListener("change", () => {
+    const p = PRESETS[S.lang].find((x) => x.id === $("preset").value);
+    if (p) $("text").value = p.text; else { $("text").value = ""; $("text").focus(); }
+    countChars();
+    showSrc();
+  });
+  $("text").addEventListener("input", () => {
+    countChars();
+    const p = PRESETS[S.lang].find((x) => x.text === $("text").value.trim());
+    $("preset").value = p ? p.id : "custom";
+    showSrc();
+  });
+  $("speed").addEventListener("input", () => { $("speedOut").textContent = nf(+$("speed").value, 2); });
+  for (const [sel, input] of [["modelSrc", "modelCustom"], ["ortSrc", "ortCustom"]]) {
+    $(sel).addEventListener("change", () => { $(input).hidden = $(sel).value !== "custom"; renderDevice(); });
+  }
+
+  $("btnEma").addEventListener("click", () => runEngine("ema"));
+  $("btnKokoro").addEventListener("click", () => runEngine("kokoro"));
+  $("btnVoiceTr").addEventListener("click", () => runBrowser("tr"));
+  $("btnVoiceEn").addEventListener("click", () => runBrowser("en"));
+  $("btnStop").addEventListener("click", stopAll);
+  $("btnCopy").addEventListener("click", copyMd);
+  $("btnCopyLog").addEventListener("click", async () => {
+    const t = deviceLines().join("\n") + "\n\n" + $("log").textContent;
+    try { await navigator.clipboard.writeText(t); status("Kayıt panoya kopyalandı.", "ok"); }
+    catch { status("Kopyalanamadı; kaydı seçip elle kopyalayın.", "warn"); }
+  });
+  if (navigator.share) {
+    $("btnShare").hidden = false;
+    $("btnShare").addEventListener("click", () => navigator.share({ title: "GözKulak Faz 0 sonuçları", text: markdown() }).catch(() => {}));
+  }
+  $("btnClearRows").addEventListener("click", () => {
+    if (!S.rows.length || !confirm("Bu cihazdaki tüm ölçüm satırları silinsin mi?")) return;
+    S.rows = []; LS.set(K.rows, S.rows); renderRows(); status("Sonuçlar silindi.");
+  });
+  $("btnRelease").addEventListener("click", () => { stopPlayback(); releaseEngines(); status("Motorlar kapatıldı; sonraki deneme modeli önbellekten yükler.", "ok"); log("Motorlar kapatıldı."); });
+  $("btnClearCache").addEventListener("click", clearCaches);
+
+  $("pageInfo").textContent = "Sayfa " + PAGE_VERSION + " · EMA ozcancelik/ema-lightning-onnx@" + EMA_COMMIT.slice(0, 7) +
+    " · onnxruntime-web 1.30.0 · kokoro-js 1.2.1 (model " + KOKORO_REV.slice(0, 7) + ")" +
+    (window.isSecureContext ? "" : " · UYARI: sayfa HTTPS değil; önbellek, doğrulama ve WebGPU çalışmaz.");
+  if (!window.isSecureContext) status("Sayfa HTTPS üzerinden açılmalı.", "bad");
+  else if (!/^https?:$/.test(location.protocol)) status("Sayfa dosya olarak açıldı (WhatsApp, İndirilenler vb.): Worker ve “Bu klasör” kaynağı çalışmaz, ölçümler ana iş parçacığında yapılır. Sayfayı VPS'teki https adresinden açın.", "warn");
+
+  fillPresets();
+  renderRows();
+  if ("speechSynthesis" in window) {
+    loadVoices();
+    if (speechSynthesis.addEventListener) speechSynthesis.addEventListener("voiceschanged", loadVoices);
+    else speechSynthesis.onvoiceschanged = loadVoices;
+  } else {
+    $("btnVoiceTr").disabled = true; $("btnVoiceEn").disabled = true;
+  }
+  probeGpu();
+  probeWorker();
+
+  const pending = LS.get(K.pending, null);
+  if (pending) {
+    clearPending();
+    addRow(pending);
+    status("Önceki deneme yarıda kalmış; tabloya eklendi.", "warn");
+  }
+}
+init();
+</script>
+</body>
+</html>
