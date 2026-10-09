@@ -4,7 +4,7 @@ Tags: accessibility, erişilebilirlik, text-to-speech, sesli okuma
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 0.1.1
+Stable tag: 0.2.0
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -21,6 +21,10 @@ GözKulak, temadan bağımsız bir erişilebilirlik menüsü ekler. Menü Shadow
 Ayarlar: Ayarlar → GözKulak.
 
 == Changelog ==
+
+= 0.2.0 =
+* Faz 1.2: menü özellikleri. Yazı boyutu, satır ve harf aralığı, yüksek kontrast, koyu mod, gri tonlama, okunaklı yazı, bağlantı vurgusu, büyük imleç, okuma maskesi ve cetveli, animasyon durdurma, görsel gizleme.
+* Tercihler ziyaretçinin tarayıcısında saklanır; tek tuşla sıfırlama; Alt + Shift + G kısayolu.
 
 = 0.1.1 =
 * Test modu: "Yalnızca yöneticiler" görünürlüğü (varsayılan). Ziyaretçilere hiçbir dosya yüklenmez.

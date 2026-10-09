@@ -1,0 +1,159 @@
+/*
+ * GözKulak sayfa stilleri. Yalnızca ziyaretçi bir özelliği açtığında yüklenir.
+ * Sınıflar <html> öğesine eklenir; menünün kendi öğeleri (gozkulak-root, gozkulak-overlay) hariç tutulur.
+ */
+
+/* Satır aralığı */
+html.gk-lh1 body :not(gozkulak-root):not(gozkulak-overlay) {
+	line-height: 1.75 !important;
+}
+
+html.gk-lh2 body :not(gozkulak-root):not(gozkulak-overlay) {
+	line-height: 2.2 !important;
+}
+
+/* Harf ve sözcük aralığı */
+html.gk-ls1 body :not(gozkulak-root):not(gozkulak-overlay) {
+	letter-spacing: 0.06em !important;
+	word-spacing: 0.12em !important;
+}
+
+html.gk-ls2 body :not(gozkulak-root):not(gozkulak-overlay) {
+	letter-spacing: 0.12em !important;
+	word-spacing: 0.24em !important;
+}
+
+/* Yüksek kontrast: siyah zemin, beyaz yazı, sarı bağlantı */
+html.gk-contrast,
+html.gk-contrast body,
+html.gk-contrast body :not(gozkulak-root):not(gozkulak-overlay) {
+	background-color: #000000 !important;
+	color: #ffffff !important;
+	border-color: #ffffff !important;
+	text-shadow: none !important;
+	box-shadow: none !important;
+}
+
+html.gk-contrast a,
+html.gk-contrast a * {
+	color: #ffff00 !important;
+}
+
+html.gk-contrast input,
+html.gk-contrast select,
+html.gk-contrast textarea,
+html.gk-contrast button {
+	border: 2px solid #ffffff !important;
+}
+
+html.gk-contrast ::placeholder {
+	color: #cccccc !important;
+}
+
+/*
+ * Koyu mod ve gri tonlama <html>'e filtre olarak uygulanır. Kök öğedeki filtre, sabit konumlu
+ * öğelerin (ör. yapışkan başlıklar) yerleşimini bozmaz. Görseller ve menü koyu modda tekrar
+ * çevrilerek özgün renklerinde kalır.
+ */
+html.gk-dark {
+	--gk-invert: invert(1) hue-rotate(180deg);
+}
+
+html.gk-gray {
+	--gk-gray: grayscale(1);
+}
+
+html.gk-dark,
+html.gk-gray {
+	filter: var(--gk-invert, ) var(--gk-gray, ) !important;
+}
+
+html.gk-dark {
+	background-color: #ffffff !important;
+}
+
+html.gk-dark img,
+html.gk-dark video,
+html.gk-dark iframe,
+html.gk-dark canvas,
+html.gk-dark embed,
+html.gk-dark object,
+html.gk-dark [style*="background-image"],
+html.gk-dark gozkulak-root,
+html.gk-dark gozkulak-overlay {
+	filter: invert(1) hue-rotate(180deg) !important;
+}
+
+/* Okunaklı yazı tipi: simge yazı tipleri (Font Awesome, Listeo, BeTheme, Elementor) hariç */
+html.gk-font body :not(gozkulak-root):not(gozkulak-overlay):not(i):not(.fa):not(.fab):not(.fas):not(.far):not(.sl):not(.im):not(.dashicons):not([class*="icon"]):not([class*="fa-"]) {
+	font-family: "Atkinson Hyperlegible Next", "Atkinson Hyperlegible", Verdana, Tahoma, "Segoe UI", Arial, sans-serif !important;
+}
+
+/* Bağlantıları vurgulama */
+html.gk-links a[href] {
+	text-decoration: underline !important;
+	text-decoration-thickness: 2px !important;
+	text-underline-offset: 3px !important;
+	outline: 2px solid #ffbf00 !important;
+	outline-offset: 2px !important;
+}
+
+/* Büyük imleç */
+html.gk-cursor,
+html.gk-cursor body,
+html.gk-cursor body * {
+	cursor: url("../img/cursor-arrow.svg") 6 4, auto !important;
+}
+
+html.gk-cursor a[href],
+html.gk-cursor a[href] *,
+html.gk-cursor button,
+html.gk-cursor button *,
+html.gk-cursor [role="button"],
+html.gk-cursor input[type="submit"],
+html.gk-cursor input[type="button"],
+html.gk-cursor input[type="checkbox"],
+html.gk-cursor input[type="radio"],
+html.gk-cursor label,
+html.gk-cursor select,
+html.gk-cursor summary {
+	cursor: url("../img/cursor-pointer.svg") 16 4, pointer !important;
+}
+
+html.gk-cursor input[type="text"],
+html.gk-cursor input[type="search"],
+html.gk-cursor input[type="email"],
+html.gk-cursor input[type="tel"],
+html.gk-cursor input[type="url"],
+html.gk-cursor input[type="password"],
+html.gk-cursor textarea {
+	cursor: text !important;
+}
+
+/* Animasyonları durdurma: animasyonlar son karelerine atlar (görünmez kalan öğe olmaz) */
+html.gk-noanim body *,
+html.gk-noanim body *::before,
+html.gk-noanim body *::after {
+	animation-duration: 0.001ms !important;
+	animation-delay: 0s !important;
+	animation-iteration-count: 1 !important;
+	transition-duration: 0.001ms !important;
+	transition-delay: 0s !important;
+	scroll-behavior: auto !important;
+}
+
+html.gk-noanim {
+	scroll-behavior: auto !important;
+}
+
+/* Görselleri gizleme: yer korunur, içerik akışı bozulmaz */
+html.gk-noimg img,
+html.gk-noimg picture,
+html.gk-noimg video,
+html.gk-noimg figure > svg {
+	visibility: hidden !important;
+}
+
+html.gk-noimg body :not(gozkulak-root):not(gozkulak-overlay) {
+	background-image: none !important;
+}

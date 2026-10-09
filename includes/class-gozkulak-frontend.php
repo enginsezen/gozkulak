@@ -79,6 +79,7 @@ final class GozKulak_Frontend {
 			'version'  => GOZKULAK_VERSION,
 			'testMode' => 'everyone' !== $s['visibility'],
 			'css'      => GOZKULAK_URL . 'assets/css/menu.css?ver=' . rawurlencode( GOZKULAK_VERSION ),
+			'pageCss'  => GOZKULAK_URL . 'assets/css/page.css?ver=' . rawurlencode( GOZKULAK_VERSION ),
 			'position' => $s['position'],
 			'offset'   => array( (int) $s['offset_x'], (int) $s['offset_y'] ),
 			'size'     => (int) $s['size'],
