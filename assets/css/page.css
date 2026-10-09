@@ -3,35 +3,58 @@
  * Sınıflar <html> öğesine eklenir; menünün kendi öğeleri (gozkulak-root, gozkulak-overlay) hariç tutulur.
  */
 
-/* Satır aralığı */
-html.gk-lh1 body :not(gozkulak-root):not(gozkulak-overlay) {
+/*
+ * Satır, harf ve sözcük aralığı yalnızca metin öğelerine uygulanır; sitenin başlığı ve
+ * gezinme menüsü hariç tutulur (simgeler kaymasın, logo yerinden oynamasın).
+ */
+html.gk-lh1 body :is(p, li, dt, dd, td, th, caption, blockquote, figcaption, label, address, pre, h1, h2, h3, h4, h5, h6):not(:is(header, nav, [role="banner"], [role="navigation"], #Header_wrapper, #Header_creative, #Top_bar, #masthead, .lhb-frontend-header, .elementor-location-header) *) {
 	line-height: 1.75 !important;
 }
 
-html.gk-lh2 body :not(gozkulak-root):not(gozkulak-overlay) {
+html.gk-lh2 body :is(p, li, dt, dd, td, th, caption, blockquote, figcaption, label, address, pre, h1, h2, h3, h4, h5, h6):not(:is(header, nav, [role="banner"], [role="navigation"], #Header_wrapper, #Header_creative, #Top_bar, #masthead, .lhb-frontend-header, .elementor-location-header) *) {
 	line-height: 2.2 !important;
 }
 
-/* Harf ve sözcük aralığı */
-html.gk-ls1 body :not(gozkulak-root):not(gozkulak-overlay) {
+html.gk-ls1 body :is(p, li, dt, dd, td, th, caption, blockquote, figcaption, label, address, pre, h1, h2, h3, h4, h5, h6):not(:is(header, nav, [role="banner"], [role="navigation"], #Header_wrapper, #Header_creative, #Top_bar, #masthead, .lhb-frontend-header, .elementor-location-header) *),
+html.gk-ls1 body :is(p, li, dt, dd, td, th, caption, blockquote, figcaption, label, address, pre, h1, h2, h3, h4, h5, h6):not(:is(header, nav, [role="banner"], [role="navigation"], #Header_wrapper, #Header_creative, #Top_bar, #masthead, .lhb-frontend-header, .elementor-location-header) *) * {
 	letter-spacing: 0.06em !important;
 	word-spacing: 0.12em !important;
 }
 
-html.gk-ls2 body :not(gozkulak-root):not(gozkulak-overlay) {
+html.gk-ls2 body :is(p, li, dt, dd, td, th, caption, blockquote, figcaption, label, address, pre, h1, h2, h3, h4, h5, h6):not(:is(header, nav, [role="banner"], [role="navigation"], #Header_wrapper, #Header_creative, #Top_bar, #masthead, .lhb-frontend-header, .elementor-location-header) *),
+html.gk-ls2 body :is(p, li, dt, dd, td, th, caption, blockquote, figcaption, label, address, pre, h1, h2, h3, h4, h5, h6):not(:is(header, nav, [role="banner"], [role="navigation"], #Header_wrapper, #Header_creative, #Top_bar, #masthead, .lhb-frontend-header, .elementor-location-header) *) * {
 	letter-spacing: 0.12em !important;
 	word-spacing: 0.24em !important;
 }
 
-/* Yüksek kontrast: siyah zemin, beyaz yazı, sarı bağlantı */
+/*
+ * Yüksek kontrast: siyah zemin, beyaz yazı, sarı bağlantı.
+ * Opak zeminler siyaha döner. Betik, zemini saydam olan öğeleri (gk-c0) saydam, yarı saydam
+ * katmanları (gk-c1) yarı saydam siyah bırakır; böylece manşet görselleri ve slaytlar kaybolmaz.
+ * Görsellerin üstündeki yazılar siyah bir hale ile okunur kalır.
+ */
 html.gk-contrast,
 html.gk-contrast body,
+html.gk-contrast body .gk-cbg {
+	background-color: #000000 !important;
+	background-image: none !important;
+	color: #ffffff !important;
+}
+
 html.gk-contrast body :not(gozkulak-root):not(gozkulak-overlay) {
 	background-color: #000000 !important;
 	color: #ffffff !important;
 	border-color: #ffffff !important;
-	text-shadow: none !important;
 	box-shadow: none !important;
+	text-shadow: 0 0 2px #000000, 0 0 4px #000000 !important;
+}
+
+html.gk-contrast body .gk-c0 {
+	background-color: transparent !important;
+}
+
+html.gk-contrast body .gk-c1 {
+	background-color: rgba(0, 0, 0, 0.65) !important;
 }
 
 html.gk-contrast a,
@@ -39,10 +62,8 @@ html.gk-contrast a * {
 	color: #ffff00 !important;
 }
 
-html.gk-contrast input,
-html.gk-contrast select,
-html.gk-contrast textarea,
-html.gk-contrast button {
+html.gk-contrast body :is(input, select, textarea, button) {
+	background-color: #000000 !important;
 	border: 2px solid #ffffff !important;
 }
 
@@ -72,16 +93,17 @@ html.gk-dark {
 	background-color: #ffffff !important;
 }
 
-html.gk-dark img,
-html.gk-dark video,
-html.gk-dark iframe,
-html.gk-dark canvas,
-html.gk-dark embed,
-html.gk-dark object,
-html.gk-dark [style*="background-image"],
-html.gk-dark gozkulak-root,
-html.gk-dark gozkulak-overlay {
+/*
+ * Görseller tekrar çevrilir. CSS ile verilen arka plan görselleri betik tarafından gk-bgimg ile
+ * işaretlenir. Slider Revolution modülleri bütün olarak çevrilir (slayt yazıları görselle uyumlu kalır).
+ * Çevrilmiş bir öğenin içindeki görsel ikinci kez çevrilmez (yoksa negatif görünür).
+ */
+html.gk-dark :is(img, picture, video, iframe, canvas, embed, object, .gk-bgimg, rs-module-wrap, sr7-module, gozkulak-root, gozkulak-overlay) {
 	filter: invert(1) hue-rotate(180deg) !important;
+}
+
+html.gk-dark :is(img, picture, video, iframe, canvas, embed, object, .gk-bgimg, rs-module-wrap, sr7-module, gozkulak-root, gozkulak-overlay) :is(img, picture, video, iframe, canvas, embed, object, .gk-bgimg) {
+	filter: none !important;
 }
 
 /* Okunaklı yazı tipi: simge yazı tipleri (Font Awesome, Listeo, BeTheme, Elementor) hariç */
@@ -146,11 +168,8 @@ html.gk-noanim {
 	scroll-behavior: auto !important;
 }
 
-/* Görselleri gizleme: yer korunur, içerik akışı bozulmaz */
-html.gk-noimg img,
-html.gk-noimg picture,
-html.gk-noimg video,
-html.gk-noimg figure > svg {
+/* Görselleri gizleme: yer korunur, içerik akışı bozulmaz (Slider Revolution katmanları dahil) */
+html.gk-noimg :is(img, picture, video, canvas, figure > svg, rs-sbg-wrap, rs-sbg, rs-sbg-px, rs-bgvideo, .rev-slidebg, sr7-bg) {
 	visibility: hidden !important;
 }
 

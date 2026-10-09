@@ -4,7 +4,7 @@ Tags: accessibility, erişilebilirlik, text-to-speech, sesli okuma
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 0.2.0
+Stable tag: 0.2.1
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -21,6 +21,13 @@ GözKulak, temadan bağımsız bir erişilebilirlik menüsü ekler. Menü Shadow
 Ayarlar: Ayarlar → GözKulak.
 
 == Changelog ==
+
+= 0.2.1 =
+* Satır ve harf aralığı yalnızca metin bloklarına uygulanır; site başlığı ve menü hariç (simgeler ve logo kaymaz).
+* Yazı büyütülünce piksel cinsinden satır yükseklikleri de büyür (satırlar üst üste binmez); başlıktaki dikey ortalama yükseklikleri korunur.
+* Yüksek kontrast: saydam ve yarı saydam katmanlar korunur; manşet görselleri ve Slider Revolution slaytları kaybolmaz. Sayfa zemin desenleri kaldırılır.
+* Koyu mod: CSS ile verilen arka plan görselleri (Elementor vb.) ve Slider Revolution modülleri negatif görünmez; iç içe görseller iki kez çevrilmez.
+* Görselleri gizle: Slider Revolution ve canvas görselleri de gizlenir.
 
 = 0.2.0 =
 * Faz 1.2: menü özellikleri. Yazı boyutu, satır ve harf aralığı, yüksek kontrast, koyu mod, gri tonlama, okunaklı yazı, bağlantı vurgusu, büyük imleç, okuma maskesi ve cetveli, animasyon durdurma, görsel gizleme.
