@@ -18,6 +18,9 @@
 		return;
 	}
 
+	// Betik dosyasının kendi sürümü. Eklentinin sürümüyle uyuşmazsa sayfa eski (önbellekteki) bir
+	// betik dosyası kullanıyordur; test modunda menüde uyarı gösterilir.
+	const SCRIPT_VERSION = "0.2.4";
 	const doc = document;
 	const htmlEl = doc.documentElement;
 	const enabledFeatures = new Set(Array.isArray(cfg.features) ? cfg.features : []);
@@ -29,6 +32,7 @@
 			title: "Erişilebilirlik",
 			close: "Menüyü kapat",
 			test: "Test modu: menüyü yalnızca yöneticiler görüyor.",
+			stale: "Uyarı: sayfa eski bir GözKulak betiği kullanıyor (betik %1, eklenti %2). Sitenin önbelleğini temizleyip sayfayı Ctrl + Shift + R ile yenileyin.",
 			vision: "Görme",
 			reading: "Okuma ve dikkat",
 			fontSize: "Yazı boyutu",
@@ -60,6 +64,7 @@
 			title: "Accessibility",
 			close: "Close menu",
 			test: "Test mode: only administrators can see this menu.",
+			stale: "Warning: this page uses an outdated GözKulak script (script %1, plugin %2). Clear the site cache and reload with Ctrl + Shift + R.",
 			vision: "Vision",
 			reading: "Reading and focus",
 			fontSize: "Text size",
@@ -874,7 +879,10 @@
 		function onMutations(list) {
 			for (const m of list) {
 				if (m.type === "childList") {
-					for (const node of m.addedNodes) if (node.nodeType === 1) pending.set(node, true);
+					for (const node of m.addedNodes) {
+						if (isStyleNode(node)) scheduleFull();
+						else if (node.nodeType === 1) pending.set(node, true);
+					}
 				} else if (m.attributeName === "class") {
 					if (!ourClassesOnly(m.oldValue, m.target)) pending.set(m.target, true);
 				} else if (styleKey(m.oldValue) !== styleKey(m.target.getAttribute("style"))) {
@@ -907,6 +915,49 @@
 
 		const LISTEN = { capture: true, passive: true };
 
+		/*
+		 * Bazı siteler stil dosyalarının bir kısmını sayfa açıldıktan sonra yükler (ör. "kritik CSS"
+		 * ve ertelenmiş CSS kullanan hız eklentileri). Yeni stil gelince renkler değişir; sayfa baştan
+		 * okunur. Aksi halde geç gelen beyaz zeminler koyulaşmaz, açılmış yazılar beyaz zeminde kalır.
+		 */
+		let fullTimer = 0;
+		let headObserver = null;
+		function scheduleFull() {
+			if (!mode) return;
+			window.clearTimeout(fullTimer);
+			fullTimer = window.setTimeout(() => {
+				fullTimer = 0;
+				if (mode) full();
+			}, 200);
+		}
+		const isStyleNode = (n) => n.nodeType === 1 && (n.tagName === "STYLE" || (n.tagName === "LINK" && /stylesheet|preload/i.test(n.rel || "")));
+		function onResourceLoad(e) {
+			if (e.target && e.target.tagName === "LINK") scheduleFull();
+		}
+		function onHeadMutations(list) {
+			for (const m of list) {
+				const changed = m.type === "attributes" ? isStyleNode(m.target) : m.target.tagName === "STYLE" || [...m.addedNodes, ...m.removedNodes].some(isStyleNode);
+				if (changed) {
+					scheduleFull();
+					return;
+				}
+			}
+		}
+		function watchStyles(on) {
+			if (on && !headObserver) {
+				headObserver = new MutationObserver(onHeadMutations);
+				headObserver.observe(doc.head, { childList: true, subtree: true, attributes: true, attributeFilter: ["rel", "media", "href", "disabled"] });
+				doc.addEventListener("load", onResourceLoad, true);
+				if (doc.readyState !== "complete") window.addEventListener("load", scheduleFull, { once: true });
+			} else if (!on && headObserver) {
+				headObserver.disconnect();
+				headObserver = null;
+				doc.removeEventListener("load", onResourceLoad, true);
+				window.removeEventListener("load", scheduleFull);
+				window.clearTimeout(fullTimer);
+			}
+		}
+
 		function set(next) {
 			if (next === mode) return;
 			mode = next;
@@ -917,6 +968,7 @@
 			pending = new Map();
 			hoverTargets.clear();
 			if (!mode) {
+				watchStyles(false);
 				if (observer) observer.disconnect();
 				observer = null;
 				doc.removeEventListener("pointerover", onHover, LISTEN);
@@ -932,6 +984,7 @@
 			}
 			doc.addEventListener("pointerover", onHover, LISTEN);
 			doc.addEventListener("pointerout", onHover, LISTEN);
+			watchStyles(true);
 			// Sayfa yüklenirken açıldıysa, sonradan devreye giren slaytlar ve gecikmeli stiller için bir kez daha
 			if (doc.readyState !== "complete" || performance.now() < 8000) {
 				lateTimer = window.setTimeout(() => {
@@ -1167,6 +1220,11 @@
 
 	const body = h("div", { class: "gk-body" });
 	if (cfg.testMode) body.append(h("p", { class: "gk-test", text: STR.test }));
+	if (cfg.version !== SCRIPT_VERSION) {
+		const msg = STR.stale.replace("%1", SCRIPT_VERSION).replace("%2", String(cfg.version));
+		if (cfg.testMode) body.append(h("p", { class: "gk-test", text: msg }));
+		window.console.warn("GözKulak: " + msg);
+	}
 	for (const group of GROUPS) {
 		const items = group.tiles.filter(([key]) => ENABLED.has(key));
 		const hasFont = group.id === "vision" && ENABLED.has("fontSize");
@@ -1263,6 +1321,7 @@
 		render();
 		window.GozKulak = {
 			version: cfg.version,
+			script: SCRIPT_VERSION,
 			open,
 			close: () => close(false),
 			reset: () => resetButton.click(),
