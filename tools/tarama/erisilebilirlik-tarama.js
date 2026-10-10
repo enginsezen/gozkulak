@@ -205,7 +205,8 @@
 		const focusable = 'a[href], button, input:not([type="hidden"]), select, textarea, [tabindex]:not([tabindex="-1"])';
 		for (const box of all('[aria-hidden="true"]').filter(visible)) {
 			const f = [...box.querySelectorAll(focusable)].filter((el) => visible(el) && !el.disabled && el.getAttribute("tabindex") !== "-1");
-			if (box.matches(focusable) || f.length) add('aria-hidden="true" içinde odaklanabilir öğe', selectorOf(box));
+			const self = box.matches(focusable) && !box.disabled && box.getAttribute("tabindex") !== "-1";
+			if (self || f.length) add('aria-hidden="true" içinde odaklanabilir öğe', selectorOf(box));
 		}
 
 		// --- formlar ---
@@ -251,7 +252,9 @@
 			return r;
 		}
 		const MEDIA = /^(IMG|PICTURE|VIDEO|CANVAS|IFRAME|EMBED|OBJECT)$/;
-		const slider = 'sr7-module, rs-module, .swiper, .slick-slider, .owl-carousel, .elementor-background-slideshow, [class*="slider"], [class*="carousel"]';
+		// Slayt alanları (yazılar görselin üstünde). Genel "slider" sınıf eşleşmesi kullanılmaz; bazı temalar
+		// <body>'ye bu adla sınıf ekliyor ve bütün sayfa ölçüm dışı kalıyordu.
+		const slider = "sr7-module, rs-module-wrap, rs-module, .swiper, .swiper-container, .slick-slider, .owl-carousel, .flexslider, .elementor-background-slideshow, .mfn-main-slider";
 		const pairs = new Map();
 		const verify = [];
 		let unsure = 0;
