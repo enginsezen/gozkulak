@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GözKulak sahte sayfa</title>
+<style>
+	body { margin: 0; font: 16px/24px Arial, sans-serif; color: #222; background: #fff; }
+	#Wrapper { background: url(pattern.svg) repeat; }
+	/* Listeo benzeri başlık: simgeler satır yüksekliğiyle hizalı */
+	#header-container { background: #fff; border-bottom: 1px solid #ddd; }
+	#header-container nav ul { display: flex; gap: 20px; list-style: none; margin: 0; padding: 0 20px; height: 60px; align-items: center; }
+	#header-container nav li { line-height: 20px; }
+	#header-container nav i { display: inline-block; width: 18px; height: 18px; background: #f91942; vertical-align: middle; border-radius: 3px; }
+	/* BeTheme benzeri üst çubuk: logo satır yüksekliğiyle konumlanır */
+	#Top_bar { background: #1d2a3a; color: #fff; height: 70px; }
+	#Top_bar .logo { float: left; line-height: 70px; padding: 0 20px; font-size: 24px; font-weight: bold; }
+	#Top_bar .logo p { margin: 0; line-height: 70px; }
+	/* Manşet: arka plan görseli + yarı saydam katman + beyaz yazı */
+	.hero { position: relative; height: 340px; background-image: url(photo.svg); background-size: cover; background-position: center; }
+	.hero .overlay { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.35); }
+	.hero .inner { position: relative; padding: 80px 40px; color: #fff; }
+	.hero h1 { margin: 0; font-size: 40px; line-height: 48px; }
+	.hero .search { margin-top: 20px; background: #fff; padding: 12px; width: 300px; color: #333; }
+	/* Elementor benzeri: arka plan sınıfla ve gecikmeli verilir */
+	.elementor-section.e-lazy:not(.e-lazyloaded) { background-image: none !important; }
+	.elementor-section.bg2 { background-image: url(photo2.svg); background-size: cover; height: 220px; color: #fff; padding: 20px; }
+	/* Kart: satır içi arka plan + içinde görsel */
+	.cards { display: flex; gap: 20px; padding: 20px; }
+	.card { width: 260px; background: #fff; border: 1px solid #ccc; }
+	.card .media { height: 150px; background-size: cover; }
+	.card .media img { width: 100%; height: 150px; object-fit: cover; display: block; }
+	.card p { margin: 10px; }
+	/* Slider Revolution benzeri */
+	rs-module-wrap, rs-module, rs-slides, rs-slide, rs-sbg-wrap, rs-sbg, rs-layer { display: block; }
+	rs-module-wrap { position: relative; height: 260px; }
+	rs-slide, rs-sbg-wrap, rs-sbg { position: absolute; inset: 0; }
+	rs-sbg { background-size: cover; background-position: center; }
+	rs-layer { position: absolute; left: 40px; top: 90px; color: #fff; font-size: 36px; line-height: 44px; }
+	/* Listeo benzeri ilan başlığı: renk geçişli zemin, ortada kutu */
+	#titlebar { background: linear-gradient(#ffffff, #cfcfcf); padding: 30px 0; }
+	#titlebar .container { width: 70%; margin: 0 auto; color: #222; }
+	/* Listeo benzeri manşet: fotoğraf + ::before ile açık renk geçişi, koyu yazı */
+	.main-search-container { position: relative; height: 240px; background: url(photo.svg) center / cover; }
+	.main-search-container::before { content: ""; position: absolute; inset: 0; background: linear-gradient(to right, rgba(250,250,250,.99) 20%, rgba(250,250,250,.7) 70%, rgba(250,250,250,0) 95%); }
+	.main-search-container h2 { position: relative; margin: 0; padding: 90px 40px; color: #333; font-size: 32px; }
+	/* Elementor benzeri: kapsayıcı ::before katmanı (beyaz, opaklık 0.8) ve simge kutusu */
+	.e-con { position: relative; height: 200px; background: url(photo2.svg) center / cover; }
+	.e-con::before { content: ""; position: absolute; inset: 0; background-color: #ffffff; opacity: 0.8; }
+	.e-con .e-con-inner { position: relative; padding: 30px; color: #1d2a3a; }
+	.elementor-icon svg { width: 48px; height: 48px; fill: #1d2a3a; }
+	.stroke-icon svg { width: 48px; height: 48px; stroke: #1d2a3a; }
+	/* sezen.pro benzeri: fotoğraf zeminli bölüm içinde beyaz kutu */
+	.why { position: relative; height: 260px; background: url(photo.svg) left center / 50% 100% no-repeat; }
+	.why .box { position: absolute; right: 40px; top: 30px; width: 420px; background: #ffffff; color: #333333; padding: 20px; transition: background-color .3s, color .3s; }
+	/* Logo ızgarası: griden renkliye geçiş */
+	.logos img { width: 120px; filter: grayscale(1); transition: filter .3s; }
+	.logos img:hover { filter: none; }
+	/* Geçiş efekti olan saydam katman (Elementor bölümleri gibi) */
+	.trans { transition: background-color .3s, border .3s; }
+	/* Üzerine gelince renk değiştiren bağlantı */
+	.hov { color: #0073aa; }
+	.hov:hover { color: #cc0000; }
+	.content { padding: 20px 40px; background: #fff; }
+	.content p { max-width: 640px; }
+	.wa { position: fixed; left: 20px; bottom: 20px; width: 50px; height: 50px; }
+</style>
+</head>
+<body>
+<div id="Wrapper">
+	<header id="header-container">
+		<nav><ul>
+			<li><a href="#"><i></i> Giriş</a></li>
+			<li><a href="#"><i></i> İlanlar</a></li>
+			<li><a href="#"><i></i> Hesabım</a></li>
+		</ul></nav>
+	</header>
+	<div id="Top_bar"><div class="logo"><p>MZA Logo</p></div></div>
+	<section class="hero" id="hero">
+		<div class="overlay trans"></div>
+		<div class="inner"><h1>Karabük'te keşfet</h1><div class="search">Ne arıyorsunuz?</div></div>
+	</section>
+	<rs-module-wrap id="rev"><rs-module><rs-slides><rs-slide>
+		<rs-sbg-wrap><rs-sbg style="background-image:url(photo2.svg)"></rs-sbg></rs-sbg-wrap>
+		<rs-layer>Slayt başlığı</rs-layer>
+	</rs-slide></rs-slides></rs-module></rs-module-wrap>
+	<div class="elementor-section bg2 e-lazy" id="ele"><h2>Elementor bölümü</h2></div>
+	<div class="cards">
+		<div class="card" id="card1"><div class="media" style="background-image:url(photo.svg)"><img src="photo2.svg" alt="kart"></div><p>Kart yazısı</p></div>
+		<div class="card"><div class="media"><img src="photo.svg" alt="kart 2"></div><p>İkinci kart</p></div>
+	</div>
+	<div id="titlebar"><div class="container"><h2 id="tbtitle">Kaymakamlar Gezi Evi</h2></div></div>
+	<div class="main-search-container" id="lhero"><h2>Keşfetmeye başla</h2></div>
+	<div class="e-con" id="econ"><div class="e-con-inner">
+		<div class="elementor-icon" id="eicon"><svg class="e-font-icon-svg" viewBox="0 0 48 48"><rect x="4" y="8" width="40" height="10" rx="2"/><rect x="4" y="22" width="40" height="10" rx="2"/></svg></div>
+		<span class="stroke-icon" id="sicon"><svg viewBox="0 0 48 48" fill="none" stroke-width="3"><circle cx="24" cy="24" r="18"/></svg></span>
+		<h3>Sunucu Sistemleri</h3>
+	</div></div>
+	<section class="why" id="why"><div class="box" id="whybox"><h3>Neden Sezen.Pro?</h3><p id="whytext">İşletmenizin teknoloji ihtiyaçlarını analiz ediyoruz.</p></div></section>
+	<div class="logos" id="logos"><img src="photo2.svg" alt="logo" id="logo1"> <a href="#" class="hov" id="hov">Üzerine gel</a></div>
+	<div class="lazy-slide" id="lazy" style="position:relative;height:120px"><div class="trans" id="lazybg" style="position:absolute;inset:0"></div></div>
+	<div class="latebox" id="latebox"><h3 id="latetitle">Yapay Zeka İncelemesi</h3><span class="pill" id="latepill">Tarihi Atmosfer Beğenisi</span></div>
+	<div class="injected" id="injected">Sonradan stil alan kutu</div>
+	<main class="content">
+		<p id="para">Bu paragrafın satır yüksekliği piksel cinsinden verilmiştir (16px yazı, 24px satır). Yazı büyütüldüğünde satırlar üst üste binmemeli. Karabük Demir Çelik Fabrikaları 1937'de kuruldu ve şehir onun çevresinde büyüdü.</p>
+		<p>İkinci paragraf: <a href="#">bir bağlantı</a> ve devamı.</p>
+	</main>
+</div>
+<img class="wa" src="icon.svg" alt="WhatsApp">
+<script>
+	setTimeout(function () { document.getElementById("ele").classList.add("e-lazyloaded"); }, 1000);
+	setTimeout(function () { document.getElementById("lazybg").style.backgroundImage = "url(photo2.svg)"; document.getElementById("lazybg").style.backgroundSize = "cover"; }, 2000);
+</script>
+<script type="application/json" id="gozkulak-config">{"version":"0.2.4","testMode":true,"css":"/wp-content/plugins/gozkulak/assets/css/menu.css?ver=0.2.4","pageCss":"/wp-content/plugins/gozkulak/assets/css/page.css?ver=0.2.4","position":"bottom-right","offset":[20,20],"size":56,"icon":"person","color":"#085e9d","features":["font_size","line_height","letter_spacing","contrast","dark_mode","grayscale","readable_font","highlight_links","big_cursor","reading_mask","reading_guide","stop_animations","hide_images"],"selector":""}</script>
+<script src="/wp-content/plugins/gozkulak/assets/js/gozkulak.js?ver=0.2.4" defer></script>
+<script>
+	setTimeout(function () { var l = document.createElement("link"); l.rel = "stylesheet"; l.href = "late.css"; document.head.appendChild(l); }, 2500);
+	setTimeout(function () { var st = document.createElement("style"); st.textContent = ".injected{background:#fafafa;color:#444;padding:10px}"; document.body.appendChild(st); }, 3200);
+</script>
+</body>
+</html>

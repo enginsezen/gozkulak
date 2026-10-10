@@ -1,0 +1,10 @@
+(module
+  (memory (export "memory") 2)
+  (global $len (mut i32) (i32.const 0))
+  (func (export "alloc") (param $n i32) (result i32) (i32.const 1024))
+  (func (export "dealloc") (param i32 i32))
+  (func (export "normalize") (param $p i32) (param $n i32)
+    (memory.copy (i32.const 65536) (local.get $p) (local.get $n))
+    (global.set $len (local.get $n)))
+  (func (export "result_ptr") (result i32) (i32.const 65536))
+  (func (export "result_len") (result i32) (global.get $len)))

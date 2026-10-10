@@ -1,0 +1,58 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Sorunlu deneme sayfası</title>
+<style>
+	body { font: 16px/1.5 Arial, sans-serif; color: #222; background: #fff; margin: 0; }
+	.gray { color: #999999; }
+	.mid { color: #777777; }
+	.bigbold { color: #999999; font-size: 24px; font-weight: 700; }
+	.hero { background: url(photo.svg) center / cover; color: #fff; padding: 40px; }
+	.card { position: relative; width: 300px; }
+	.card img { width: 300px; display: block; }
+	.card .over { position: absolute; left: 10px; bottom: 10px; color: #fff; }
+	.hp { display: none; }
+</style>
+</head>
+<body>
+<header><nav><a href="/"><img src="icon.svg" alt=""></a> <a href="/sosyal"><svg viewBox="0 0 10 10" width="20" height="20"><circle cx="5" cy="5" r="4"/></svg></a></nav></header>
+<h1>Ana başlık</h1>
+<h1>İkinci ana başlık</h1>
+<h2>Bölüm</h2>
+<h4>Atlanmış seviye</h4>
+<h3></h3>
+<img src="photo.svg" width="100">
+<img src="photo.svg" width="100" data-x="2">
+<img src="photo.svg" alt="IMG_1234.jpg" width="100">
+<img src="photo.svg" alt="resim" width="100">
+<p class="gray">Gri yazı düşük kontrast</p>
+<p class="gray">Gri yazı ikinci</p>
+<p class="mid">Orta gri yazı</p>
+<p class="bigbold">Büyük kalın gri</p>
+<div class="hero"><p>Görsel üstünde beyaz yazı</p></div>
+<div class="card"><img src="photo.svg" alt="Kart görseli"><div class="over">Kart başlığı</div></div>
+<sr7-module><p style="color:#fff">Slayt yazısı</p></sr7-module>
+<p><a href="/a">Daha fazla bilgi edin</a> <a href="/b">Daha fazla bilgi edin</a> <a href="/c">Daha fazla bilgi edin</a> <a href="/d">Devamını oku</a></p>
+<button><i class="fa fa-search"></i></button>
+<button>Ara</button>
+<div role="button">Sahte düğme</div>
+<span onclick="void 0">Tıklanabilir span</span>
+<a href="/t" tabindex="3">Sekme sırası</a>
+<div aria-hidden="true"><a href="/gizli">Gizli bağlantı</a></div>
+<form>
+	<input type="text" placeholder="Adınız">
+	<select><option>Seçin</option></select>
+	<label for="eposta">E-posta</label><input id="eposta" type="email">
+	<label>Telefon <input type="tel"></label>
+	<input class="hp" type="text" name="honeypot">
+	<input type="hidden" name="nonce" value="x">
+	<input type="submit" value="Gönder">
+</form>
+<iframe src="b.html" width="200" height="100"></iframe>
+<video autoplay width="100"></video>
+<div aria-labelledby="yok-boyle-id">ARIA</div>
+<div id="tekrar">bir</div><div id="tekrar">iki</div>
+</body>
+</html>

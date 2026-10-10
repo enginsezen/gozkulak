@@ -2,3 +2,11 @@
 /node_modules/
 *.zip
 .DS_Store
+
+# Claude Code: kişiye özel talimat ve notlar (sunucu bilgisi içerir; repoya girmez)
+CLAUDE.local.md
+/ozel/
+
+# Testler
+/tests/node_modules/
+/tests/shots/

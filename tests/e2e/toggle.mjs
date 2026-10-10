@@ -1,0 +1,38 @@
+import { chromium } from "playwright";
+const b = await chromium.launch();
+const p = await (await b.newContext({ viewport: { width: 1280, height: 900 } })).newPage();
+const errs = [];
+p.on("pageerror", (e) => errs.push(e.message));
+await p.goto("http://127.0.0.1:8080/gk-mock/");
+await p.evaluate(() => localStorage.removeItem("gozkulak:v1"));
+await p.reload();
+await p.waitForFunction(() => { const h = document.querySelector("gozkulak-root"); return h && getComputedStyle(h).display !== "none"; });
+const sh = (fn, arg) => p.evaluate(([f, a]) => { const host = document.querySelector("gozkulak-root"); return new Function("host", "root", "a", f)(host, host.shadowRoot, a); }, [fn, arg]);
+const clickTile = (label) => sh(`const t = [...root.querySelectorAll('.gk-tile')].find(t => t.querySelector('.gk-tile-label').textContent === a); t.click(); return true;`, label);
+const count = () => p.evaluate(() => ["gk-c0", "gk-c1", "gk-cbg", "gk-bgimg"].map((c) => c + ":" + document.getElementsByClassName(c).length).join(" "));
+// Gözlemci döngüsü: işaret sayısı ve mutasyon sayısı
+await p.evaluate(() => { window.__m = 0; new MutationObserver((l) => { window.__m += l.length; }).observe(document.body, { attributes: true, subtree: true, attributeFilter: ["class"] }); });
+await sh(`root.querySelector('.gk-btn').click(); return 1;`);
+await clickTile("Yüksek kontrast");
+await p.waitForTimeout(300);
+console.log("kontrast açık:", await count());
+await p.waitForTimeout(2000);
+const m1 = await p.evaluate(() => window.__m);
+await p.waitForTimeout(1500);
+console.log("döngü yok mu (1,5 sn'de yeni sınıf değişikliği):", (await p.evaluate(() => window.__m)) - m1);
+await clickTile("Koyu mod");
+await p.waitForTimeout(300);
+console.log("koyu moda geçiş:", await count(), "| html:", await p.evaluate(() => document.documentElement.className));
+await clickTile("Koyu mod");
+await p.waitForTimeout(300);
+console.log("hepsi kapalı:", await count());
+// Kontrast açıkken sonradan eklenen yarı saydam katman
+await clickTile("Yüksek kontrast");
+await p.evaluate(() => { const d = document.createElement("div"); d.id = "late"; d.style.cssText = "position:fixed;top:0;left:0;width:50px;height:50px;background:rgba(255,255,255,.5)"; document.body.append(d); });
+await p.waitForTimeout(500);
+console.log("sonradan eklenen katman:", await p.evaluate(() => document.getElementById("late").className, ), await p.evaluate(() => getComputedStyle(document.getElementById("late")).backgroundColor));
+await sh(`root.querySelector('.gk-reset').click(); return 1;`);
+await p.waitForTimeout(300);
+console.log("sıfırla:", await count());
+console.log("HATALAR:", errs.length ? errs.join("\n") : "yok");
+await b.close();
