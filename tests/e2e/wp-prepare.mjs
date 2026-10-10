@@ -44,8 +44,9 @@ async function run(id) {
 }
 
 // Ön yüzde sayfanın listesi ve sayfadaki GözKulak'ın birimleri
-async function front() {
+async function front(width) {
 	const f = await ctx.newPage();
+	if (width) await f.setViewportSize({ width, height: 900 });
 	await f.goto(WP + "/?page_id=500");
 	await f.waitForFunction(() => window.GozKulak && window.GozKulak.units);
 	const out = await f.evaluate(async () => {
@@ -95,6 +96,28 @@ s = await run(500);
 check("değişen metinde yalnızca yeni birim üretilir", /^Bitti\. 1 yeni ses dosyası/.test(s), s);
 fr = await front();
 check("liste yeni birimleri içerir", JSON.stringify([...fr.files].sort()) === JSON.stringify([...new Set(fr.units)].sort()), fr.files.length + " dosya");
+
+// Tema bölümleri ekran genişliğine göre gizliyor ya da iki kez yazıyor (BeTheme: hide-desktop, hide-laptop…).
+// Kısa başlık sonraki cümleyle birlikte üretildiği için birimler genişliğe göre değişir; hazırlama her
+// genişlikte görünen birimleri üretmeli.
+const resp = await p.evaluate(async ([u, n]) => (await fetch(u, {
+	method: "POST", headers: { "X-WP-Nonce": n, "Content-Type": "application/json" },
+	body: JSON.stringify({ content: "<style>@media (min-width:1440px){.gk-lap{display:none}}</style><p>Merhaba dünya.</p><p class=\"gk-lap\">Bilgi</p><ul class=\"slick-dots\" role=\"tablist\"><li><a>0</a></li><li><a>1</a></li></ul><h2>Referanslarımız</h2><p>Müze pazartesi günleri kapalıdır.</p>" }),
+})).status, [WP + "/?rest_route=/wp/v2/pages/500", nonce]);
+check("ekran genişliğine göre değişen sayfa kaydedildi", resp === 200, String(resp));
+await p.reload();
+s = await run(500);
+check("değişen genişliklerde hazırlama bitti", /^Bitti\. \d+ yeni ses dosyası/.test(s), s);
+const widths = {};
+for (const w of [1920, 1280, 390]) {
+	fr = await front(w);
+	widths[w] = fr.texts.join(" | ");
+	const have = new Set(fr.files);
+	const miss = fr.units.filter((x) => !have.has(x));
+	check("genişlik " + w + ": bütün birimlerin sesi var", fr.units.length > 0 && !miss.length, widths[w] + (miss.length ? " (eksik " + miss.length + ")" : ""));
+}
+check("birimler genişliğe göre gerçekten değişiyor", widths[1920] !== widths[1280], JSON.stringify(widths));
+check("slayt noktaları okunmuyor", !/0, 1/.test(widths[1280]), widths[1280]);
 
 await p.click(".gozkulak-prep-cleanup");
 await p.waitForFunction(() => /silindi/.test(document.querySelector(".gozkulak-prep-status").textContent));

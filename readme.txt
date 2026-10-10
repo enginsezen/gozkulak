@@ -4,7 +4,7 @@ Tags: accessibility, erişilebilirlik, text-to-speech, sesli okuma
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 0.3.2
+Stable tag: 0.3.3
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -32,6 +32,10 @@ Bu isteklerde yalnızca standart HTTP bilgileri (IP adresi, tarayıcı bilgisi) 
 Üçüncü taraf bileşenler ve lisansları: THIRD-PARTY-NOTICES.txt
 
 == Changelog ==
+
+= 0.3.3 =
+* Hazır ses, sayfayı geniş masaüstü, dizüstü, tablet ve telefon genişliklerinde tarar. Bölümleri ekran genişliğine göre gizleyen temalarda (ör. BeTheme) ziyaretçinin ekranında görünen bazı cümlelerin sesi eksik kalıyordu; sayfa hazır olduğu hâlde model yükleniyordu.
+* Slayt noktaları ve sayfa numaraları ("0, 1, 2, 3") artık okunmuyor.
 
 = 0.3.2 =
 * Cümle sonundaki "bul." "Bulvarı", "sok." "Sokak" diye okunuyordu. "Bul." ve "Sok." artık yalnızca büyük harfle yazılınca adres kısaltması sayılır ("Atatürk Bul." → "Atatürk Bulvarı"). Bu cümlelerin hazır sesi yeniden hazırlanmalıdır.

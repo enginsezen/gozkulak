@@ -20,7 +20,7 @@
 
 	// Betik dosyasının kendi sürümü. Eklentinin sürümüyle uyuşmazsa sayfa eski (önbellekteki) bir
 	// betik dosyası kullanıyordur; test modunda menüde uyarı gösterilir.
-	const SCRIPT_VERSION = "0.3.2";
+	const SCRIPT_VERSION = "0.3.3";
 	const doc = document;
 	const htmlEl = doc.documentElement;
 	const enabledFeatures = new Set(Array.isArray(cfg.features) ? cfg.features : []);
@@ -1341,7 +1341,8 @@
 	 * vurgulama DOM'a dokunmadan (CSS Highlight API) yapılır.
 	 */
 	const content = (() => {
-		const SKIP = "nav, form, button, select, textarea, input, script, style, noscript, template, svg, iframe, canvas, video, audio, object, [aria-hidden='true'], [hidden], .screen-reader-text, .sr-only, .visually-hidden, .wpa-test-msg, #wpadminbar, gozkulak-root, gozkulak-overlay";
+		// Slayt noktaları ve sayfa numaraları ("0, 1, 2, 3") düğme gibidir, okunmaz.
+		const SKIP = "nav, form, button, select, textarea, input, script, style, noscript, template, svg, iframe, canvas, video, audio, object, [aria-hidden='true'], [hidden], [role='tablist'], .slick-dots, .swiper-pagination, .owl-dots, .flex-control-nav, .slider_pagination, .page-numbers, .screen-reader-text, .sr-only, .visually-hidden, .wpa-test-msg, #wpadminbar, gozkulak-root, gozkulak-overlay";
 		// İçindekiler tabloları sayfa okunurken atlanır (başlıklar sayfada zaten okunuyor; kullanıcı kararı,
 		// 2026-10-10). Seçilen metin okunurken atlanmaz.
 		const TOC = ".lwptoc, #ez-toc-container, .ez-toc-container, #toc_container, .wp-block-rank-math-toc-block, .wp-block-yoast-seo-table-of-contents, .elementor-widget-table-of-contents, .wp-block-uagb-table-of-contents, .kb-table-of-content-nav, .wp-block-ht-block-toc, .wpj-jtoc, #ftwp-container, .simple-toc, [role='doc-toc'], #toc, .toc";

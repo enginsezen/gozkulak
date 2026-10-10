@@ -191,7 +191,11 @@
 		});
 	}
 
-	// Sayfa masaüstü genişliğinde ama ekran dışında açılır: GözKulak yalnızca görünen öğeleri okur.
+	// Sayfa ekran dışında açılır. GözKulak yalnızca görünen öğeleri okur; temalar bazı bölümleri ekran
+	// genişliğine göre gizler ya da iki kez yazar (BeTheme: hide-desktop, hide-mobile…). Bu yüzden sayfa
+	// geniş masaüstü, dizüstü, tablet ve telefon genişliklerinde okunur; birimlerin birleşimi hazırlanır.
+	const WIDTHS = [1920, 1280, 900, 390];
+
 	async function unitsOf(url) {
 		if (!frame) {
 			frame = document.createElement("iframe");
@@ -217,7 +221,16 @@
 		}
 		if (!win.GozKulak) throw new Error("Sayfada GözKulak yok (eklenti kapalı ya da sayfa önbellekten geldi)");
 		await sleep(1000); // geç yüklenen içerik
-		const list = await win.GozKulak.units();
+		const list = [];
+		try {
+			for (const w of WIDTHS) {
+				frame.style.width = w + "px";
+				await sleep(500); // yeni genişlikte yerleşim ve temanın yeniden boyutlandırma betikleri
+				list.push(...(await win.GozKulak.units()));
+			}
+		} finally {
+			frame.style.width = "";
+		}
 		return list.filter((u) => u && /^[0-9a-f]{32}$/.test(u.hash) && typeof u.text === "string");
 	}
 
