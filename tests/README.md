@@ -54,6 +54,7 @@ npm run phpcs       # WordPress kodlama standardı; çıktı boşsa sorun yok (i
 npm run wp          # WordPress Playground: http://127.0.0.1:9400, PHP 7.4, eklenti etkin (wp/blueprint.json)
 node e2e/wp-audio.mjs   # hazır ses REST uçları (npm run wp açıkken)
 node e2e/wp-prepare.mjs # hazır ses hazırlama, gerçek modelle (tts.sezen.pro'dan ~40 MB iner; GK_TTS ile değişir)
+node e2e/wp-play.mjs    # ziyaretçide hazır sesin çalınması: tamamı hazır sayfa, karışık sayfa (gerçek modelle)
 ```
 
 Site Türkçe kurulur (`<html lang="tr-TR">`); İngilizce sayfada Türkçe birim çıkmaz. Playground'da yönetici `admin` / `password`, abone `abone` / `abone-Parola-123`, yayımlanmış sayfa `?page_id=500`, taslak `501`. Site her açılışta sıfırdan kurulur. `--workers=1` gerekir: birden çok işçide bir istekte silinen klasör öteki işçide görünmeye devam ediyor.

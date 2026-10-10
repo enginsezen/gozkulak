@@ -50,6 +50,7 @@ Kişiye özel bilgiler (siteler, sunucu, test cihazları, güncel durum) `CLAUDE
 - `player`: Web Audio.
 - `ema`: Worker istemcisi.
 - `browserEngine` / `emaEngine`: okuma sıralayıcıları.
+- `prepared` / `preparedEngine`: hazır ses; birimlerin dosya adları ve `<audio>` ile çalma (hız perdeyi korur).
 - `reader`: durum makinesi; idle / asking / loading / playing / paused.
 - `clickRead`.
 - `overlay`: okuma maskesi ve cetveli.

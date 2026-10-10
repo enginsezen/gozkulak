@@ -193,7 +193,13 @@
 	const NATURAL = SPEECH && lang === "tr" && typeof TTS.worker === "string" && /^https?:\/\//.test(TTS.worker) &&
 		typeof window.Worker === "function" && typeof window.WebAssembly === "object" &&
 		!!(window.AudioContext || window.webkitAudioContext) && !!(window.crypto && window.crypto.subtle);
-	if (NATURAL) ENABLED.add("naturalVoice");
+	// Hazır ses: yöneticinin önceden üretip siteye yüklediği cümle dosyaları (bu sayfanın listesi).
+	// Model ve Worker gerekmez; tarayıcının Ogg Opus çalabilmesi yeter.
+	const AUDIO = cfg.audio && typeof cfg.audio === "object" && typeof cfg.audio.base === "string" &&
+		/^https?:\/\//.test(cfg.audio.base) && Array.isArray(cfg.audio.files) ? cfg.audio : null;
+	const PREPARED = SPEECH && lang === "tr" && !!AUDIO && !!(window.crypto && window.crypto.subtle) &&
+		typeof window.Audio === "function" && !!new window.Audio().canPlayType('audio/ogg; codecs="opus"');
+	if (NATURAL || PREPARED) ENABLED.add("naturalVoice");
 
 	// Birbirini dışlayan seçenekler
 	const EXCLUSIVE = { contrast: "darkMode", darkMode: "contrast", readingMask: "readingGuide", readingGuide: "readingMask" };
@@ -2335,12 +2341,17 @@
 	const prepared = (() => {
 		const PREFIX = "gk1|ema-13c431d|opus24|";
 
+		const memo = new Map();
+
 		async function hash(text) {
+			if (memo.has(text)) return memo.get(text);
 			const d = await window.crypto.subtle.digest("SHA-256", new TextEncoder().encode(PREFIX + text));
-			return [...new Uint8Array(d)].slice(0, 16).map((x) => x.toString(16).padStart(2, "0")).join("");
+			const out = [...new Uint8Array(d)].slice(0, 16).map((x) => x.toString(16).padStart(2, "0")).join("");
+			memo.set(text, out);
+			return out;
 		}
 
-		// Listenin Türkçe bölümlerindeki birimler: { from, to, text } (to hariç)
+		// Listenin Türkçe bölümlerindeki birimler: { from, to, text, items } (to hariç; items: emaEngine.job)
 		function units(list) {
 			const out = [];
 			for (let i = 0; i < list.length;) {
@@ -2350,7 +2361,7 @@
 					const run = list.slice(0, end);
 					for (let k = i; k < end;) {
 						const w = emaEngine.job(run, k);
-						out.push({ from: k, to: w.next, text: w.text });
+						out.push({ from: k, to: w.next, text: w.text, items: w.items });
 						k = w.next;
 					}
 				}
@@ -2359,7 +2370,210 @@
 			return out;
 		}
 
-		return { hash, units };
+		// Okuma listesinde dosyası olan birimler: cümle sırası → { from, to, items, hash }. Hiçbiri yoksa null.
+		async function plan(list) {
+			if (!PREPARED) return null;
+			const files = new Set(AUDIO.files);
+			const out = [];
+			let any = false;
+			try {
+				const us = units(list);
+				const hs = await Promise.all(us.map((u) => hash(u.text)));
+				us.forEach((u, k) => {
+					if (!files.has(hs[k])) return;
+					const x = { from: u.from, to: u.to, items: u.items, hash: hs[k] };
+					for (let i = u.from; i < u.to; i++) out[i] = x;
+					any = true;
+				});
+			} catch (e) {
+				return null;
+			}
+			return any ? out : null;
+		}
+
+		return { hash, units, plan };
+	})();
+
+	/*
+	 * Hazır sesin çalınması: birimler <audio> öğesiyle sırayla çalınır. Web Audio'nun hız ayarı ses
+	 * perdesini değiştirdiği için öğe kullanılır; hızlandırmada perde korunur (preservesPitch).
+	 * Sıradaki ~20 sn'lik dosyalar önceden indirilir. Vurgu, birleşik birimde ikinci cümleye harf
+	 * sayısından tahmin edilen anda geçer (canlı üretimdeki gibi).
+	 */
+	const preparedEngine = (() => {
+		const AHEAD = 20;
+		const GAP = 0.3;
+		const TICK = 80;
+		const LETTERS_PER_SEC = 15;
+		const KEEP = 80; // bellekte tutulan dosya sayısı
+		const cache = new Map(); // özet → Promise<Blob>
+		let plan = [];
+		let el = null;
+		let url = "";
+		let token = 0;
+		let ticker = 0;
+		let timer = 0;
+		let paused = false;
+		let speed = 1;
+		let waiting = null; // birimler arası boşlukta duraklatıldı: devamda çalınacak birim
+
+		const lettersOf = (t) => (t.match(/[\p{L}\p{N}]/gu) || []).length;
+
+		function element() {
+			if (!el) {
+				el = new window.Audio();
+				el.preload = "auto";
+				el.preservesPitch = true;
+				el.mozPreservesPitch = true;
+				el.webkitPreservesPitch = true;
+			}
+			return el;
+		}
+
+		function fetchUnit(hash) {
+			let p = cache.get(hash);
+			if (p) return p;
+			p = window.fetch(AUDIO.base + hash.slice(0, 2) + "/" + hash + ".ogg", { credentials: "same-origin" }).then((r) => {
+				if (!r.ok) throw new Error("Hazır ses dosyası alınamadı (" + r.status + ")");
+				return r.blob();
+			});
+			p.catch(() => cache.delete(hash));
+			cache.set(hash, p);
+			if (cache.size > KEEP) cache.delete(cache.keys().next().value);
+			return p;
+		}
+
+		function stop() {
+			token++;
+			window.clearInterval(ticker);
+			window.clearTimeout(timer);
+			timer = 0;
+			waiting = null;
+			if (el) {
+				el.onended = null;
+				el.onerror = null;
+				el.pause();
+				el.removeAttribute("src");
+				el.load();
+			}
+			if (url) window.URL.revokeObjectURL(url);
+			url = "";
+		}
+
+		function play(list, from, rate, h) {
+			stop();
+			const my = token;
+			const live = () => my === token;
+			speed = rate;
+			paused = false;
+			// from'dan başlayan, dosyası olan ardışık birimler (from bir birimin ortasındaysa o birimden)
+			const units = [];
+			for (let i = from; i < list.length && plan[i];) {
+				units.push(plan[i]);
+				i = plan[i].to;
+			}
+			let k = 0;
+			let marks = [];
+			const fail = (err) => {
+				if (!live()) return;
+				stop();
+				h.onError(err);
+			};
+			const prefetch = () => {
+				let sec = 0;
+				for (let j = k; j < units.length && sec < AHEAD; j++) {
+					fetchUnit(units[j].hash).catch(() => {});
+					sec += lettersOf(list.slice(units[j].from, units[j].to).map((x) => x.speech).join(" ")) / LETTERS_PER_SEC;
+				}
+			};
+			const begin = async () => {
+				waiting = null;
+				if (!live()) return;
+				if (k >= units.length) {
+					stop();
+					h.onEnd();
+					return;
+				}
+				const u = units[k];
+				prefetch();
+				let blob;
+				try {
+					blob = await fetchUnit(u.hash);
+				} catch (err) {
+					fail(err);
+					return;
+				}
+				if (!live()) return;
+				const a = element();
+				if (url) window.URL.revokeObjectURL(url);
+				url = window.URL.createObjectURL(blob);
+				a.src = url;
+				a.defaultPlaybackRate = speed;
+				a.playbackRate = speed;
+				marks = u.items.map((x) => ({ i: x.i, at: x.offset / LETTERS_PER_SEC }));
+				a.onerror = () => fail(new Error("Hazır ses çalınamadı"));
+				a.onended = () => {
+					if (!live()) return;
+					k++;
+					if (k >= units.length) {
+						begin();
+						return;
+					}
+					waiting = begin;
+					timer = window.setTimeout(() => {
+						timer = 0;
+						if (!paused && waiting) waiting();
+					}, (GAP / speed) * 1000);
+				};
+				if (!paused) a.play().catch(fail);
+			};
+			h.onSentence(units.length ? units[0].from : from);
+			begin();
+			ticker = window.setInterval(() => {
+				if (!live() || !el) return;
+				while (marks.length && marks[0].at <= el.currentTime + 0.05) {
+					const m = marks.shift();
+					h.onSentence(m.i);
+				}
+			}, TICK);
+		}
+
+		return {
+			play,
+			stop,
+			use(p) {
+				plan = p || [];
+			},
+			// Ses çıkışı ziyaretçinin dokunuşu içinde hazırlanır (iOS).
+			unlock() {
+				element();
+			},
+			pause() {
+				paused = true;
+				window.clearTimeout(timer);
+				timer = 0;
+				if (el) el.pause();
+				return true;
+			},
+			resume() {
+				paused = false;
+				if (waiting) {
+					waiting();
+					return true;
+				}
+				if (el && el.getAttribute("src") && el.paused && !el.ended) el.play().catch(() => {});
+				return true;
+			},
+			// Hız değişince birim baştan okunmaz; öğenin hızı değişir.
+			rate(r) {
+				speed = r;
+				if (el) {
+					el.defaultPlaybackRate = r;
+					el.playbackRate = r;
+				}
+				return true;
+			},
+		};
 	})();
 
 	/*
@@ -2385,11 +2599,15 @@
 		let broken = false; // bu sayfada doğal ses yüklenemedi
 		let gpuRetried = false; // WebGPU sorunu yüzünden WASM'a bir kez geçildi
 		let browserOk = true; // onay sorulurken: tarayıcının Türkçe sesi var mı
+		let plan = null; // cümle sırası → hazır birim (prepared.plan); yoksa null
+		let preparedOff = false; // bu sayfada hazır ses çalınamadı
 		const listeners = new Set();
 
 		const emit = () => listeners.forEach((fn) => fn());
 		const rate = () => RATES[prefs.ttsRate] || 1;
 		const wantsNatural = () => NATURAL && prefs.naturalVoice && !broken;
+		const wantsPrepared = () => PREPARED && prefs.naturalVoice && !preparedOff;
+		const ready = (i) => !!(plan && plan[i]);
 		const warn = (err) => window.console.warn("GözKulak: " + ((err && err.message) || err));
 		const clamp = (i) => Math.max(0, Math.min(queue.length - 1, i));
 		// Test modunda (yalnızca yöneticiler) geçişin teknik nedeni notun sonunda gösterilir: telefonda konsol yok.
@@ -2401,15 +2619,19 @@
 			announce(text);
 		}
 
-		// Aynı dildeki ardışık cümleler aynı sesle okunur; dil değişince ses de değişir.
+		// Aynı dildeki ardışık cümleler aynı sesle okunur; dil değişince ses de değişir. Türkçede hazır
+		// sesi olan ve olmayan bölümler de ayrı okunur.
 		function runEnd(from) {
 			const l = queue[from].lang;
+			const r = ready(from);
 			let i = from + 1;
-			while (i < queue.length && queue[i].lang === l) i++;
+			while (i < queue.length && queue[i].lang === l && ready(i) === r) i++;
 			return i;
 		}
 
-		function engineFor(l) {
+		function engineFor(i) {
+			const l = queue[i].lang;
+			if (l === "tr" && ready(i)) return preparedEngine;
 			if (natural && l === "tr") return emaEngine;
 			if (voiceOk[l]) return browserEngine;
 			// Tarayıcının o dilde sesi yoksa doğal ses okur (hiç okunmamasından iyidir).
@@ -2445,7 +2667,7 @@
 			fresh = false;
 			message = "";
 			if (engine) engine.stop();
-			let next = engineFor(queue[index].lang);
+			let next = engineFor(index);
 			// Sesi olmayan dildeki bölüm atlanır.
 			while (!next) {
 				const skip = runEnd(index);
@@ -2454,7 +2676,7 @@
 					return;
 				}
 				index = skip;
-				next = engineFor(queue[index].lang);
+				next = engineFor(index);
 			}
 			engine = next;
 			state = "playing";
@@ -2477,10 +2699,18 @@
 			}
 			queue = list;
 			index = clamp(from || 0);
-			const rest = queue.slice(index);
-			let needNatural = wantsNatural() && rest.some((x) => x.lang === "tr");
 			// Ses çıkışı ziyaretçinin dokunuşu içinde açılmalı: ilk beklemeden önce.
-			if (needNatural && !player.unlock()) needNatural = false;
+			const usePrepared = wantsPrepared();
+			if (usePrepared) preparedEngine.unlock();
+			const audioOk = wantsNatural() && queue.slice(index).some((x) => x.lang === "tr") && player.unlock();
+			plan = usePrepared ? await prepared.plan(queue) : null;
+			if (my !== run) return;
+			preparedEngine.use(plan);
+			// Okuma hazır bir birimin ortasından başlıyorsa birimin başından okunur.
+			if (ready(index)) index = plan[index].from;
+			const rest = queue.slice(index);
+			// Model yalnızca hazır sesi olmayan Türkçe cümle varsa gerekir (o zaman onay da sorulur).
+			let needNatural = audioOk && rest.some((x, k) => x.lang === "tr" && !ready(index + k));
 			if (needNatural) {
 				state = "loading";
 				emit();
@@ -2495,7 +2725,7 @@
 				if (ok === null) return; // onay soruluyor ya da okuma değişti
 				natural = ok;
 			}
-			if (!natural && !rest.some((x) => voiceOk[x.lang])) {
+			if (!natural && !rest.some((x, k) => voiceOk[x.lang] || ready(index + k))) {
 				const failedNatural = needNatural;
 				halt();
 				say(failedNatural ? STR.ttsNaturalNone : STR.ttsNoVoice);
@@ -2554,6 +2784,13 @@
 		function failed(err) {
 			warn(err);
 			const wasPaused = state === "paused";
+			// Hazır ses çalınamadı: bu sayfada hazır ses bırakılır, okuma bulunduğu cümleden sürer.
+			if (engine === preparedEngine) {
+				preparedOff = true;
+				engine.stop();
+				start(queue, index, wasPaused);
+				return;
+			}
 			if (engine !== emaEngine) {
 				if (engine) engine.stop();
 				state = "paused";
@@ -2599,7 +2836,7 @@
 			engine = null;
 			natural = false;
 			run++;
-			if (!queue.slice(index).some((x) => voiceOk[x.lang])) {
+			if (!queue.slice(index).some((x, k) => voiceOk[x.lang] || ready(index + k))) {
 				state = "paused";
 				fresh = true;
 				say(STR.ttsNaturalNone);
@@ -2648,6 +2885,7 @@
 			state = "idle";
 			queue = [];
 			index = 0;
+			plan = null;
 			progress = null;
 			fresh = false;
 		}
@@ -2674,7 +2912,10 @@
 		function step(delta) {
 			if (state !== "playing" && state !== "paused") return;
 			if (engine) engine.stop();
-			index = clamp(index + delta);
+			let to = clamp(index + delta);
+			// Hazır seste birimin ortasına gidilmez: ileri sonraki birime, geri birimin başına.
+			if (ready(to) && plan[to].from !== to) to = delta > 0 && plan[to].to < queue.length ? plan[to].to : plan[to].from;
+			index = to;
 			if (state === "playing") play();
 			else {
 				fresh = true;
@@ -2684,6 +2925,10 @@
 		}
 
 		function rateChanged() {
+			if ((state === "playing" || state === "paused") && engine === preparedEngine && !fresh) {
+				engine.rate(rate());
+				return;
+			}
 			if (state === "playing") play();
 			else if (state === "paused") {
 				if (engine) engine.stop();
@@ -2746,10 +2991,12 @@
 				return progress;
 			},
 			get natural() {
-				return engine === emaEngine && (state === "playing" || state === "paused");
+				return (engine === emaEngine || engine === preparedEngine) && (state === "playing" || state === "paused");
 			},
 			get diag() {
-				return cfg.testMode && engine === emaEngine ? emaEngine.diag() : "";
+				if (!cfg.testMode) return "";
+				if (engine === preparedEngine) return "hazır ses";
+				return engine === emaEngine ? emaEngine.diag() : "";
 			},
 		};
 	})();
@@ -3119,7 +3366,7 @@
 		let asking = false;
 
 		const tiles = h("div", { class: "gk-grid" }, tile("clickRead", "speaker", STR.clickRead));
-		if (NATURAL) tiles.append(tile("naturalVoice", "voice", STR.naturalVoice, () => reader.voiceChanged()));
+		if (NATURAL || PREPARED) tiles.append(tile("naturalVoice", "voice", STR.naturalVoice, () => reader.voiceChanged()));
 
 		const section = h("section", { class: "gk-group gk-speech", "aria-labelledby": "gk-g-speech" },
 			h("h3", { id: "gk-g-speech", class: "gk-group-title", text: STR.ttsTitle }),
