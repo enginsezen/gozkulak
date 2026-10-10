@@ -8,17 +8,17 @@ WordPress için erişilebilirlik menüsü ve Türkçe sesli okuma eklentisi. Ad�
 
 ## Durum
 
-Geliştirme sürüyor. Yol haritası:
+Beş faz tamamlandı (2026-10-11); eklenti üç sitede ziyaretçilere açık, güncellemeler GitHub'dan imzalı olarak gelir. Yol haritası:
 
 | Faz | İçerik | Durum |
 | --- | --- | --- |
 | 0 | Ses motorlarının cihazlarda ölçümü | Tamamlandı |
 | 1 | Menü (sesli okuma olmadan) | Tamamlandı |
 | 2 | Sesli okuma | Tamamlandı |
-| 3 | Güvenlik sertleştirme ve testler | Sürüyor |
-| 4 | Sitelere açma ve GitHub'dan güncelleme | — |
+| 3 | Güvenlik sertleştirme ve testler | Tamamlandı |
+| 4 | Sitelere açma ve GitHub'dan güncelleme | Tamamlandı |
 
-Faz 4'e kadar eklenti canlı sitelerde **test modunda** çalışır: menüyü yalnızca yöneticiler görür, ziyaretçilere hiçbir dosya yüklenmez.
+"Kimler görsün: Yalnızca yöneticiler" seçiliyken eklenti **test modunda** çalışır: menüyü yalnızca yöneticiler görür, ziyaretçilere hiçbir dosya yüklenmez.
 
 ## Kurulum
 
