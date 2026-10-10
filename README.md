@@ -50,6 +50,7 @@ Gereksinimler: WordPress 6.4+, PHP 7.4+.
 - Güvenlik kuralları: ayar sayfasında yetki (`manage_options`) ve nonce denetimi; her girdi temizlenir, her çıktı escape edilir; ön yüzde `innerHTML` kullanılmaz; ayarlar sayfaya çalıştırılmayan bir JSON bloğu olarak aktarılır.
 - `tools/faz0/`: Faz 0 ölçüm sayfası ve okunacak alanı bulan tarayıcı konsolu betiği.
 - `tools/tarama/`: sitelerin erişilebilirlik taraması için tarayıcı konsolu betiği.
+- `tools/vps/tts-dosyalari.sh`: doğal ses dosyalarını kendi sunucunuza indirip SHA-256 ile doğrulayan betik (yalnızca curl, sha256sum, gzip; paket kurmaz). Sitenin kök klasöründe çalıştırılır; `.wasm`/`.mjs` için nginx `gzip_static` kopyaları da hazırlar.
 
 ## Lisans
 
