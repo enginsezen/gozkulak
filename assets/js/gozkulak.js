@@ -20,7 +20,7 @@
 
 	// Betik dosyasının kendi sürümü. Eklentinin sürümüyle uyuşmazsa sayfa eski (önbellekteki) bir
 	// betik dosyası kullanıyordur; test modunda menüde uyarı gösterilir.
-	const SCRIPT_VERSION = "0.2.10";
+	const SCRIPT_VERSION = "0.2.11";
 	const doc = document;
 	const htmlEl = doc.documentElement;
 	const enabledFeatures = new Set(Array.isArray(cfg.features) ? cfg.features : []);
@@ -1766,8 +1766,15 @@
 			stalled = 0;
 		}
 
-		// Parçayı bir öncekinin bittiği yere ekler; başlayacağı anı döndürür.
-		function push(pcm) {
+		// Ses bittiği andan beri geçen süre takılma olarak kaydedilir (tampon biriktirmeye başlarken).
+		function markStall() {
+			if (ctx && next > 0 && next < ctx.currentTime && counts()) stalled += ctx.currentTime - next;
+			if (ctx) next = 0;
+		}
+
+		// Parçayı bir öncekinin bittiği yere ekler; başlayacağı anı döndürür. Tampondan gelen parçalar
+		// (bilerek bekletildi) takılma sayılmaz.
+		function push(pcm, held) {
 			if (!ctx || !pcm.length) return -1;
 			if (!out) {
 				out = ctx.createGain();
@@ -1776,7 +1783,7 @@
 			const buf = ctx.createBuffer(1, pcm.length, RATE);
 			if (buf.copyToChannel) buf.copyToChannel(pcm, 0);
 			else buf.getChannelData(0).set(pcm);
-			if (next > 0 && next < ctx.currentTime && counts()) stalled += ctx.currentTime - next;
+			if (!held && next > 0 && next < ctx.currentTime && counts()) stalled += ctx.currentTime - next;
 			const at = Math.max(next, ctx.currentTime + LEAD);
 			const src = ctx.createBufferSource();
 			src.buffer = buf;
@@ -1792,6 +1799,7 @@
 			unlock,
 			reset,
 			push,
+			markStall,
 			gap(sec) {
 				if (ctx) next = Math.max(next, ctx.currentTime) + sec;
 			},
@@ -2096,7 +2104,7 @@
 		const FIRST_AUDIO_MS = 8000;
 		const HANG_MS = 12000;
 		const MEASURE_SEC = 8;
-		const STALL_SEC = 3;
+		const EARLY_SEC = 4;
 		const TICK = 80;
 		// Tek kelimelik ya da çok kısa cümleler (ör. "Salı", "7") modelde zayıf ve tuhaf sesleniyor; bir
 		// sonraki cümleyle birlikte üretilir. Vurgu ikinciye, harf sayısından tahmin edilen anda geçer.
@@ -2149,22 +2157,30 @@
 			let starve = 0; // üretim sürerken çalacak ses kalmadan geçen süre (ms; aynı koşullarda)
 			let audio = 0; // tamamlanan cümlelerin ses süresi (sn)
 			let spent = 0; // bunların üretim süresi (sn)
+			let jobAudio = 0; // süren işin şimdiye kadarki sesi (sn)
+			let jobMs = 0; // süren işte Worker'da geçen süre (ms)
 			paused = false;
 			player.resume();
 			h.onSentence(from);
 
-			const slowNow = () => {
+			const speedText = (a, t) => (t > 0 ? (a / t).toFixed(2) + "×" : "?");
+			const slowNow = (why) => {
 				decided = true;
-				h.onSlow();
+				h.onSlow(why + "; takılma " + player.stalled().toFixed(1) + " sn");
 			};
+			// Yavaşlık kararı yalnızca üretim hızından verilir. Takılmalar (ör. kısa cümlelerden sonra gelen
+			// uzun bir cümlede) cihazın yavaş olduğunu göstermez; onlara karşı tampon biriktirilir.
 			const judge = () => {
 				if (decided || !live()) return;
-				if (!heard && quiet > FIRST_AUDIO_MS) return slowNow();
-				// Yalnızca biten beklemeler sayılır: ses geç de olsa geliyorsa cihaz yavaştır; hiç gelmiyorsa
-				// motor takılmıştır (aşağıda HANG_MS).
-				if (player.stalled() > STALL_SEC) return slowNow();
-				if (ratedOk !== ema.build && audio >= MEASURE_SEC) {
-					if (audio / Math.max(0.001, spent) < 1) return slowNow();
+				if (!heard && quiet > FIRST_AUDIO_MS) return slowNow("ilk ses " + FIRST_AUDIO_MS / 1000 + " sn'de gelmedi");
+				if (ratedOk === ema.build) return undefined;
+				// Açıkça yavaş: süren iş dahil en az 4 sn ses, gerçek zamanın %60'ının altında
+				const a = audio + jobAudio;
+				const t = spent + jobMs / 1000;
+				if (a >= EARLY_SEC && a / Math.max(0.001, t) < 0.6) return slowNow("üretim hızı " + speedText(a, t));
+				// Tamamlanan cümlelerde en az 8 sn ses, gerçek zamanın altında
+				if (audio >= MEASURE_SEC) {
+					if (audio / Math.max(0.001, spent) < 1) return slowNow("üretim hızı " + speedText(audio, spent));
 					ratedOk = ema.build;
 				}
 				return undefined;
@@ -2174,18 +2190,21 @@
 			let holding = true;
 			let held = [];
 			let heldSec = 0;
-			const place = (pcm, ms) => {
-				const at = player.push(pcm);
+			const place = (pcm, ms, wasHeld) => {
+				const at = player.push(pcm, wasHeld);
 				if (at >= 0) for (const m of ms) marks.push({ i: m.i, at: at + m.dt });
 			};
 			const flush = () => {
-				for (const x of held) place(x.pcm, x.ms);
+				for (const x of held) place(x.pcm, x.ms, true);
 				held = [];
 				heldSec = 0;
 				holding = false;
 			};
 			const deliver = (pcm, ms) => {
-				if (!holding && heard && player.ahead() < 0.05) holding = true;
+				if (!holding && heard && player.ahead() < 0.05) {
+					holding = true;
+					player.markStall();
+				}
 				heard = true;
 				starve = 0;
 				if (!holding) {
@@ -2205,13 +2224,20 @@
 					let first = true;
 					inFlight = true;
 					starve = 0;
-					const st = await ema.synth(w.text, rate, player.ahead() < 1.5, (pcm) => {
+					jobAudio = 0;
+					jobMs = 0;
+					const st = await ema.synth(w.text, rate, player.ahead() < 1.5, (pcm, elapsed) => {
 						if (!live()) return;
 						const ms = first ? w.items.map((x) => ({ i: x.i, dt: x.offset / LETTERS_PER_SEC / rate })) : [];
 						first = false;
+						jobAudio += pcm.length / 48000;
+						jobMs = elapsed;
 						deliver(pcm, ms);
+						judge();
 					});
 					inFlight = false;
+					jobAudio = 0;
+					jobMs = 0;
 					if (!live()) return;
 					if (held.length) flush();
 					const sec = Number(st.audioSec) || 0;
@@ -2305,6 +2331,8 @@
 		const wantsNatural = () => NATURAL && prefs.naturalVoice && !broken;
 		const warn = (err) => window.console.warn("GözKulak: " + ((err && err.message) || err));
 		const clamp = (i) => Math.max(0, Math.min(queue.length - 1, i));
+		// Test modunda (yalnızca yöneticiler) geçişin teknik nedeni notun sonunda gösterilir: telefonda konsol yok.
+		const why = (text, detail) => (cfg.testMode && detail ? text + " (Tanı: " + detail + ")" : text);
 
 		function say(text) {
 			message = text;
@@ -2346,8 +2374,8 @@
 			onError(err) {
 				if (my === run) failed(err);
 			},
-			onSlow() {
-				if (my === run) slow();
+			onSlow(detail) {
+				if (my === run) slow(detail);
 			},
 		});
 
@@ -2446,8 +2474,8 @@
 				broken = true;
 				ema.reset();
 				if (voiceOk.tr) {
-					note = STR.ttsNaturalFailed;
-					announce(note);
+					note = why(STR.ttsNaturalFailed, err && err.message);
+					announce(STR.ttsNaturalFailed);
 				}
 				return false;
 			}
@@ -2481,10 +2509,10 @@
 			}
 			broken = true;
 			ema.reset();
-			toBrowser(STR.ttsNaturalBroke, wasPaused);
+			toBrowser(STR.ttsNaturalBroke, wasPaused, err && err.message);
 		}
 
-		function slow() {
+		function slow(detail) {
 			const wasPaused = state === "paused";
 			if (ema.build === "webgpu" && !gpuRetried) {
 				gpuRetried = true;
@@ -2497,14 +2525,15 @@
 			if (!voiceOk.tr) return;
 			// Faz 0 kararı: bu cihazda tarayıcının sesi kullanılır ve bu, ziyaretçinin tarayıcısında
 			// hatırlanır ("Doğal ses" seçeneği kapanır; ziyaretçi yeniden açabilir).
+			warn("doğal ses yavaş: " + detail);
 			prefs.naturalVoice = false;
 			savePrefs();
 			ema.reset();
-			toBrowser(STR.ttsSlow, wasPaused);
+			toBrowser(STR.ttsSlow, wasPaused, detail);
 		}
 
 		// Okuma bulunduğu cümleden tarayıcının sesiyle sürer; duraklatılmışsa duraklatılmış kalır.
-		function toBrowser(text, wasPaused) {
+		function toBrowser(text, wasPaused, detail) {
 			if (engine) engine.stop();
 			engine = null;
 			natural = false;
@@ -2515,7 +2544,7 @@
 				say(STR.ttsNaturalNone);
 				return;
 			}
-			note = text;
+			note = why(text, detail);
 			announce(text);
 			if (wasPaused || state === "paused") {
 				state = "paused";
