@@ -1249,8 +1249,9 @@
 			t = t.replace(/%\s*(\d[\d.,]*)/g, "yüzde $1");
 			const PER = { yıl: "yıllık", ay: "aylık", gün: "günlük", hafta: "haftalık", saat: "saatlik", kişi: "kişi başı" };
 			t = t.replace(/\s*\/\s*(yıl|ay|gün|hafta|saat|kişi)(?![\p{L}])/gu, (m, w) => " " + PER[w]);
-			// Tek başına "+": sonda ya da noktalamadan önce atılır ("₺5.000 +"), kelimeler arasında "ve" olur.
-			t = t.replace(/\s\+\s*(?=[.,;]|\s*$)/g, "").replace(/\s\+\s+(?=\p{L})/gu, " ve ");
+			// Tek başına "+": sonda ya da noktalamadan önce atılır ("₺5.000 +"), kelimeler arasında "ve" olur;
+			// arkasından zaten bir bağlaç geliyorsa atılır ("₺5.000 + ve …" → "ve ve" okunmasın).
+			t = t.replace(/\s\+\s*(?=[.,;]|\s*$)/g, "").replace(/\s\+\s+(?=(?:ve|veya|ile)(?![\p{L}]))/gu, " ").replace(/\s\+\s+(?=\p{L})/gu, " ve ");
 			// Harf ve rakam bitişikse ("Karabük78", içindekiler tablosunda "1Safranbolu'nun") araya boşluk girer.
 			t = t.replace(/(\p{L})([0-9])/gu, "$1 $2").replace(/([0-9])(\p{L})/gu, "$1 $2");
 			// Kısa bir satırın başındaki sıra numarası (içindekiler, numaralı başlık): "1, Safranbolu'nun…"

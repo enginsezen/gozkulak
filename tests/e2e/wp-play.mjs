@@ -3,11 +3,12 @@
 //  1) Bütün cümleler hazır: onay sorulmaz, model ve Worker inmez, ses <audio> ile çalar, vurgu ilerler,
 //     hız perde korunarak ve birim baştan okunmadan değişir, duraklat/devam çalışır.
 //  2) Sonradan bir cümle eklenir (hazır değil): onay sorulur; hazır cümleler dosyadan, yenisi canlı üretilir.
-// Sunucu: npm run wp. Model dosyaları GK_TTS adresinden iner (varsayılan https://tts.sezen.pro/).
+// Sunucu: npm run wp. Model dosyaları GK_TTS adresindeki ses sunucusundan iner; verilmezse sürüme
+// sabitlenmiş yedek kaynaklardan (Hugging Face, jsDelivr). Sunucu adresi repoya yazılmaz.
 import { chromium } from "playwright";
 
 const WP = process.env.GK_WP || "http://127.0.0.1:9400";
-const TTS = process.env.GK_TTS || "https://tts.sezen.pro/";
+const TTS = process.env.GK_TTS || "";
 const b = await chromium.launch({ args: ["--autoplay-policy=no-user-gesture-required"] });
 const errs = [];
 const check = (name, ok, detail) => {
@@ -87,7 +88,7 @@ v.on("pageerror", (e) => errs.push("pageerror: " + e.message));
 let model = [];
 v.on("request", (r) => {
 	const u = r.url();
-	if (u.startsWith(TTS) || /gozkulak-tts-worker/.test(u)) model.push(u.split("/").pop());
+	if ((TTS ? u.startsWith(TTS) : /huggingface\.co|\.hf\.co|cdn\.jsdelivr\.net/.test(u)) || /gozkulak-tts-worker/.test(u)) model.push(u.split("/").pop());
 });
 const sh = (fn, arg) => v.evaluate(([f, a]) => new Function("root", "a", f)(document.querySelector("gozkulak-root").shadowRoot, a), [fn, arg]);
 const status = () => sh("return root.querySelector('.gk-tts-status').textContent + ' | ' + root.querySelector('.gk-tts-note').textContent;");

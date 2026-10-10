@@ -1,11 +1,12 @@
 // Hazır ses hazırlama (Ayarlar → GözKulak → Hazır ses), WordPress Playground'da gerçek modelle.
 // Sayfa ekran dışı çerçevede açılır, birimler üretilip yüklenir, liste ön yüze gider; ikinci
 // hazırlamada yeni dosya üretilmez; metin değişince yalnızca değişen birim üretilir; temizleme ve silme.
-// Sunucu: npm run wp. Model dosyaları GK_TTS adresinden iner (varsayılan https://tts.sezen.pro/).
+// Sunucu: npm run wp. Model dosyaları GK_TTS adresindeki ses sunucusundan iner; verilmezse sürüme
+// sabitlenmiş yedek kaynaklardan (Hugging Face, jsDelivr). Sunucu adresi repoya yazılmaz.
 import { chromium } from "playwright";
 
 const WP = process.env.GK_WP || "http://127.0.0.1:9400";
-const TTS = process.env.GK_TTS || "https://tts.sezen.pro/";
+const TTS = process.env.GK_TTS || "";
 const b = await chromium.launch();
 const errs = [];
 const check = (name, ok, detail) => {

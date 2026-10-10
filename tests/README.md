@@ -22,6 +22,13 @@ npm run test:all    # ek olarak başarım ve ekran görüntüsü testleri
 node e2e/ema.mjs    # tek bir test (sunucu açık olmalı: npm run serve)
 ```
 
+Öne çıkan testler:
+
+- `speechtext.mjs`: birim testleri. Metin hazırlamanın Türkçe ve İngilizce kuralları, sıra sayısı ekleri ve cümle bölme tam eşitlikle denetlenir; hazır ses dosya adlarının ön eki ve yöntemi korunur. Tarayıcı gerekmez.
+- `axe.mjs`: GözKulak arayüzünün axe-core ile WCAG 2.2 A/AA ve en iyi uygulama taraması (menü kapalı/açık, onay kutusu, okuma sürerken, mini oynatıcı, maske, cetvel, koyu mod, kontrast, büyük yazı, İngilizce sayfa, telefon). İhlal varsa başarısız olur.
+- `ema-csp.mjs`: güvenlik başlığı (CSP) ve Trusted Types altında doğal ses, hazır ses ve geri dönüşler.
+- `ema-limit.mjs`: beklenenden büyük motor dosyasının kesilmesi.
+
 `run.mjs` test sunucusu kapalıysa kendisi açar. Sonuçta her test için ✓/✗ yazar. Test çıktısında `HATALAR: yok` ya da `HATA SAYISI: 0` yoksa test başarısız sayılır. Ekran görüntüleri `tests/shots/` klasörüne düşer.
 
 ## Test sunucusu (`serve.mjs`)
@@ -41,9 +48,11 @@ Doğal ses testleri gerçek ONNX Runtime ve gerçek Worker ile çalışır; yaln
 Sunucu, motor Worker'ını (`assets/js/gozkulak-tts-worker.js`) her istekte gerçek dosyadan üretir: model özetleri sahte modellerinkiyle, yedek kaynak `alt/` ile değiştirilir. Değişkenler:
 
 - `w`: `worker-test.js` (normal), `worker-slow.js` (gerçek zamanın 1/3'ü), `worker-slow2.js`, `worker-lag.js` (2× hızlı ama uzun cümlenin başında 3,5 sn gecikme), `worker-hang.js` (ikinci işte takılır), `worker-csp.php` (katı CSP başlığı)
-- `b`: `main` (kendi sunucu), `bad` (bozuk dosya: yedeğe geçer), `alt`, `broken` (hiçbir dosya yok), `none`
+- `b`: `main` (kendi sunucu), `bad` (bozuk dosya: yedeğe geçer), `big` / `bigc` (beklenenden büyük dosya, `Content-Length` ile / parça parça), `alt`, `broken` (hiçbir dosya yok), `none`
 - `fb=0`: yedek kaynaklar kapalı
 - `mix=1`: sayfaya `lang="en"` bir paragraf eklenir
+- `csp`: sayfa ve Worker şu güvenlik başlığıyla sunulur: `onerilen`, `katı` (WebAssembly ve blob: yok), `medyasız` (`media-src` blob: yok), `tt` (Trusted Types zorunlu), `ttdar` (Trusted Types, `gozkulak` politikasına izin yok)
+- `files`: virgülle ayrılmış birim özetleri; sayfaya hazır ses listesi olarak eklenir. `/gk-hazir/xx/<özet>.ogg` her özet için `fixtures/hazir/ton.ogg` deneme sesini verir
 
 ## PHP ve WordPress (sisteme PHP kurmadan)
 
@@ -56,7 +65,7 @@ npm run plugin-check  # WordPress Plugin Check: paket (git archive) ayrı bir Pl
                       # Yalnızca readme'nin İngilizce olmadığına dair iki hata beklenir: eklenti WordPress.org'da değil
 npm run wp          # WordPress Playground: http://127.0.0.1:9400, PHP 7.4, eklenti etkin (wp/blueprint.json)
 node e2e/wp-audio.mjs   # hazır ses REST uçları (npm run wp açıkken)
-node e2e/wp-prepare.mjs # hazır ses hazırlama, gerçek modelle (tts.sezen.pro'dan ~40 MB iner; GK_TTS ile değişir)
+node e2e/wp-prepare.mjs # hazır ses hazırlama, gerçek modelle (~40 MB iner: GK_TTS=https://ses-sunucunuz/ ya da yedek kaynaklar)
 node e2e/wp-play.mjs    # ziyaretçide hazır sesin çalınması: tamamı hazır sayfa, karışık sayfa (gerçek modelle)
 ```
 

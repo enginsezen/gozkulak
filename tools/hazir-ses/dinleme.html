@@ -9,7 +9,7 @@
   Eklenti paketine girmez. Yerel test sunucusuyla açılır:
     cd tests && npm run serve
     http://127.0.0.1:8080/wp-content/plugins/gozkulak/tools/hazir-ses/dinleme.html
-  Model dosyaları "Ses dosyalarının adresi"nden (varsayılan tts.sezen.pro) indirilir ve doğrulanır.
+  Model dosyaları "Ses dosyalarının adresi"nden (boşsa sürüme sabitli yedek kaynaklardan) indirilir ve doğrulanır.
 -->
 <style>
 	body { font: 16px/1.5 system-ui, sans-serif; margin: 0; color: #1d2327; background: #f6f7f7; }
@@ -34,7 +34,7 @@
 	<p>Aynı metin dört hızda iki yolla üretilir. <b>Model</b>: sesi model o hızda üretir (her hız ayrı dosya). <b>Hızlandırma</b>: 1× ses tarayıcıda hızlandırılır ya da yavaşlatılır (tek dosya, ses perdesi korunur). Ayrıca Opus 24 ve 32 kbps, sıkıştırılmamış sesle karşılaştırılır.</p>
 
 	<label for="base">Ses dosyalarının adresi</label>
-	<input id="base" type="url" value="https://tts.sezen.pro/">
+	<input id="base" type="url" value="" placeholder="https://ses.example.com/">
 	<label><input id="gpu" type="checkbox"> WebGPU kullan (masaüstü Chrome)</label>
 	<label for="text">Metin</label>
 	<textarea id="text">Safranbolu Eski Çarşı'da bulunan Kaymakamlar Gezi Evi, geleneksel Safranbolu ev yaşamını tanıtmak amacıyla müzeye dönüştürülmüş tarihi bir konaktır. Yapı on dokuzuncu yüzyıl başlarında inşa edilmiştir. Müze her gün sabah dokuzdan akşam altıya kadar açıktır. Bilet gişede satılır. Grup ziyaretleri için önceden haber verilmesi önerilir.</textarea>
