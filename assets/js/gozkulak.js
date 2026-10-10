@@ -20,7 +20,7 @@
 
 	// Betik dosyasının kendi sürümü. Eklentinin sürümüyle uyuşmazsa sayfa eski (önbellekteki) bir
 	// betik dosyası kullanıyordur; test modunda menüde uyarı gösterilir.
-	const SCRIPT_VERSION = "0.2.11";
+	const SCRIPT_VERSION = "0.2.12";
 	const doc = document;
 	const htmlEl = doc.documentElement;
 	const enabledFeatures = new Set(Array.isArray(cfg.features) ? cfg.features : []);
@@ -2114,7 +2114,12 @@
 		// kesik kesik çalmak yerine kısa bir bekleme olur. Hızı ölçülüp yeterli bulunan cihazda kısa tutulur.
 		const PREROLL = 1.5;
 		const PREROLL_FAST = 0.5;
+		// Okuma ortasında ses biterse her seferinde daha uzun biriktirilir (en çok REBUFFER_MAX sn): üretim
+		// çalmaya zar zor yetişiyorsa sık ve kısa kesilmeler yerine seyrek bir bekleme olur.
+		const REBUFFER_STEP = 1.5;
+		const REBUFFER_MAX = 6;
 		let token = 0;
+		let stats = null; // test modundaki tanı notu için: üretim hızı ve kesilmeler
 		let ticker = 0;
 		let paused = false;
 		let ratedOk = ""; // üretim hızı ölçülüp yeterli bulunan derleme (bu sayfada yeniden ölçülmez)
@@ -2159,11 +2164,13 @@
 			let spent = 0; // bunların üretim süresi (sn)
 			let jobAudio = 0; // süren işin şimdiye kadarki sesi (sn)
 			let jobMs = 0; // süren işte Worker'da geçen süre (ms)
+			let stalls = 0; // okuma ortasında sesin bittiği kez
+			const speedText = (a, t) => (t > 0 ? (a / t).toFixed(2) + "×" : "?");
+			stats = { speed: () => speedText(audio + jobAudio, spent + jobMs / 1000), stalls: () => stalls };
 			paused = false;
 			player.resume();
 			h.onSentence(from);
 
-			const speedText = (a, t) => (t > 0 ? (a / t).toFixed(2) + "×" : "?");
 			const slowNow = (why) => {
 				decided = true;
 				h.onSlow(why + "; takılma " + player.stalled().toFixed(1) + " sn");
@@ -2194,6 +2201,7 @@
 				const at = player.push(pcm, wasHeld);
 				if (at >= 0) for (const m of ms) marks.push({ i: m.i, at: at + m.dt });
 			};
+			const target = () => (stalls ? Math.min(REBUFFER_MAX, PREROLL + REBUFFER_STEP * stalls) : ratedOk === ema.build ? PREROLL_FAST : PREROLL);
 			const flush = () => {
 				for (const x of held) place(x.pcm, x.ms, true);
 				held = [];
@@ -2203,6 +2211,7 @@
 			const deliver = (pcm, ms) => {
 				if (!holding && heard && player.ahead() < 0.05) {
 					holding = true;
+					stalls++;
 					player.markStall();
 				}
 				heard = true;
@@ -2213,7 +2222,7 @@
 				}
 				held.push({ pcm, ms });
 				heldSec += pcm.length / 48000;
-				if (heldSec >= (ratedOk === ema.build ? PREROLL_FAST : PREROLL)) flush();
+				if (heldSec >= target()) flush();
 			};
 
 			(async () => {
@@ -2239,9 +2248,18 @@
 					jobAudio = 0;
 					jobMs = 0;
 					if (!live()) return;
-					if (held.length) flush();
 					const sec = Number(st.audioSec) || 0;
-					if (sec > 0 && w.next < list.length) player.gap(GAP / rate);
+					// Biriktirilirken cümle bitince tampon dolmadan çalınmaz (yoksa kısa cümlelerde ses hemen
+					// yine biter); son cümlede beklenecek bir şey kalmadığı için çalınır.
+					if (sec > 0 && w.next < list.length) {
+						if (holding && held.length) {
+							held.push({ pcm: new Float32Array(Math.round((GAP / rate) * 48000)), ms: [] });
+							heldSec += GAP / rate;
+						} else {
+							player.gap(GAP / rate);
+						}
+					}
+					if (held.length && (w.next >= list.length || heldSec >= target())) flush();
 					audio += sec;
 					spent += (Number(st.synthMs) || 0) / 1000;
 					judge();
@@ -2288,6 +2306,11 @@
 		return {
 			play,
 			stop,
+			// Test modundaki tanı notu: üretim hızı (gerçek zamana oranı) ve okuma ortasında sesin kaç kez bittiği
+			diag() {
+				if (!stats || !ema.build) return "";
+				return ema.build + ", üretim " + stats.speed() + ", kesilme " + stats.stalls();
+			},
 			pause() {
 				paused = true;
 				player.pause();
@@ -2686,6 +2709,9 @@
 			},
 			get natural() {
 				return engine === emaEngine && (state === "playing" || state === "paused");
+			},
+			get diag() {
+				return cfg.testMode && engine === emaEngine ? emaEngine.diag() : "";
 			},
 		};
 	})();
@@ -3098,7 +3124,8 @@
 		// Doğal sesle okunurken "yapay zekâ ile üretilmiştir" notu; tarayıcı sesine geçildiyse nedeni.
 		function noteText(st) {
 			if (!busyState(st) || reader.message) return "";
-			return [reader.natural ? STR.ttsAiNote : "", reader.note].filter(Boolean).join(" ");
+			const dg = reader.diag;
+			return [reader.natural ? STR.ttsAiNote : "", reader.note, dg ? "(Tanı: " + dg + ")" : ""].filter(Boolean).join(" ");
 		}
 
 		function render() {

@@ -4,7 +4,7 @@ Tags: accessibility, erişilebilirlik, text-to-speech, sesli okuma
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 0.2.11
+Stable tag: 0.2.12
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -32,6 +32,10 @@ Bu isteklerde yalnızca standart HTTP bilgileri (IP adresi, tarayıcı bilgisi) 
 Üçüncü taraf bileşenler ve lisansları: THIRD-PARTY-NOTICES.txt
 
 == Changelog ==
+
+= 0.2.12 =
+* Telefonda doğal ses okurken ses arada bitince sık sık kesilip yeniden başlamıyor. Kısa cümlelerde biriktirilen ses, tampon dolmadan çalınıyordu ve hemen yine bitiyordu; artık tampon dolana kadar beklenir. Ses okuma ortasında her bittiğinde biraz daha uzun biriktirilir (en çok 6 sn): sık ve kısa kesilmeler yerine seyrek bir bekleme olur.
+* Test modunda, doğal sesle okunurken panelde üretim hızı ve kesilme sayısı görünür ("Tanı: …").
 
 = 0.2.11 =
 * Doğal ses, okuma sırasında yaşanan kısa takılmalar yüzünden artık tarayıcının sesine geçmiyor. Telefonda kısa cümlelerden sonra gelen uzun bir cümlede ses bir an bitebiliyor; tampon için bilerek beklenen süre de takılma sayılıyordu ve hızlı bir cihaz "yavaş" bulunuyordu. Yavaşlık kararı artık yalnızca üretim hızından verilir: en az 4 sn seste gerçek zamanın %60'ının ya da tamamlanan en az 8 sn seste gerçek zamanın altında kalırsa.

@@ -10,6 +10,8 @@ npm install
 npx playwright install chromium
 ```
 
+Playwright yeni bir dağıtım sürümünü tanımıyorsa (ör. Ubuntu 26.04) tarayıcı şöyle indirilir: `PLAYWRIGHT_HOST_PLATFORM_OVERRIDE=ubuntu24.04-x64 npx playwright install chromium`.
+
 `npm install`, testlerin kullandığı gerçek ONNX Runtime'ı (`onnxruntime-web@1.30.0`) ve axe-core'u da indirir.
 
 ## Çalıştırma
