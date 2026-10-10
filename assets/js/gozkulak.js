@@ -20,7 +20,7 @@
 
 	// Betik dosyasının kendi sürümü. Eklentinin sürümüyle uyuşmazsa sayfa eski (önbellekteki) bir
 	// betik dosyası kullanıyordur; test modunda menüde uyarı gösterilir.
-	const SCRIPT_VERSION = "0.2.5";
+	const SCRIPT_VERSION = "0.2.6";
 	const doc = document;
 	const htmlEl = doc.documentElement;
 	const enabledFeatures = new Set(Array.isArray(cfg.features) ? cfg.features : []);
@@ -176,6 +176,9 @@
 				break;
 			case "text":
 				add(text(12, 16.5, 12, "Aa"));
+				break;
+			case "grip":
+				add(path("M12 4v16M8 8l4-4 4 4M8 16l4 4 4-4", { "stroke-width": "2.2" }));
 				break;
 			case "close":
 				add(path("M6 6l12 12M18 6L6 18", { "stroke-width": "2" }));
@@ -996,16 +999,26 @@
 		return { set };
 	})();
 
-	// ---------- okuma maskesi ve cetveli: ayrı bir katman, imleci ve klavye odağını izler ----------
+	/*
+	 * ---------- okuma maskesi ve cetveli ----------
+	 * Ayrı bir katmandır; tıklamalar ve dokunuşlar altındaki sayfaya geçer.
+	 * Fareyle imleci, klavyeyle odaklanan öğeyi izler. Dokunmatik ekranda katman ekranda sabit kalır,
+	 * içerik altından kaydırılır; yeri sağ kenardaki tutamaçla sürüklenerek değiştirilir. Böylece
+	 * katmanı taşımak için sayfaya dokunmak (ve istemeden bir bağlantıya basmak) gerekmez.
+	 */
 	const overlay = (() => {
 		const BAND = 140;
 		let host = null;
 		let top;
 		let bottom;
 		let guide;
+		let grip;
 		let mode = null;
-		let y = window.innerHeight / 2;
+		let y = Math.round(window.innerHeight * 0.4);
 		let frame = 0;
+		let lastPointer = 0;
+		let drag = null;
+		const coarse = () => window.matchMedia && window.matchMedia("(any-pointer: coarse)").matches;
 
 		function build() {
 			host = doc.createElement("gozkulak-overlay");
@@ -1021,7 +1034,24 @@
 			top = h("div", { class: "gk-mask gk-mask-top" });
 			bottom = h("div", { class: "gk-mask gk-mask-bottom" });
 			guide = h("div", { class: "gk-guide" });
-			root.append(h("link", { rel: "stylesheet", href: cfg.css }), top, bottom, guide);
+			grip = h("div", { class: "gk-grip", "aria-hidden": "true", hidden: true }, icon("grip"));
+			grip.addEventListener("pointerdown", (e) => {
+				e.preventDefault();
+				drag = { id: e.pointerId, dy: e.clientY - y };
+				grip.setPointerCapture(e.pointerId);
+				grip.classList.add("gk-grip-on");
+			});
+			grip.addEventListener("pointermove", (e) => {
+				if (drag && e.pointerId === drag.id) moveTo(e.clientY - drag.dy);
+			});
+			const release = (e) => {
+				if (!drag || e.pointerId !== drag.id) return;
+				drag = null;
+				grip.classList.remove("gk-grip-on");
+			};
+			grip.addEventListener("pointerup", release);
+			grip.addEventListener("pointercancel", release);
+			root.append(h("link", { rel: "stylesheet", href: cfg.css }), top, bottom, guide, grip);
 		}
 
 		function draw() {
@@ -1030,41 +1060,53 @@
 			top.style.height = Math.max(0, y - BAND / 2) + "px";
 			bottom.style.top = Math.max(0, y + BAND / 2) + "px";
 			guide.style.top = Math.max(0, y - 5) + "px";
+			grip.style.top = Math.round(y - 22) + "px";
 		}
 
 		function moveTo(next) {
-			y = Math.max(0, Math.min(window.innerHeight, next));
+			y = Math.max(22, Math.min(window.innerHeight - 22, next));
 			if (!frame) frame = window.requestAnimationFrame(draw);
 		}
 
-		const onPointer = (e) => moveTo(e.clientY);
-		const onTouch = (e) => {
-			if (e.touches && e.touches[0]) moveTo(e.touches[0].clientY);
+		// Yalnızca fare ve kalem izlenir; parmak hareketi sayfayı kaydırır, katmanı oynatmaz.
+		const onPointer = (e) => {
+			if (e.pointerType === "mouse" || e.pointerType === "pen") moveTo(e.clientY);
 		};
+		const onPointerDown = (e) => {
+			lastPointer = Date.now();
+			if (e.pointerType === "touch" && grip.hidden) grip.hidden = false;
+		};
+		// Odak yalnızca klavyeyle gelindiğinde izlenir (dokunarak odaklanan bağlantı katmanı oynatmaz).
 		const onFocus = (e) => {
+			if (Date.now() - lastPointer < 800) return;
 			const target = e.composedPath ? e.composedPath()[0] : e.target;
 			if (!target || !target.getBoundingClientRect || (rootHost && rootHost.contains(target))) return;
 			const r = target.getBoundingClientRect();
 			moveTo(r.top + r.height / 2);
 		};
+		const onResize = () => moveTo(y);
 
 		function set(next) {
 			if (next === mode) return;
 			mode = next;
 			if (!mode) {
 				if (host) host.remove();
+				drag = null;
 				doc.removeEventListener("pointermove", onPointer);
-				doc.removeEventListener("touchmove", onTouch);
+				doc.removeEventListener("pointerdown", onPointerDown, true);
 				doc.removeEventListener("focusin", onFocus);
+				window.removeEventListener("resize", onResize);
 				return;
 			}
 			if (!host) build();
 			top.hidden = bottom.hidden = mode !== "mask";
 			guide.hidden = mode !== "guide";
+			if (coarse()) grip.hidden = false;
 			if (!host.isConnected) doc.body.append(host);
 			doc.addEventListener("pointermove", onPointer, { passive: true });
-			doc.addEventListener("touchmove", onTouch, { passive: true });
+			doc.addEventListener("pointerdown", onPointerDown, { capture: true, passive: true });
 			doc.addEventListener("focusin", onFocus);
+			window.addEventListener("resize", onResize, { passive: true });
 			draw();
 		}
 
@@ -1128,13 +1170,16 @@
 	hs.setProperty("--gk-size", size + "px");
 	hs.setProperty("--gk-color", color);
 	hs.setProperty("--gk-ink", inkFor(color));
+	// Panelin ekrana sığması için kenar uzaklıkları da stil sayfasına aktarılır.
+	hs.setProperty("--gk-ox", x);
+	hs.setProperty("--gk-oy", position.startsWith("bottom") ? yOff : "0px");
 	if (position.endsWith("right")) hs.setProperty("right", x);
 	else hs.setProperty("left", x);
 	if (position.startsWith("bottom")) {
 		hs.setProperty("bottom", yOff);
 	} else {
-		hs.setProperty("top", "50%");
-		hs.setProperty("transform", "translateY(-50%)");
+		// transform kullanılmaz: dar ekranda panel ekrana göre konumlanabilsin (position: fixed).
+		hs.setProperty("top", "calc(50% - " + size / 2 + "px)");
 	}
 
 	const shadow = rootHost.attachShadow({ mode: "open" });

@@ -97,8 +97,10 @@ button:focus-visible {
 	position: absolute;
 	display: flex;
 	flex-direction: column;
-	width: min(380px, calc(100vw - 24px));
-	max-height: min(640px, calc(100vh - var(--gk-size) - 48px));
+	width: min(380px, calc(100vw - var(--gk-ox, 20px) - 12px));
+	/* Panel düğmenin üstünde açılır; ekranın görünen yüksekliğine (dvh) ve düğmenin kenar uzaklığına göre sınırlanır. */
+	max-height: min(640px, calc(100vh - var(--gk-oy, 20px) - var(--gk-size) - 24px));
+	max-height: min(640px, calc(100dvh - var(--gk-oy, 20px) - var(--gk-size) - 24px));
 	background: #ffffff;
 	border: 1px solid #c9d1da;
 	border-radius: 12px;
@@ -116,18 +118,44 @@ button:focus-visible {
 	bottom: calc(var(--gk-size) + 12px);
 }
 
-:host([data-position="middle-right"]) .gk-panel {
-	right: calc(var(--gk-size) + 12px);
+:host([data-position="middle-right"]) .gk-panel,
+:host([data-position="middle-left"]) .gk-panel {
 	top: 50%;
 	transform: translateY(-50%);
+	width: min(380px, calc(100vw - var(--gk-ox, 20px) - var(--gk-size) - 24px));
 	max-height: min(640px, calc(100vh - 24px));
+	max-height: min(640px, calc(100dvh - 24px));
+}
+
+:host([data-position="middle-right"]) .gk-panel {
+	right: calc(var(--gk-size) + 12px);
 }
 
 :host([data-position="middle-left"]) .gk-panel {
 	left: calc(var(--gk-size) + 12px);
-	top: 50%;
-	transform: translateY(-50%);
-	max-height: min(640px, calc(100vh - 24px));
+}
+
+/* Telefon: panel ekranın genişliğini kullanır; başlık ve kapat düğmesi her zaman görünür kalır. */
+@media (max-width: 520px) {
+	:host([data-position]) .gk-panel {
+		position: fixed;
+		left: 8px;
+		right: 8px;
+		width: auto;
+		transform: none;
+	}
+
+	:host([data-position^="bottom"]) .gk-panel {
+		top: auto;
+		bottom: calc(var(--gk-oy, 20px) + var(--gk-size) + 12px);
+	}
+
+	:host([data-position^="middle"]) .gk-panel {
+		top: 8px;
+		bottom: auto;
+		max-height: calc(100vh - 16px);
+		max-height: calc(100dvh - 16px);
+	}
 }
 
 .gk-head {
@@ -371,6 +399,31 @@ button:focus-visible {
 	background: rgba(255, 191, 0, 0.85);
 	border-top: 2px solid #18212b;
 	border-bottom: 2px solid #18212b;
+}
+
+/* Dokunmatik ekranda maske ve cetveli taşıma tutamacı */
+.gk-grip {
+	position: fixed;
+	right: 10px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 44px;
+	height: 44px;
+	padding: 9px;
+	border: 2px solid #ffffff;
+	border-radius: 50%;
+	background: #18212b;
+	color: #ffffff;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+	pointer-events: auto;
+	touch-action: none;
+	cursor: grab;
+}
+
+.gk-grip-on {
+	background: #085e9d;
+	cursor: grabbing;
 }
 
 @media (prefers-reduced-motion: no-preference) {
