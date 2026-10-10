@@ -4,7 +4,7 @@ Tags: accessibility, erişilebilirlik, text-to-speech, sesli okuma
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 0.2.8
+Stable tag: 0.2.9
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -32,6 +32,13 @@ Bu isteklerde yalnızca standart HTTP bilgileri (IP adresi, tarayıcı bilgisi) 
 Üçüncü taraf bileşenler ve lisansları: THIRD-PARTY-NOTICES.txt
 
 == Changelog ==
+
+= 0.2.9 =
+* Doğal ses: tek kelimelik ya da çok kısa cümleler ("Salı", "7", tek kelimelik başlıklar) bir sonraki cümleyle birlikte üretilir; model bunları tek başına zayıf ve tuhaf seslendiriyordu. Vurgu yine cümle cümle geçer.
+* Doğal ses: telefonda kesik kesik çalmaya karşı okumanın başında (ve ses biterse) kısa bir tampon biriktirilir; motor yüklenince bir ısınma çalıştırması yapılır.
+* Sağa yaslanan ya da yan yana dizilen satır parçaları (Listeo çalışma saatleri, içindekiler tablosu numaraları) satırla birlikte okunur: "Salı 09:00 ile 17:30" tek cümle.
+* Okumaya hazırlık: harf ve rakam bitişik yazılmış sözcükler ("Karabük78" → "Karabük 78"), alan adı gibi yazılmış adlar ("Sezen.Pro" → "Sezen nokta pro"), noktadan sonra boşluk unutulmuş yazımlar ve satır başındaki sıra numaraları ("1, Safranbolu'nun…") artık harf harf okunmuyor.
+* İçindekiler tablosunun "gizle/göster" bağlantısı okunmaz.
 
 = 0.2.8 =
 * Faz 2.2: Türkçe doğal ses (EMA Lightning, yapay zekâ). Ses ziyaretçinin cihazında, eklentinin kendi dosyasından açılan bir Web Worker'da üretilir; sayfa donmaz.

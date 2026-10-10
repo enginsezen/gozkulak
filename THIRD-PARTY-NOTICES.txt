@@ -15,7 +15,7 @@ adreslerden indirilir ve SHA-256 ile doğrulanır.
    assets/js/gozkulak-tts-worker.js dosyasındaki ses üretme bölümü (metin hazırlama, parçalama,
    süre planı, gürültü üreteci, EMA sınıfı) ve normalleştirici yükleyicisi bu dosyalardan
    uyarlanmıştır. Değişiklikler: Web Worker mesajları, dosya indirme ve SHA-256 doğrulaması,
-   ilk parçada kademeli büyüyen çözme pencereleri, iptal; kod biçimi.
+   ilk parçada kademeli büyüyen çözme pencereleri, ısınma çalıştırması, iptal; kod biçimi.
 
    Aynı depodaki model dosyaları (meta.json, normalizer.wasm, text.onnx, sound.onnx,
    decoder.onnx) çalışma anında indirilir; eklentide dağıtılmaz.

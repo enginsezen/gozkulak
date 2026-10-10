@@ -20,7 +20,7 @@
 
 	// Betik dosyasının kendi sürümü. Eklentinin sürümüyle uyuşmazsa sayfa eski (önbellekteki) bir
 	// betik dosyası kullanıyordur; test modunda menüde uyarı gösterilir.
-	const SCRIPT_VERSION = "0.2.8";
+	const SCRIPT_VERSION = "0.2.9";
 	const doc = document;
 	const htmlEl = doc.documentElement;
 	const enabledFeatures = new Set(Array.isArray(cfg.features) ? cfg.features : []);
@@ -1195,6 +1195,9 @@
 			[abbr("A\\.Ş\\.?(?=\\s|,|$)", "g"), "Anonim Şirketi"],
 		];
 
+		// Alan adı uzantıları: "Sezen.Pro" ve "karabuk78.com" gibi yazımlarda nokta okunur.
+		const TLD = new Set(["com", "net", "org", "pro", "info", "biz", "io", "app", "dev", "co", "tr", "edu", "gov", "bel", "gen", "web", "tv", "me", "eu", "de", "uk", "us", "xyz", "site", "online", "store", "shop", "blog", "tech", "ai", "name", "mobi", "az", "cy", "nl", "fr", "it", "es", "ru", "k12", "av", "tsk", "pol"]);
+
 		function tr(input) {
 			let t = " " + String(input) + " ";
 			t = t.replace(/[“”„«»″]/g, '"').replace(/[‘’‚′]/g, "'");
@@ -1204,6 +1207,14 @@
 			t = t.replace(/\b[\w.+-]+@[\w-]+(\.[\w-]+)+\b/g, (m) => m.replace("@", " et ").replace(/\./g, " nokta "));
 			t = t.replace(/\bhttps?:\/\/(www\.)?([\w-]+(\.[\w-]+)+)\S*/gi, (m, w, host) => host.replace(/\./g, " nokta "));
 			t = t.replace(/\bwww\.([\w-]+(\.[\w-]+)+)\b/gi, (m, host) => host.replace(/\./g, " nokta "));
+			// Noktayla birleşmiş sözcükler: alan adı gibi yazılmış adlarda ("Sezen.Pro", "karabuk78.com") nokta
+			// okunur; noktadan sonra boşluk unutulmuşsa ("geldi.Sonra", "1.Bölüm") boşluk eklenir. Model bitişik
+			// yazımı harf harf okuyor.
+			for (let k = 0; k < 3; k++) {
+				const before = t;
+				t = t.replace(/([\p{L}\p{N}]+)\.(\p{L}{2,})(?![\p{L}\p{N}])/gu, (m, a, b) => (TLD.has(b.toLocaleLowerCase("tr")) ? a + " nokta " + b.toLocaleLowerCase("tr") : a + ". " + b));
+				if (t === before) break;
+			}
 			// telefon
 			t = t.replace(/\b(Tel|Tlf|Telefon)\s*[.:]\s*/gi, "Telefon: ").replace(/\b(Fax|Faks)\s*[.:]\s*/gi, "Faks: ").replace(/\bGSM\s*[.:]\s*/g, "Cep telefonu: ");
 			t = t.replace(/(\+\s?90|\b0)?[\s(]*\d{3}[\s)]*\d{3}[\s.-]?\d{2}[\s.-]?\d{2}\b/g, (m) => {
@@ -1231,6 +1242,10 @@
 			t = t.replace(/\s*\/\s*(yıl|ay|gün|hafta|saat|kişi)(?![\p{L}])/gu, (m, w) => " " + PER[w]);
 			// Tek başına "+": sonda ya da noktalamadan önce atılır ("₺5.000 +"), kelimeler arasında "ve" olur.
 			t = t.replace(/\s\+\s*(?=[.,;]|\s*$)/g, "").replace(/\s\+\s+(?=\p{L})/gu, " ve ");
+			// Harf ve rakam bitişikse ("Karabük78", içindekiler tablosunda "1Safranbolu'nun") araya boşluk girer.
+			t = t.replace(/(\p{L})([0-9])/gu, "$1 $2").replace(/([0-9])(\p{L})/gu, "$1 $2");
+			// Kısa bir satırın başındaki sıra numarası (içindekiler, numaralı başlık): "1, Safranbolu'nun…"
+			if (t.length < 100) t = t.replace(/^(\s*)(\d{1,2})\s+(?=\p{Lu}\p{Ll})/u, "$1$2, ");
 			t = caps(t, "tr");
 			// eğik çizgi ve tire
 			t = t.replace(/(\d)\s*\/\s*([A-Za-zÇĞİÖŞÜçğıöşü])\b/g, "$1 $2");
@@ -1317,9 +1332,14 @@
 	 * vurgulama DOM'a dokunmadan (CSS Highlight API) yapılır.
 	 */
 	const content = (() => {
-		const SKIP = "nav, form, button, select, textarea, input, script, style, noscript, template, svg, iframe, canvas, video, audio, object, [aria-hidden='true'], [hidden], .screen-reader-text, .sr-only, .visually-hidden, .wpa-test-msg, #wpadminbar, gozkulak-root, gozkulak-overlay";
+		const SKIP = "nav, form, button, select, textarea, input, script, style, noscript, template, svg, iframe, canvas, video, audio, object, [aria-hidden='true'], [hidden], .screen-reader-text, .sr-only, .visually-hidden, .wpa-test-msg, #wpadminbar, .lwptoc_toggle, .ez-toc-title-toggle, .ez-toc-toggle, gozkulak-root, gozkulak-overlay";
 		const AUTO = ["main", "[role='main']", ".entry-content", ".post-content", "article", "#content", "#Content", ".site-content", ".content-area"];
 		const INLINE = /^(inline|inline-block|inline-flex|inline-grid|contents|ruby)$/;
+		// Satır içi öğeler (span, a, strong…) float ya da flex/grid kapsayıcısı yüzünden blok olabilir; ör.
+		// Listeo çalışma saatlerinde sağa yaslanan saat. Okumada bunlar satırın parçasıdır ("Salı 09:00 - 17:30"
+		// tek cümle); yoksa "Salı" tek kelimelik bir cümle olarak kalır.
+		const PHRASING = new Set(["SPAN", "A", "B", "STRONG", "EM", "I", "SMALL", "TIME", "ABBR", "MARK", "LABEL", "CITE", "Q", "SUB", "SUP", "CODE", "DATA", "BDI", "BDO", "U", "S", "VAR", "KBD", "SAMP", "DFN", "FONT"]);
+		const FLEXLIKE = /^(flex|inline-flex|grid|inline-grid)$/;
 
 		const visible = (el) => (el.checkVisibility ? el.checkVisibility({ checkVisibilityCSS: true }) : !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length));
 		const textLength = (el) => (el.innerText || "").replace(/\s+/g, " ").trim().length;
@@ -1349,17 +1369,31 @@
 			return list.sort((a, b) => (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1));
 		}
 
+		// "block", "inline" ya da "soft" (blok olmuş satır içi öğe: satırın parçası, ama ayrı bir öğe)
+		function kindOf(el, cache) {
+			let v = cache && cache.get(el);
+			if (v !== undefined) return v;
+			const cs = getComputedStyle(el);
+			v = INLINE.test(cs.display) ? "inline" : "block";
+			if (v === "block" && PHRASING.has(el.tagName) && (cs.float !== "none" || (el.parentElement && FLEXLIKE.test(getComputedStyle(el.parentElement).display)))) v = "soft";
+			if (cache) cache.set(el, v);
+			return v;
+		}
+
 		function blockOf(node, root, cache) {
 			for (let el = node.parentElement; el && el !== root.parentElement; el = el.parentElement) {
 				if (el === root) return el;
-				let display = cache && cache.get(el);
-				if (display === undefined) {
-					display = getComputedStyle(el).display;
-					if (cache) cache.set(el, display);
-				}
-				if (!INLINE.test(display)) return el;
+				if (kindOf(el, cache) === "block") return el;
 			}
 			return root;
+		}
+
+		// Metin düğümünün bloğu içindeki en yakın "soft" öğe (yoksa null).
+		function softOf(node, block, cache) {
+			for (let el = node.parentElement; el && el !== block; el = el.parentElement) {
+				if (kindOf(el, cache) === "soft") return el;
+			}
+			return null;
 		}
 
 		/**
@@ -1404,9 +1438,11 @@
 					if (current) out.push(current);
 					current = { el: block, text: "", segs: [] };
 				} else if (current.segs.length && !/\s$/.test(current.text)) {
-					// Aynı bloktaki düğümler arasında <br> ya da blok sınırı varsa boşluk bırakılır.
+					// Aynı bloktaki düğümler arasında <br> ya da blok sınırı varsa virgül, ayrı öğelerse
+					// (ör. sağa yaslanan saat) boşluk bırakılır; sözcükler birbirine yapışmaz.
 					const prev = current.segs[current.segs.length - 1].node;
 					if (brBetween(prev, n)) current.text += ", ";
+					else if (softOf(prev, block, displays) !== softOf(n, block, displays) && !/^\s/.test(n.nodeValue.slice(from))) current.text += " ";
 				}
 				current.segs.push({ node: n, from, start: current.text.length, len: to - from });
 				current.text += n.nodeValue.slice(from, to);
@@ -2057,12 +2093,35 @@
 		const MEASURE_SEC = 8;
 		const STALL_SEC = 3;
 		const TICK = 80;
+		// Tek kelimelik ya da çok kısa cümleler (ör. "Salı", "7") modelde zayıf ve tuhaf sesleniyor; bir
+		// sonraki cümleyle birlikte üretilir. Vurgu ikinciye, harf sayısından tahmin edilen anda geçer.
+		const SHORT_LETTERS = 10;
+		const LETTERS_PER_SEC = 15;
+		// Çalmaya başlamadan önce biriktirilen ses (sn). Telefonda ilk cümlelerde ve ses biterse
+		// kesik kesik çalmak yerine kısa bir bekleme olur. Hızı ölçülüp yeterli bulunan cihazda kısa tutulur.
+		const PREROLL = 1.5;
+		const PREROLL_FAST = 0.5;
 		let token = 0;
 		let ticker = 0;
 		let paused = false;
 		let ratedOk = ""; // üretim hızı ölçülüp yeterli bulunan derleme (bu sayfada yeniden ölçülmez)
 
 		const sleep = (ms) => new Promise((r) => window.setTimeout(r, ms));
+		const letters = (t) => (t.match(/[\p{L}\p{N}]/gu) || []).length;
+		const isShort = (t) => t.split(/\s+/).filter((w) => /[\p{L}\p{N}]/u.test(w)).length <= 1 || letters(t) < SHORT_LETTERS;
+
+		// i'den başlayan üretim işi: kısa cümle, ardından gelenle birleştirilir.
+		function job(list, i) {
+			const items = [{ i, offset: 0 }];
+			let text = list[i].speech;
+			let j = i + 1;
+			while (j < list.length && isShort(text) && letters(text) + letters(list[j].speech) <= 160) {
+				items.push({ i: j, offset: letters(text) });
+				text += " " + list[j].speech;
+				j++;
+			}
+			return { text, items, next: j };
+		}
 
 		function stop() {
 			token++;
@@ -2106,30 +2165,56 @@
 				return undefined;
 			};
 
+			// Biriktirme: okumanın başında ve ses biterse parçalar bir süre tutulup birlikte dizilir.
+			let holding = true;
+			let held = [];
+			let heldSec = 0;
+			const place = (pcm, ms) => {
+				const at = player.push(pcm);
+				if (at >= 0) for (const m of ms) marks.push({ i: m.i, at: at + m.dt });
+			};
+			const flush = () => {
+				for (const x of held) place(x.pcm, x.ms);
+				held = [];
+				heldSec = 0;
+				holding = false;
+			};
+			const deliver = (pcm, ms) => {
+				if (!holding && heard && player.ahead() < 0.05) holding = true;
+				heard = true;
+				starve = 0;
+				if (!holding) {
+					place(pcm, ms);
+					return;
+				}
+				held.push({ pcm, ms });
+				heldSec += pcm.length / 48000;
+				if (heldSec >= (ratedOk === ema.build ? PREROLL_FAST : PREROLL)) flush();
+			};
+
 			(async () => {
-				for (let i = from; i < list.length; i++) {
+				for (let i = from; i < list.length;) {
 					while (live() && player.ahead() > AHEAD) await sleep(300);
 					if (!live()) return;
+					const w = job(list, i);
 					let first = true;
 					inFlight = true;
 					starve = 0;
-					const st = await ema.synth(list[i].speech, rate, player.ahead() < 1.5, (pcm) => {
+					const st = await ema.synth(w.text, rate, player.ahead() < 1.5, (pcm) => {
 						if (!live()) return;
-						const at = player.push(pcm);
-						heard = true;
-						starve = 0;
-						if (first && at >= 0) {
-							first = false;
-							marks.push({ i, at });
-						}
+						const ms = first ? w.items.map((x) => ({ i: x.i, dt: x.offset / LETTERS_PER_SEC / rate })) : [];
+						first = false;
+						deliver(pcm, ms);
 					});
 					inFlight = false;
 					if (!live()) return;
+					if (held.length) flush();
 					const sec = Number(st.audioSec) || 0;
-					if (sec > 0 && i + 1 < list.length) player.gap(GAP / rate);
+					if (sec > 0 && w.next < list.length) player.gap(GAP / rate);
 					audio += sec;
 					spent += (Number(st.synthMs) || 0) / 1000;
 					judge();
+					i = w.next;
 				}
 				produced = true;
 			})().catch((err) => {

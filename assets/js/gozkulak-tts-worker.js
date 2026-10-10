@@ -14,7 +14,7 @@
  * Erdem Tuna (Apache License 2.0). ONNX Runtime Web: Microsoft (MIT). Ayrıntılar: THIRD-PARTY-NOTICES.txt
  *
  * Uyarlamada yapılan değişiklikler: dosya indirme ve doğrulama, Worker mesajları, ilk parçada kademeli
- * büyüyen çözme pencereleri (1 → 2 → 4 sn), iptal.
+ * büyüyen çözme pencereleri (1 → 2 → 4 sn), ısınma çalıştırması, iptal.
  */
 (() => {
 	"use strict";
@@ -366,7 +366,14 @@
 			for (const [name, i] of [["text", m + 2], ["sound", m + 3], ["decoder", m + 4]]) {
 				sessions[name] = await ort.InferenceSession.create(new Uint8Array(buf(i)), opts);
 			}
-			ema = new EMA(meta, sessions, normalize);
+			const engine = new EMA(meta, sessions, normalize);
+			// Isınma: ilk çalıştırmanın ek maliyeti (bellek ayırma, WebGPU'da gölgelendirici derleme) okumanın
+			// ilk cümlesine binmesin. WebGPU sorunları da okuma başlamadan burada ortaya çıkar.
+			post({ ev: "stage", id, stage: "warmup" });
+			for await (const wav of engine.stream("Merhaba.", { quick: true })) {
+				if (!wav) break;
+			}
+			ema = engine;
 		} catch (e) {
 			for (const s of Object.values(sessions)) await s.release().catch(() => {});
 			throw fail("Motor kurulamadı: " + errText(e), build === "webgpu" ? "gpu" : "setup");
