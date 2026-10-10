@@ -48,8 +48,23 @@ final class GozKulak_Updater {
 		add_filter( 'plugins_api', array( __CLASS__, 'info' ), 10, 3 );
 		add_filter( 'upgrader_pre_install', array( __CLASS__, 'remember' ), 9, 2 );
 		add_filter( 'upgrader_source_selection', array( __CLASS__, 'verify' ), 10, 4 );
-		// Güncellemeler → "Tekrar denetle" WordPress'in listesini siler; GitHub'ın sonucu da yeniden alınsın.
+		// WordPress'in eklenti listesi silinince GitHub'ın sonucu da yeniden alınsın.
 		add_action( 'delete_site_transient_update_plugins', array( __CLASS__, 'forget' ) );
+		// "Tekrar denetle": WordPress eklentileri son denetimden bir dakika geçmediyse yeniden denetlemez;
+		// liste, WordPress'in denetiminden (öncelik 10) hemen önce silinir.
+		add_action( 'load-update-core.php', array( __CLASS__, 'force_check' ), 9 );
+	}
+
+	/**
+	 * Güncellemeler → "Tekrar denetle" (ya da ayarlardaki "Şimdi denetle"): eklentiler baştan denetlenir.
+	 * Yalnızca okuma ve önbellek silme: nonce gerekmez.
+	 *
+	 * @return void
+	 */
+	public static function force_check() {
+		if ( isset( $_GET['force-check'] ) && current_user_can( 'update_plugins' ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			delete_site_transient( 'update_plugins' );
+		}
 	}
 
 	/**

@@ -70,6 +70,7 @@ const ZIPS = {
 	"v9.9.4": pkg("9.9.4", { header: "9.9.9" }),
 	"v9.9.5": pkg("9.9.5"),
 	"v9.9.6": pkg("9.9.6"),
+	"v9.9.7": pkg("9.9.7"),
 };
 // Eski imzalı paket yeni bir etiketle yeniden sunulur (sürüm geriletme)
 ZIPS["v9.9.9"] = pkg("9.9.9", { version: "9.9.0", sigVersion: "9.9.0", header: "9.9.0" });
@@ -203,11 +204,18 @@ try {
 	s = await installed();
 	check("eski imzalı paket yeni etiketle sunulursa kurulmaz (geriletme)", /paketteki sürüm \(9\.9\.0\) kurulu sürümden \(9\.9\.6\) yeni değil/.test(out) && s.version === "9.9.6", JSON.stringify(s));
 
+	// "Tekrar denetle" tek başına yeni sürümü göstermeli (son denetimin üzerinden bir dakika geçmeden de)
+	tags = ["v9.9.7"];
+	await p.goto(WP + "/wp-admin/update-core.php?force-check=1");
+	await p.goto(WP + "/wp-admin/plugins.php");
+	const again = p.locator('a[href*="action=upgrade-plugin"][href*="gozkulak"]').first();
+	check("\"Tekrar denetle\" yeni sürümü hemen gösterir", (await again.count()) === 1 && /9\.9\.7/.test(await p.locator('tr.plugin-update-tr[data-plugin="gozkulak/gozkulak.php"]').textContent()));
+
 	// Ayarlar sayfasındaki güncelleme satırı
 	const SET = WP + "/wp-admin/options-general.php?page=gozkulak";
 	await p.goto(SET);
 	let line = (await p.locator("h2:has-text('Güncelleme') + p").textContent()).replace(/\s+/g, " ");
-	check("ayarlarda kurulu ve en yeni sürüm görünür", /Kurulu sürüm: 9\.9\.6\./.test(line) && /en yeni sürüm: 9\.9\.9/.test(line), line);
+	check("ayarlarda kurulu ve en yeni sürüm görünür", /Kurulu sürüm: 9\.9\.6\./.test(line) && /en yeni sürüm: 9\.9\.7/.test(line), line);
 	broken = true;
 	await fetch(WP + "/?gk-yenile=1");
 	await p.goto(WP + "/wp-admin/update-core.php?force-check=1");
