@@ -95,6 +95,12 @@ check("geçersiz ad reddedilir", r.status === 404, String(r.status));
 r = await req(adm, "/audio/" + H1.toUpperCase(), { body: fakeOgg(), nonce });
 check("büyük harfli ad reddedilir", r.status === 400 || r.status === 404, String(r.status));
 
+const guards = await adm.evaluate(async (us) => Promise.all(us.map(async (u) => {
+	const x = await fetch(u);
+	return x.status + ":" + (await x.text()).length;
+})), [WP + "/wp-content/uploads/gozkulak/index.php", WP + "/wp-content/uploads/gozkulak/01/index.php"]);
+check("klasörlerde boş index.php var (dizin listelenmez)", guards.every((g) => g === "200:0"), guards.join(" "));
+
 const file = await adm.evaluate(async (u) => {
 	const x = await fetch(u);
 	return { status: x.status, size: (await x.arrayBuffer()).byteLength };
@@ -106,6 +112,8 @@ r = await req(adm, "/page/500", { json: { files: [H1, H1, H3] }, nonce });
 check("liste kaydedilir, eksik dosya bildirilir", r.status === 200 && r.data.saved === 1 && r.data.missing.length === 1 && r.data.missing[0] === H3, JSON.stringify(r.data));
 r = await req(adm, "/page/501", { json: { files: [H1] }, nonce });
 check("taslak sayfaya liste yazılamaz", r.status === 404, String(r.status));
+r = await req(adm, "/page/502", { json: { files: [H1] }, nonce });
+check("şifreli sayfaya liste yazılamaz", r.status === 404, String(r.status));
 r = await req(adm, "/page/500", { json: { files: ["<script>"] }, nonce });
 check("geçersiz liste öğesi reddedilir", r.status === 400, String(r.status));
 r = await req(adm, "/page/500", { json: { files: "x" }, nonce });
@@ -122,6 +130,18 @@ check("temizleme yalnızca kullanılmayanı siler", r.status === 200 && r.data.d
 const after = await adm.evaluate(async ([a, b2]) => [(await fetch(a)).status, (await fetch(b2)).status],
 	[WP + "/wp-content/uploads/gozkulak/01/" + H1 + ".ogg", WP + "/wp-content/uploads/gozkulak/fe/" + H2 + ".ogg"]);
 check("kullanılan dosya kalır, kullanılmayan gider", after[0] === 200 && after[1] === 404, after.join(","));
+
+// Sayfa sonradan şifrelenir: liste ön yüze yazılmaz, temizlemede kaldırılır ve sesi silinir
+r = await req(adm, "/page/500", { json: { files: [H1] }, nonce });
+check("liste yeniden kaydedilir", r.status === 200 && r.data.saved === 1, JSON.stringify(r.data));
+const wpReq = (p, path, json) => p.evaluate(async ([u, n, j]) => (await fetch(u, { method: "POST", headers: { "X-WP-Nonce": n, "Content-Type": "application/json" }, body: JSON.stringify(j), credentials: "same-origin" })).status, [WP + "/?rest_route=" + path, nonce, json]);
+check("sayfa şifrelendi", (await wpReq(adm, "/wp/v2/pages/500", { password: "gizli" })) === 200);
+cfg = await config(adm, "/?page_id=500");
+check("şifreli sayfada liste yazılmaz", !!cfg && !cfg.audio, JSON.stringify(cfg && cfg.audio));
+r = await req(adm, "/cleanup", { nonce });
+const h1 = await adm.evaluate(async (u) => (await fetch(u)).status, WP + "/wp-content/uploads/gozkulak/01/" + H1 + ".ogg");
+check("temizleme şifreli sayfanın sesini siler", r.status === 200 && r.data.deleted === 1 && h1 === 404, JSON.stringify(r.data) + " " + h1);
+check("şifre kaldırıldı", (await wpReq(adm, "/wp/v2/pages/500", { password: "" })) === 200);
 
 r = await req(sub, "/purge", { nonce: await nonceOf(sub) });
 check("abone silemez", r.status === 403, String(r.status));

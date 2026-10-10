@@ -10,7 +10,7 @@
     },
     {
       "step": "runPHP",
-      "code": "<?php require '/wordpress/wp-load.php'; wp_insert_post(array('post_title' => 'Deneme', 'post_content' => '<p>Merhaba dünya. Bu bir deneme sayfasıdır.</p>', 'post_status' => 'publish', 'post_type' => 'page', 'import_id' => 500)); wp_insert_post(array('post_title' => 'Taslak', 'post_content' => 'x', 'post_status' => 'draft', 'import_id' => 501)); wp_create_user('abone', 'abone-Parola-123', 'abone@example.com');"
+      "code": "<?php require '/wordpress/wp-load.php'; wp_insert_post(array('post_title' => 'Deneme', 'post_content' => '<p>Merhaba dünya. Bu bir deneme sayfasıdır.</p>', 'post_status' => 'publish', 'post_type' => 'page', 'import_id' => 500)); wp_insert_post(array('post_title' => 'Taslak', 'post_content' => 'x', 'post_status' => 'draft', 'import_id' => 501)); wp_insert_post(array('post_title' => 'Gizli', 'post_content' => '<p>Bu metin şifreyle korunuyor.</p>', 'post_status' => 'publish', 'post_type' => 'page', 'post_password' => 'gizli', 'import_id' => 502)); wp_create_user('abone', 'abone-Parola-123', 'abone@example.com');"
     }
   ]
 }

@@ -20,8 +20,14 @@ if (!existsSync(V + "/bin/phpstan")) {
 	php(["composer.phar", "install", "--no-interaction", "--no-progress", "--quiet"], D);
 }
 
+// --debug: tek süreçte çalışır (php-wasm alt süreç açamaz); taranan dosya adları çıktıdan süzülür.
+let out = "";
+let code = 0;
 try {
-	php([V + "/phpstan/phpstan/phpstan.phar", "analyse", "--no-progress", "--memory-limit=1G", "-c", "phpstan.neon.dist"], T);
-} catch {
-	process.exit(1);
+	out = execFileSync("npx", ["-y", "@php-wasm/cli@3.1.57", V + "/phpstan/phpstan/phpstan.phar", "analyse", "--debug", "--no-progress", "--memory-limit=1G", "-c", "phpstan.neon.dist"], { cwd: T, stdio: ["ignore", "pipe", "inherit"] }).toString();
+} catch (e) {
+	out = String(e.stdout || "");
+	code = 1;
 }
+process.stdout.write(out.split("\n").filter((l) => !l.startsWith("/")).join("\n"));
+process.exit(code);

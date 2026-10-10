@@ -9,7 +9,8 @@
 //   /gk-tts/worker-*.js             motor Worker'ı: sahte model özetleriyle, yedek kaynak alt/ olacak şekilde
 //   /gk-tts/{,alt/}ema-lightning-onnx/13c431d/…  sahte modeller (tests/fixtures/ema-fake)
 //   /gk-tts/{,alt/}onnxruntime-web/1.30.0/…      gerçek ONNX Runtime (tests/node_modules/onnxruntime-web/dist)
-//   /gk-tts/bad/…                   bozuk kaynak (text.onnx bozuk, ONNX Runtime yok)
+//   /gk-tts/bad/…                   bozuk kaynak (text.onnx aynı boyutta bozuk, ONNX Runtime yok)
+//   /gk-tts/big/… /gk-tts/bigc/…    text.onnx beklenenden 3 MB büyük (Content-Length ile / parça parça)
 //
 // Deneme sayfalarındaki "version" alanı eklentinin güncel sürümüyle değiştirilir (eski betik uyarısı çıkmasın).
 import { createServer } from "node:http";
@@ -68,7 +69,7 @@ function worker(kind) {
 function ttsPage(q) {
 	const workers = ["worker-test.js", "worker-slow.js", "worker-slow2.js", "worker-csp.php", "worker-hang.js", "worker-lag.js"];
 	const w = workers.includes(q.get("w")) ? q.get("w") : "worker-test.js";
-	const bases = { main: ORIGIN + "/gk-tts/", bad: ORIGIN + "/gk-tts/bad/", alt: ORIGIN + "/gk-tts/alt/", none: "", ngx: "http://127.0.0.1:8099/", broken: ORIGIN + "/gk-tts/nope/" };
+	const bases = { main: ORIGIN + "/gk-tts/", bad: ORIGIN + "/gk-tts/bad/", big: ORIGIN + "/gk-tts/big/", bigc: ORIGIN + "/gk-tts/bigc/", alt: ORIGIN + "/gk-tts/alt/", none: "", ngx: "http://127.0.0.1:8099/", broken: ORIGIN + "/gk-tts/nope/" };
 	const b = bases[q.get("b") || "main"] ?? "";
 	const cfg = {
 		version: version(), testMode: true,
@@ -101,7 +102,7 @@ function resolveFile(path) {
 	let m;
 	if ((m = /^\/wp-content\/plugins\/gozkulak\/(.*)$/.exec(path))) return safe(R, m[1]);
 	if ((m = /^\/gk-tts\/(?:alt\/)?ema-lightning-onnx\/13c431d\/([^/]+)$/.exec(path))) return safe(FAKE, m[1]);
-	if ((m = /^\/gk-tts\/(?:alt\/)?onnxruntime-web\/1\.30\.0\/([^/]+)$/.exec(path))) return safe(ORT, m[1]);
+	if ((m = /^\/gk-tts\/(?:alt\/|big\/|bigc\/)?onnxruntime-web\/1\.30\.0\/([^/]+)$/.exec(path))) return safe(ORT, m[1]);
 	if ((m = /^\/(gk-mock|gk-oku|gk-tara)\/(.*)$/.exec(path))) {
 		const p = safe(join(T, "site", m[1]), m[2] || "index.html");
 		return p && existsSync(p) && statSync(p).isDirectory() ? join(p, "index.html") : p;
@@ -125,8 +126,19 @@ const server = createServer((req, res) => {
 		const bad = /^\/gk-tts\/bad\/ema-lightning-onnx\/13c431d\/([^/]+)$/.exec(path);
 		if (bad && MODEL_FILES.includes(bad[1])) {
 			let body = readFileSync(join(FAKE, bad[1]));
-			if (bad[1] === "text.onnx") body = Buffer.concat([body, Buffer.from("bozuk")]);
+			if (bad[1] === "text.onnx") body = Buffer.concat([body.subarray(0, body.length - 5), Buffer.from("bozuk")]);
 			return send(200, body, TYPES[extname(bad[1])], { "Access-Control-Allow-Origin": "*" });
+		}
+		// Beklenenden büyük dosya: indirme boyut sınırında kesilmeli (bellek dolmasın)
+		const big = /^\/gk-tts\/(big|bigc)\/ema-lightning-onnx\/13c431d\/([^/]+)$/.exec(path);
+		if (big && MODEL_FILES.includes(big[2])) {
+			let body = readFileSync(join(FAKE, big[2]));
+			if (big[2] === "text.onnx") body = Buffer.concat([body, Buffer.alloc(3 * 1024 * 1024)]);
+			if (big[1] === "big") return send(200, body, TYPES[extname(big[2])], { "Access-Control-Allow-Origin": "*" });
+			// Content-Length olmadan, parça parça
+			res.writeHead(200, { "Content-Type": TYPES[extname(big[2])], "Cache-Control": "no-store", "Access-Control-Allow-Origin": "*", "Transfer-Encoding": "chunked" });
+			for (let i = 0; i < body.length; i += 65536) res.write(body.subarray(i, i + 65536));
+			return res.end();
 		}
 		// Çerçeve içinde açılması yasak sayfa (tarama betiğinin yedek yolu için)
 		if (path === "/gk-tara/c.php" || path === "/gk-tara/c.html") {

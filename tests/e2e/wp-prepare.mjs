@@ -35,6 +35,7 @@ const state = async (id) => (await row(id).locator(".gozkulak-prep-state").textC
 const status = async () => (await p.locator(".gozkulak-prep-status").textContent()).trim();
 check("Hazır ses bölümünde sayfa listelenir", (await row(500).count()) === 1);
 check("taslak sayfa listelenmez", (await row(501).count()) === 0);
+check("şifreli sayfa listelenmez", (await row(502).count()) === 0);
 
 async function run(id) {
 	await p.locator(`#gozkulak-prepare tr[data-id="${id}"] .gozkulak-prep-pick`).check();

@@ -152,7 +152,8 @@
 	// Bağlantı bu süre boyunca hiç veri getirmezse indirme kesilir ve sıradaki kaynak denenir.
 	const STALL_MS = 30000;
 
-	async function download(url, onBytes, store) {
+	// max: beklenen boyut. Fazlası gelirse indirme kesilir: dosya zaten doğrulanamaz, bellek dolmasın.
+	async function download(url, onBytes, store, max) {
 		const ctl = typeof AbortController === "function" ? new AbortController() : null;
 		let timer = 0;
 		const arm = () => {
@@ -172,8 +173,11 @@
 				signal: ctl ? ctl.signal : undefined,
 			});
 			if (!res.ok) throw new Error("HTTP " + res.status);
+			const tooBig = () => new Error("dosya beklenenden büyük");
+			if (Number(res.headers.get("content-length")) > max && !res.headers.get("content-encoding")) throw tooBig();
 			if (!res.body || !res.body.getReader) {
 				const buf = await res.arrayBuffer();
+				if (buf.byteLength > max) throw tooBig();
 				onBytes(buf.byteLength);
 				return buf;
 			}
@@ -184,8 +188,12 @@
 				arm();
 				const { done, value } = await reader.read();
 				if (done) break;
-				parts.push(value);
 				n += value.byteLength;
+				if (n > max) {
+					reader.cancel().catch(() => {});
+					throw tooBig();
+				}
+				parts.push(value);
 				onBytes(value.byteLength);
 			}
 			return join(parts, n);
@@ -226,7 +234,7 @@
 				const buf = await download(url, (n) => {
 					counted += n;
 					acct(n);
-				}, !!cache);
+				}, !!cache, f.size);
 				const got = await sha256(buf);
 				if (got !== f.sha) throw new Error("SHA-256 doğrulaması tutmadı (gelen " + got.slice(0, 12) + "…)");
 				if (cache) {

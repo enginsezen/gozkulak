@@ -353,6 +353,7 @@ final class GozKulak_Admin {
 			array(
 				'post_type'        => array_values( $types ),
 				'post_status'      => 'publish',
+				'has_password'     => false,
 				'numberposts'      => self::PREPARE_MAX,
 				'orderby'          => 'modified',
 				'order'            => 'DESC',

@@ -114,6 +114,7 @@ final class GozKulak_Audio {
 			return self::fail( 'gozkulak_fs', __( 'Klasör oluşturulamadı.', 'gozkulak' ), 500 );
 		}
 		self::guard( self::dir() );
+		self::guard( $dir );
 		if ( ! $fs->put_contents( $dir . $hash . '.ogg', $body, FS_CHMOD_FILE ) ) {
 			return self::fail( 'gozkulak_fs', __( 'Dosya yazılamadı.', 'gozkulak' ), 500 );
 		}
@@ -130,8 +131,8 @@ final class GozKulak_Audio {
 	public static function save_page( WP_REST_Request $request ) {
 		$id   = $request->get_param( 'id' );
 		$post = is_numeric( $id ) ? get_post( (int) $id ) : null;
-		if ( ! $post || ! is_post_publicly_viewable( $post ) ) {
-			return self::fail( 'gozkulak_post', __( 'Yayımlanmış bir sayfa bulunamadı.', 'gozkulak' ), 404 );
+		if ( ! $post || ! self::shareable( $post ) ) {
+			return self::fail( 'gozkulak_post', __( 'Yayımlanmış, şifresiz bir sayfa bulunamadı.', 'gozkulak' ), 404 );
 		}
 		$files = $request->get_param( 'files' );
 		if ( ! is_array( $files ) || count( $files ) > self::MAX_LIST ) {
@@ -167,13 +168,19 @@ final class GozKulak_Audio {
 	}
 
 	/**
-	 * Hiçbir sayfanın listesinde olmayan dosyaları siler.
+	 * Hiçbir sayfanın listesinde olmayan dosyaları siler. Artık herkese açık olmayan (taslak, çöp,
+	 * özel, şifreli) sayfaların listeleri de kaldırılır: sesleri herkese açık klasörde kalmasın.
 	 *
 	 * @return WP_REST_Response
 	 */
 	public static function cleanup() {
 		$used = array();
-		foreach ( self::all_lists() as $csv ) {
+		foreach ( self::all_lists() as $post_id => $csv ) {
+			$post = get_post( $post_id );
+			if ( ! $post || ! self::shareable( $post ) ) {
+				delete_post_meta( $post_id, self::META );
+				continue;
+			}
 			foreach ( explode( ',', $csv ) as $hash ) {
 				$used[ $hash ] = true;
 			}
@@ -214,10 +221,11 @@ final class GozKulak_Audio {
 	 * @return array<string, mixed>|null
 	 */
 	public static function for_page() {
-		if ( ! is_singular() ) {
+		$post = get_queried_object();
+		if ( ! is_singular() || ! $post instanceof WP_Post || ! self::shareable( $post ) ) {
 			return null;
 		}
-		$csv = self::list_of( get_queried_object_id() );
+		$csv = self::list_of( $post->ID );
 		if ( '' === $csv ) {
 			return null;
 		}
@@ -262,6 +270,16 @@ final class GozKulak_Audio {
 	 */
 	public static function valid_hash( $hash ) {
 		return is_string( $hash ) && 1 === preg_match( self::HASH, $hash );
+	}
+
+	/**
+	 * Sayfanın sesi herkese açık klasörde tutulabilir mi: yayımlanmış, herkese açık ve şifresiz.
+	 *
+	 * @param WP_Post $post Yazı.
+	 * @return bool
+	 */
+	public static function shareable( WP_Post $post ) {
+		return is_post_publicly_viewable( $post ) && '' === $post->post_password;
 	}
 
 	/**
@@ -340,9 +358,9 @@ final class GozKulak_Audio {
 	}
 
 	/**
-	 * Bütün sayfaların listeleri (virgülle ayrılmış özetler).
+	 * Bütün sayfaların listeleri: yazı kimliği => virgülle ayrılmış özetler.
 	 *
-	 * @return string[]
+	 * @return array<int, string>
 	 */
 	private static function all_lists() {
 		global $wpdb;
@@ -351,8 +369,14 @@ final class GozKulak_Audio {
 		}
 		// Meta değerleri toplu okunur; sonuç önbelleğe alınmaz (yalnızca temizlikte, yönetici isteğiyle).
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-		$rows = $wpdb->get_col( $wpdb->prepare( 'SELECT meta_value FROM %i WHERE meta_key = %s', $wpdb->postmeta, self::META ) );
-		return array_values( array_filter( $rows, 'is_string' ) );
+		$rows = $wpdb->get_results( $wpdb->prepare( 'SELECT post_id, meta_value FROM %i WHERE meta_key = %s', $wpdb->postmeta, self::META ), ARRAY_A );
+		$out  = array();
+		foreach ( is_array( $rows ) ? $rows : array() as $row ) {
+			if ( is_numeric( $row['post_id'] ) && is_string( $row['meta_value'] ) ) {
+				$out[ (int) $row['post_id'] ] = $row['meta_value'];
+			}
+		}
+		return $out;
 	}
 
 	/**
