@@ -4,7 +4,7 @@ Tags: accessibility, erişilebilirlik, text-to-speech, sesli okuma
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 0.4.3
+Stable tag: 0.4.4
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -45,6 +45,13 @@ Sitede Content-Security-Policy başlığı varsa gereken izinler:
 Hazır ses hazırlanırken site sayfaları aynı siteden çerçevede açılır; X-Frame-Options: DENY gönderilmemelidir. İzin eksikse menü çalışır, okuma bir sonraki sese (doğal ses ya da tarayıcının sesi) geçer.
 
 == Changelog ==
+
+= 0.4.4 =
+* Düzeltme: Koyu mod bazen kendiliğinden bozuluyordu; sayfa kaydırılınca ya da fareyle üzerine gelinince yazılar ve zeminler özgün renklerine dönüyordu (çok renkli sayfalarda). Ölçüm sırasında kullanılan geçici sınıf, renk kurallarından biriyle aynı adı taşıyordu.
+* Sayaçlar (ekrana gelince 0'dan sayan rakamlar) son değerleriyle okunur. Eskiden okunan sayı dinlenen ana göre değişiyordu ("0 %"); sayfa kaydırıldıysa o cümlenin hazır sesi bulunamıyor ve indirme onayı soruluyordu. Sayaç sayarken vurgu kaybolmaz.
+* "100 %" ve "25%" yazımları da "yüzde 100", "yüzde 25" okunur.
+* Eklenti açıklaması ve ayarlar sayfasındaki ses açıklaması, hazır sesi de anlatacak şekilde düzeltildi.
+* Okunuş değiştiği için sayaç ya da "sayı %" içeren sayfalar yeniden hazırlanmalıdır (Hazırla, ardından "Kullanılmayan dosyaları sil").
 
 = 0.4.3 =
 * Düzeltme: Güncellemeler → "Tekrar denetle" (ve ayarlardaki "Şimdi denetle") yeni sürümü her zaman hemen gösterir. WordPress eklentileri son denetimden bir dakika geçmeden yeniden denetlemiyordu; GitHub'ın sonucu da 6 saat saklandığı için yeni sürüm saatlerce görünmeyebiliyordu.

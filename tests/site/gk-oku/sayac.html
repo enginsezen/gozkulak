@@ -1,0 +1,22 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><title>Sayaç</title>
+<style>body{font:16px/1.6 Arial,sans-serif;margin:20px} .counter{display:flex;gap:4px;align-items:baseline} .counter span{font-size:32px}</style></head><body>
+<!-- Sayaçlar son değerleriyle okunur (e2e/sayac.mjs). Elementor sayacı benzetimi: metin 0'dan 100'e sayar. -->
+<main>
+<h2>Rakamlarla Biz</h2>
+<div class="elementor-counter"><div class="elementor-counter-title">Müşteri Memnuniyeti</div><div class="counter"><span class="elementor-counter-number" data-duration="2000" data-to-value="100" data-from-value="0">0</span><span>%</span></div></div>
+<div class="elementor-counter"><div class="elementor-counter-title">Tamamlanan Proje</div><div class="counter"><span class="count" data-count="1250">0</span></div></div>
+<p>Destek ekibimize <a href="#iletisim" data-target="#iletisim">buradan</a> ulaşabilirsiniz.</p>
+<p>Kuruluş yılımız <span data-count="yok">1996</span> olarak kayıtlıdır.</p>
+</main>
+<script>
+// Sayaç benzetimi: her adımda metin düğümü yenilenir (jQuery .text() gibi)
+window.startCounters = () => {
+	for (const el of document.querySelectorAll("[data-to-value], .count")) {
+		const end = +(el.dataset.toValue || el.dataset.count);
+		let v = 0;
+		const t = setInterval(() => { v = Math.min(end, v + Math.ceil(end / 40)); el.textContent = String(v); if (v >= end) clearInterval(t); }, 50);
+	}
+};
+</script>
+<script type="application/json" id="gozkulak-config">{"version":"0.2.8","testMode":true,"css":"/wp-content/plugins/gozkulak/assets/css/menu.css","pageCss":"/wp-content/plugins/gozkulak/assets/css/page.css","position":"bottom-right","offset":[20,20],"size":56,"icon":"person","color":"#085e9d","features":["text_to_speech"],"selector":"main"}</script>
+<script src="/wp-content/plugins/gozkulak/assets/js/gozkulak.js?ver=t" defer></script></body></html>

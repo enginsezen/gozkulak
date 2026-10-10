@@ -20,7 +20,7 @@
 
 	// Betik dosyasının kendi sürümü. Eklentinin sürümüyle uyuşmazsa sayfa eski (önbellekteki) bir
 	// betik dosyası kullanıyordur; test modunda menüde uyarı gösterilir.
-	const SCRIPT_VERSION = "0.4.3";
+	const SCRIPT_VERSION = "0.4.4";
 	const doc = document;
 	const htmlEl = doc.documentElement;
 	const enabledFeatures = new Set(Array.isArray(cfg.features) ? cfg.features : []);
@@ -453,7 +453,7 @@
 		function ensure() {
 			if (sheet !== undefined) return;
 			sheet = init();
-			insert("html.gk-measure *, html.gk-measure *::before, html.gk-measure *::after, .gk-pm, .gk-pm::before, .gk-pm::after { transition: none !important; }");
+			insert("html.gk-measure *, html.gk-measure *::before, html.gk-measure *::after, .gk-ml, .gk-ml::before, .gk-ml::after { transition: none !important; }");
 		}
 		return {
 			ensure,
@@ -629,6 +629,8 @@
 		const XHTML = "http://www.w3.org/1999/xhtml";
 		const SVGNS = "http://www.w3.org/2000/svg";
 		const SKIP = new Set(["SCRIPT", "STYLE", "NOSCRIPT", "TEMPLATE", "LINK", "META", "BR", "GOZKULAK-ROOT", "GOZKULAK-OVERLAY"]);
+		// Renk kuralı sınıfları "gk-p" + sıra numarasıdır (36 tabanında). Başka hiçbir sınıf "gk-p" ile
+		// başlamamalı: ölçüm işareti bir zamanlar "gk-pm" idi ve 22. renk kuralıyla aynı ada denk geliyordu.
 		const isPaintClass = (c) => c === "gk-c0" || c === "gk-cimg" || c.startsWith("gk-p");
 		const marked = new Set();
 		const effOf = new WeakMap();
@@ -926,7 +928,7 @@
 		function measureLocal(list, fn) {
 			const saved = list.map((el) => [...el.classList].filter(isPaintClass));
 			list.forEach((el, i) => {
-				el.classList.add("gk-pm");
+				el.classList.add("gk-ml");
 				if (saved[i].length) el.classList.remove(...saved[i]);
 			});
 			try {
@@ -936,7 +938,7 @@
 					if (saved[i].length) el.classList.add(...saved[i]);
 				});
 				void htmlEl.offsetWidth;
-				for (const el of list) el.classList.remove("gk-pm");
+				for (const el of list) el.classList.remove("gk-ml");
 			}
 		}
 
@@ -1290,7 +1292,7 @@
 			t = t.replace(/\b(\d[\d.,]*)\s*(m²|m2)(?=\s|[.,;]|$)/gi, "$1 metrekare");
 			t = t.replace(/\b(\d[\d.,]*)\s*cm\b/gi, "$1 santimetre").replace(/\b(\d[\d.,]*)\s*kg\b/gi, "$1 kilogram");
 			t = t.replace(/₺\s*(\d[\d.,]*)/g, "$1 lira").replace(/(\d[\d.,]*)\s*(₺|TL\b)/g, "$1 lira");
-			t = t.replace(/%\s*(\d[\d.,]*)/g, "yüzde $1");
+			t = t.replace(/%\s*(\d[\d.,]*)/g, "yüzde $1").replace(/(\d[\d.,]*)\s*%/g, "yüzde $1");
 			const PER = { yıl: "yıllık", ay: "aylık", gün: "günlük", hafta: "haftalık", saat: "saatlik", kişi: "kişi başı" };
 			t = t.replace(/\s*\/\s*(yıl|ay|gün|hafta|saat|kişi)(?![\p{L}])/gu, (m, w) => " " + PER[w]);
 			// Tek başına "+": sonda ya da noktalamadan önce atılır ("₺5.000 +"), kelimeler arasında "ve" olur;
@@ -1405,6 +1407,20 @@
 		const PHRASING = new Set(["SPAN", "A", "B", "STRONG", "EM", "I", "SMALL", "TIME", "ABBR", "MARK", "LABEL", "CITE", "Q", "SUB", "SUP", "CODE", "DATA", "BDI", "BDO", "U", "S", "VAR", "KBD", "SAMP", "DFN", "FONT"]);
 		const FLEXLIKE = /^(flex|inline-flex|grid|inline-grid)$/;
 
+		// Sayaçlar (ekrana gelince 0'dan son değere sayan rakamlar) son değerleriyle okunur. Yoksa okunan
+		// sayı ziyaretçinin ne zaman dinlediğine göre değişir ve hazır sesle eşleşmez. Son değer sayaç
+		// eklentilerinin ortak özniteliklerinden okunur; öğenin metni de değer de yalnızca rakamsa.
+		const COUNTER_ATTRS = ["data-to-value", "data-to", "data-count", "data-target", "data-end"];
+		function counterValue(n) {
+			const el = n.parentElement;
+			if (!el || !/^[\d\s.,]+$/.test(n.nodeValue)) return null;
+			for (const a of COUNTER_ATTRS) {
+				const v = (el.getAttribute(a) || "").trim();
+				if (/^\d[\d.,]*$/.test(v)) return v;
+			}
+			return null;
+		}
+
 		const visible = (el) => (el.checkVisibility ? el.checkVisibility({ checkVisibilityCSS: true }) : !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length));
 		const textLength = (el) => (el.innerText || "").replace(/\s+/g, " ").trim().length;
 
@@ -1500,6 +1516,7 @@
 					if (n === range.endContainer) to = range.endOffset;
 				}
 				if (to <= from) continue;
+				const final = counterValue(n);
 				if (!current || current.el !== block) {
 					if (current) out.push(current);
 					current = { el: block, text: "", segs: [] };
@@ -1510,8 +1527,14 @@
 					if (brBetween(prev, n)) current.text += ", ";
 					else if (softOf(prev, block, displays) !== softOf(n, block, displays) && !/^\s/.test(n.nodeValue.slice(from))) current.text += " ";
 				}
-				current.segs.push({ node: n, from, start: current.text.length, len: to - from });
-				current.text += n.nodeValue.slice(from, to);
+				if (final !== null) {
+					// Sayaç her adımda metin düğümünü yeniler; vurgu düğüme değil öğeye bağlanır.
+					current.segs.push({ node: n, el: n.parentElement, from: 0, start: current.text.length, len: final.length });
+					current.text += final;
+				} else {
+					current.segs.push({ node: n, from, start: current.text.length, len: to - from });
+					current.text += n.nodeValue.slice(from, to);
+				}
 			}
 			if (current) out.push(current);
 			// Tekrarlanan bloklar ve üst üste aynı başlık bir kez okunur.
@@ -1613,12 +1636,13 @@
 			const find = (pos, end) => {
 				for (const g of segs) {
 					if (end ? pos <= g.start + g.len && pos > g.start : pos < g.start + g.len) {
+						if (g.el) return end ? [g.el, g.el.childNodes.length] : [g.el, 0];
 						const inner = Math.max(0, Math.min(g.len, pos - g.start));
 						return [g.node, g.from + inner];
 					}
 				}
 				const last = segs[segs.length - 1];
-				return [last.node, last.from + last.len];
+				return last.el ? [last.el, last.el.childNodes.length] : [last.node, last.from + last.len];
 			};
 			try {
 				const r = doc.createRange();
