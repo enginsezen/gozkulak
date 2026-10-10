@@ -20,7 +20,7 @@
 
 	// Betik dosyasının kendi sürümü. Eklentinin sürümüyle uyuşmazsa sayfa eski (önbellekteki) bir
 	// betik dosyası kullanıyordur; test modunda menüde uyarı gösterilir.
-	const SCRIPT_VERSION = "0.3.0";
+	const SCRIPT_VERSION = "0.3.1";
 	const doc = document;
 	const htmlEl = doc.documentElement;
 	const enabledFeatures = new Set(Array.isArray(cfg.features) ? cfg.features : []);
@@ -1593,16 +1593,22 @@
 			return synth ? synth.getVoices() : [];
 		}
 
+		// Sesler bir kez beklenir. Linux'taki Chrome gibi hiç sesi olmayan tarayıcıda her okumada
+		// yeniden beklenmez; sesler sonradan gelirse getVoices() onları zaten verir.
+		let waited = null;
 		function waitVoices() {
 			if (!synth || voices().length) return Promise.resolve();
-			return new Promise((resolve) => {
-				const done = () => {
-					synth.removeEventListener("voiceschanged", done);
-					resolve();
-				};
-				synth.addEventListener("voiceschanged", done);
-				setTimeout(done, 1500);
-			});
+			if (!waited) {
+				waited = new Promise((resolve) => {
+					const done = () => {
+						synth.removeEventListener("voiceschanged", done);
+						resolve();
+					};
+					synth.addEventListener("voiceschanged", done);
+					setTimeout(done, 1500);
+				});
+			}
+			return waited;
 		}
 
 		function voiceFor(lang) {
@@ -2716,7 +2722,8 @@
 				emit();
 			}
 			voiceOk = {};
-			for (const l of new Set(rest.map((x) => x.lang))) {
+			// Tarayıcının sesi yalnızca hazır sesi olmayan cümlelerin dilleri için sorulur.
+			for (const l of new Set(rest.filter((x, k) => !ready(index + k)).map((x) => x.lang))) {
 				voiceOk[l] = await browserEngine.available(l);
 				if (my !== run) return;
 			}

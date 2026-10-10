@@ -108,10 +108,14 @@ async function openPage() {
 
 // 1) Bütün cümleler hazır
 await openPage();
+await v.evaluate(() => (window.__click = performance.now()));
 await clickPlay();
 await v.waitForTimeout(400);
 check("onay sorulmaz", !(await askShown()));
 await v.waitForFunction(() => window.__media.length > 0, null, { timeout: 10000 });
+// Linux'taki Chrome'da tarayıcının sesi yok: sesler beklenmeden hemen başlar.
+const wait1 = await v.evaluate(() => Math.round(__media[0].t - __click));
+check("tıklamadan sonra 1 sn içinde başlar", wait1 < 1000, wait1 + " ms");
 const st1 = await status();
 check("hazır ses çalıyor", (await label()) !== "Dinle" && /Tanı: hazır ses/.test(st1), st1);
 const m0 = await v.evaluate(() => ({ rate: __el.playbackRate, pitch: __el.preservesPitch, src: __el.src.slice(0, 5) }));
