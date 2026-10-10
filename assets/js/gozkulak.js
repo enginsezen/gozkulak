@@ -20,7 +20,7 @@
 
 	// Betik dosyasının kendi sürümü. Eklentinin sürümüyle uyuşmazsa sayfa eski (önbellekteki) bir
 	// betik dosyası kullanıyordur; test modunda menüde uyarı gösterilir.
-	const SCRIPT_VERSION = "0.4.4";
+	const SCRIPT_VERSION = "0.4.5";
 	const doc = document;
 	const htmlEl = doc.documentElement;
 	const enabledFeatures = new Set(Array.isArray(cfg.features) ? cfg.features : []);
@@ -1202,8 +1202,8 @@
 			[abbr("Tic\\.(?=\\s|,|$)", "g"), "Ticaret"],
 			[abbr("San\\.(?=\\s|,|$)", "g"), "Sanayi"],
 			[abbr("Ltd\\.(?=\\s|,|$)", "g"), "Limited"],
-			[abbr("Şti\\.?(?=\\s|,|$)", "g"), "Şirketi"],
-			[abbr("A\\.Ş\\.?(?=\\s|,|$)", "g"), "Anonim Şirketi"],
+			[abbr("Şti\\.?(?=\\s|,|$|')", "g"), "Şirketi"],
+			[abbr("A\\.Ş\\.?(?=\\s|,|$|')", "g"), "Anonim Şirketi"],
 		];
 
 		const LOAN = [
@@ -1280,6 +1280,8 @@
 			t = t.replace(/\b7\s*\/\s*24\b/g, "7 gün 24 saat");
 			// adres ve kısaltmalar
 			for (const [re, out] of ABBR) t = t.replace(re, out);
+			// "Şti.'nin", "A.Ş.'ye": ek, "Şirketi" okunuşuna göre yazılır (şirketinin, şirketine, şirketinde).
+			t = t.replace(/(?<![\p{L}\p{N}])Şirketi'(\p{Ll}+)/gu, (m, ek) => "Şirketi" + (/^(?:n|yl)/.test(ek) ? ek : /^y/.test(ek) ? "n" + ek.slice(1) : /^[dt]/.test(ek) ? "nd" + ek.slice(1) : /^[aeıioöuü]/.test(ek) ? "n" + ek : ek));
 			// Türkçe metindeki İngilizce sözcükler, model Türkçe harflerle okusun diye okunuşlarıyla yazılır
 			// (her yazımda: "Wi-Fi", "WIFI", "wifi"; "UNESCO" → "unesko" okunuyordu).
 			for (const [re, out] of LOAN) t = t.replace(re, out);

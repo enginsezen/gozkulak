@@ -4,7 +4,7 @@ Tags: accessibility, erişilebilirlik, text-to-speech, sesli okuma
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 0.4.4
+Stable tag: 0.4.5
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -45,6 +45,11 @@ Sitede Content-Security-Policy başlığı varsa gereken izinler:
 Hazır ses hazırlanırken site sayfaları aynı siteden çerçevede açılır; X-Frame-Options: DENY gönderilmemelidir. İzin eksikse menü çalışır, okuma bir sonraki sese (doğal ses ya da tarayıcının sesi) geçer.
 
 == Changelog ==
+
+= 0.4.5 =
+* Düzeltme: Okunuş sözlüğünde sonu noktayla biten kısaltmalar ("Şti. = Şirketi", "Doç. = doçent") geçersiz sayılıyordu; artık kaydedilir.
+* "Şti.'nin", "A.Ş.'ye" gibi ek almış kısaltmalar da okunur: "Şirketinin", "Anonim Şirketine". Eskiden yalnızca ardından boşluk ya da virgül gelince açılıyordu.
+* Okunuş değiştiği için bu yazımları içeren sayfalar yeniden hazırlanmalıdır.
 
 = 0.4.4 =
 * Düzeltme: Koyu mod bazen kendiliğinden bozuluyordu; sayfa kaydırılınca ya da fareyle üzerine gelinince yazılar ve zeminler özgün renklerine dönüyordu (çok renkli sayfalarda). Ölçüm sırasında kullanılan geçici sınıf, renk kurallarından biriyle aynı adı taşıyordu.

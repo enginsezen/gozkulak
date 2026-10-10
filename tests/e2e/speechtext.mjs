@@ -53,6 +53,9 @@ const TR = {
 		["Kültür Apt. 4", "Kültür Apartmanı 4."],
 		["Ltd. Şti. San. ve Tic.", "Limited Şirketi Sanayi ve Ticaret."],
 		["ABC Tic. A.Ş.", "ABC Ticaret Anonim Şirketi."],
+		["Ticaret Ltd. Şti.'nin felsefesi", "Ticaret Limited Şirketinin felsefesi."],
+		["Ltd. Şti.’ye ve A.Ş.'e", "Limited Şirketine ve Anonim Şirketine."],
+		["Şti.'de, Şti.'den, Şti.'yle", "Şirketinde, Şirketinden, Şirketiyle."],
 		["Dr.Ahmet Yılmaz", "Doktor Ahmet Yılmaz."],
 		["Prof. Dr. Ayşe Kaya", "Profesör Doktor Ayşe Kaya."],
 		["Doç. Dr. Ali Veli", "Doçent Doktor Ali Veli."],
@@ -188,7 +191,7 @@ for (const [input, expect] of EN) {
 }
 
 console.log("\nOkunuş sözlüğü (site ayarı)");
-speechText.setDictionary([["MZA", "MZA"], ["KARDEMİR", "kardemir"], ["Wireless", "vayırlıs"], ["Sezen.Pro", "sezen pro"], ["Kahve Dünyası", "kahve dünyası"], ["A101", "a yüz bir"], ["İstanbul", "istanbul"], "bozuk", ["", "x"], [1, 2]]);
+speechText.setDictionary([["MZA", "MZA"], ["KARDEMİR", "kardemir"], ["Wireless", "vayırlıs"], ["Sezen.Pro", "sezen pro"], ["Kahve Dünyası", "kahve dünyası"], ["A101", "a yüz bir"], ["İstanbul", "istanbul"], ["Doç.", "doçent"], "bozuk", ["", "x"], [1, 2]]);
 const SAY = [
 	["MZA'nın ürünleri", "MZA nın ürünleri."],
 	["MZA DEMİRYOLU MAKASI", "MZA demiryolu makası."],
@@ -200,6 +203,7 @@ const SAY = [
 	["Kahve  Dünyası'nda", "kahve dünyası'nda."],
 	["A101 market", "a yüz bir market."],
 	["İSTANBUL ve istanbul", "istanbul ve istanbul."],
+	["Doç. Ali ve doç. Ayşe", "doçent Ali ve doçent Ayşe."],
 	["Telefon 0370 712 34 56", "Telefon 0, 370, 712, 34, 56."],
 	["Karayolu 7. km", "Karayolu 7'nci kilometre."],
 ];

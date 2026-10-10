@@ -160,15 +160,15 @@ const saveSay = async (text) => {
 	await adm.waitForLoadState("networkidle");
 	return { value: await adm.inputValue("#gozkulak-say"), error: await adm.locator("#setting-error-gozkulak_pronunciations").count() };
 };
-let say = await saveSay("# açıklama\nMZA   =   MZA\nWireless = vayırlıs\n\nKahve Dünyası = kahve dünyası");
-check("sözlük kaydedilir, boşluklar düzenlenir", !say.error && say.value === "# açıklama\nMZA = MZA\nWireless = vayırlıs\n\nKahve Dünyası = kahve dünyası", JSON.stringify(say));
+let say = await saveSay("# açıklama\nMZA   =   MZA\nWireless = vayırlıs\n\nKahve Dünyası = kahve dünyası\nŞti. = şirketi");
+check("sözlük kaydedilir, boşluklar düzenlenir", !say.error && say.value === "# açıklama\nMZA = MZA\nWireless = vayırlıs\n\nKahve Dünyası = kahve dünyası\nŞti. = şirketi", JSON.stringify(say));
 cfg = await config(adm, "/?page_id=500");
-check("sözlük ön yüze kelime/okunuş çiftleri olarak gider", JSON.stringify(cfg && cfg.say) === JSON.stringify([["MZA", "MZA"], ["Wireless", "vayırlıs"], ["Kahve Dünyası", "kahve dünyası"]]), JSON.stringify(cfg && cfg.say));
+check("sözlük ön yüze kelime/okunuş çiftleri olarak gider", JSON.stringify(cfg && cfg.say) === JSON.stringify([["MZA", "MZA"], ["Wireless", "vayırlıs"], ["Kahve Dünyası", "kahve dünyası"], ["Şti.", "şirketi"]]), JSON.stringify(cfg && cfg.say));
 await adm.goto(WP + "/?page_id=500");
 await adm.waitForFunction(() => window.GozKulak, null, { timeout: 10000 });
 const spoken = await adm.evaluate(() => GozKulak.prepare("Wireless ve MZA DEMİRYOLU"));
 check("okunuşa uygulanır", spoken === "vayırlıs ve MZA demiryolu.", spoken);
-for (const [bad, why] of [["Wireless vayırlıs", "eşittir yok"], ["Wireless = <b>x</b>", "HTML"], ["<script> = x", "kelimede işaret"], ["Wireless = ", "okunuş boş"], ["a".repeat(61) + " = x", "kelime çok uzun"]]) {
+for (const [bad, why] of [["Wireless vayırlıs", "eşittir yok"], ["Wireless = <b>x</b>", "HTML"], ["<script> = x", "kelimede işaret"], ["Wireless = ", "okunuş boş"], ["a".repeat(61) + " = x", "kelime çok uzun"], ["Şti.. = x", "sonda iki nokta"], [".com = x", "noktayla başlıyor"]]) {
 	say = await saveSay("Kardemir = kardemir\n" + bad);
 	check("geçersiz satır reddedilir (" + why + "), önceki değer korunur", say.error === 1 && say.value.startsWith("# açıklama\nMZA = MZA"), JSON.stringify(say));
 }

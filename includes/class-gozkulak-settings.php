@@ -318,8 +318,9 @@ final class GozKulak_Settings {
 		if ( '' === $word || '' === $say || mb_strlen( $word ) > self::SAY_WORD_MAX || mb_strlen( $say ) > self::SAY_TEXT_MAX ) {
 			return null;
 		}
-		// Kelime harf ya da rakamla başlar ve biter; arada boşluk ve . - ' ’ & + olabilir.
-		if ( ! preg_match( "/^[\\p{L}\\p{N}](?:[\\p{L}\\p{N} .\\-'’&+]*[\\p{L}\\p{N}])?$/u", $word ) ) {
+		// Kelime harf ya da rakamla başlar ve biter (kısaltmalarda sonda nokta olabilir: "Şti."); arada boşluk
+		// ve . - ' ’ & + olabilir.
+		if ( ! preg_match( "/^[\\p{L}\\p{N}](?:[\\p{L}\\p{N} .\\-'’&+]*[\\p{L}\\p{N}])?\\.?$/u", $word ) ) {
 			return null;
 		}
 		// Okunuş düz metin: HTML ya da denetim karakteri içeremez.
