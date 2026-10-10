@@ -4,7 +4,7 @@ Tags: accessibility, erişilebilirlik, text-to-speech, sesli okuma
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 0.3.3
+Stable tag: 0.3.4
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -45,6 +45,14 @@ Sitede Content-Security-Policy başlığı varsa gereken izinler:
 Hazır ses hazırlanırken site sayfaları aynı siteden çerçevede açılır; X-Frame-Options: DENY gönderilmemelidir. İzin eksikse menü çalışır, okuma bir sonraki sese (doğal ses ya da tarayıcının sesi) geçer.
 
 == Changelog ==
+
+= 0.3.4 =
+* Güvenlik: şifreyle korunan sayfalar hazır ses için hazırlanamaz ve ses listeleri sayfaya yazılmaz. "Kullanılmayan dosyaları sil", artık herkese açık olmayan (taslak, çöp, özel, şifreli) sayfaların seslerini de siler. Ses alt klasörlerine boş index.php konur.
+* Güvenlik: doğal ses dosyaları beklenen boyutta kesilir; bozuk ya da kötü niyetli bir sunucu ziyaretçinin belleğini dolduramaz.
+* Trusted Types zorunlu sitelerde doğal ses çalışır ("gozkulak" politikası). Gereken güvenlik başlığı (CSP) izinleri açıklamada.
+* Menü sayfanın ilk boyamasından sonra eklenir; PageSpeed / Lighthouse puanı eklenti yüzünden düşmez. Tercihler (koyu mod, yazı boyutu) yine hemen uygulanır.
+* Okunuş: "Wi-Fi" ve "wifi" "vayfay", "UNESCO" "yunesko" okunur. "₺5.000 + ve …" artık "ve ve" diye okunmaz. Bu sözcükleri içeren sayfaların hazır sesi yeniden hazırlanmalıdır.
+* Ayar girdileri tür denetiminden geçer (PHPStan en sıkı düzeyde temiz).
 
 = 0.3.3 =
 * Hazır ses, sayfayı geniş masaüstü, dizüstü, tablet ve telefon genişliklerinde tarar. Bölümleri ekran genişliğine göre gizleyen temalarda (ör. BeTheme) ziyaretçinin ekranında görünen bazı cümlelerin sesi eksik kalıyordu; sayfa hazır olduğu hâlde model yükleniyordu.

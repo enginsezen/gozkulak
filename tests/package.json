@@ -10,6 +10,7 @@
     "phpcs": "node phpcs.mjs",
     "phpstan": "node phpstan.mjs",
     "plugin-check": "node plugin-check.mjs",
+    "lighthouse": "node lighthouse.mjs",
     "wp": "npx -y @wp-playground/cli@3.1.57 server --php=7.4 --port=9400 --workers=1 --mount=..:/wordpress/wp-content/plugins/gozkulak --blueprint=wp/blueprint.json"
   },
   "devDependencies": {

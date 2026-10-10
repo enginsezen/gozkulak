@@ -20,7 +20,7 @@
 
 	// Betik dosyasının kendi sürümü. Eklentinin sürümüyle uyuşmazsa sayfa eski (önbellekteki) bir
 	// betik dosyası kullanıyordur; test modunda menüde uyarı gösterilir.
-	const SCRIPT_VERSION = "0.3.3";
+	const SCRIPT_VERSION = "0.3.4";
 	const doc = document;
 	const htmlEl = doc.documentElement;
 	const enabledFeatures = new Set(Array.isArray(cfg.features) ? cfg.features : []);
@@ -1122,7 +1122,7 @@
 		// Harf harf okunması gereken kısaltmalar (ünlü içerse bile)
 		const KEEP = new Set(["MZA", "OSB", "SSL", "SEO", "PDF", "AVM", "KDV", "SGK", "PTT", "TL", "TC", "ABD", "AB", "AŞ", "SMS", "GPS", "USB", "SSD", "CNC", "LED", "TV", "WC", "DNS", "VPN", "PHP", "CSS", "HTML", "URL", "API", "AI", "TDK", "TBMM", "TCDD", "KVKK", "OSB", "ISO", "TSE", "CE", "AR", "GE", "BT", "IT", "HR", "IK", "İK", "ÖSYM", "KPSS", "YKS", "LGS", "TRT", "THY", "SSK", "BAĞ-KUR"]);
 		// Kelime gibi okunan büyük harfli kısaltmalar
-		const AS_WORD = { IP: "ip", UNESCO: "unesco", NATO: "nato", ASELSAN: "aselsan", TÜBİTAK: "tübitak", KARDEMİR: "kardemir", TÜİK: "tüik", İŞKUR: "işkur", AFAD: "afad", WIFI: "vayfay", "WI-FI": "vayfay" };
+		const AS_WORD = { IP: "ip", NATO: "nato", ASELSAN: "aselsan", TÜBİTAK: "tübitak", KARDEMİR: "kardemir", TÜİK: "tüik", İŞKUR: "işkur", AFAD: "afad" };
 		const DAYS = "pazartesi|salı|çarşamba|perşembe|cuma|cumartesi|pazar|monday|tuesday|wednesday|thursday|friday|saturday|sunday";
 
 		// Türkçe sıra sayısı eki: sayının okunuşundaki son kelimeye göre (19 → on dokuz → "uncu")
@@ -1204,6 +1204,11 @@
 			[abbr("A\\.Ş\\.?(?=\\s|,|$)", "g"), "Anonim Şirketi"],
 		];
 
+		const LOAN = [
+			[abbr("wi-?fi(?![\\p{L}\\p{N}])", "gi"), "vayfay"],
+			[abbr("unesco(?![\\p{L}\\p{N}])", "gi"), "yunesko"],
+		];
+
 		// Alan adı uzantıları: "Sezen.Pro" ve "karabuk78.com" gibi yazımlarda nokta okunur.
 		const TLD = new Set(["com", "net", "org", "pro", "info", "biz", "io", "app", "dev", "co", "tr", "edu", "gov", "bel", "gen", "web", "tv", "me", "eu", "de", "uk", "us", "xyz", "site", "online", "store", "shop", "blog", "tech", "ai", "name", "mobi", "az", "cy", "nl", "fr", "it", "es", "ru", "k12", "av", "tsk", "pol"]);
 
@@ -1237,6 +1242,9 @@
 			t = t.replace(/\b7\s*\/\s*24\b/g, "7 gün 24 saat");
 			// adres ve kısaltmalar
 			for (const [re, out] of ABBR) t = t.replace(re, out);
+			// Türkçe metindeki İngilizce sözcükler, model Türkçe harflerle okusun diye okunuşlarıyla yazılır
+			// (her yazımda: "Wi-Fi", "WIFI", "wifi"; "UNESCO" → "unesko" okunuyordu).
+			for (const [re, out] of LOAN) t = t.replace(re, out);
 			t = t.replace(/\bNo\s*[:.]\s*(?=\d)/gi, "numara ").replace(/\bKat\s*[:.]\s*(?=\d)/gi, "kat ").replace(/\bD\s*:\s*(?=\d)/g, "daire ");
 			// numaralı başlık ve sıra sayıları
 			t = t.replace(/^(\s*)(\d{1,3})[.)]\s+(?=[A-ZÇĞİÖŞÜ])/, "$1$2, ");
@@ -3607,11 +3615,42 @@
 	if (speechUi) shadow.append(speechUi.mini);
 	shadow.append(button, live);
 
-	// Kayıtlı tercihler sayfa açılır açılmaz uygulanır.
+	// Menü, sayfanın ilk boyamasından sonra eklenir: menünün stil dosyası ilk boyamadan önce istenirse
+	// Lighthouse / PageSpeed benzetimi onu ve betiği boyamayı engelleyen zincire katıp sayfanın puanını
+	// düşürüyordu (gerçek ölçümde fark yoktu). Boyama bilgisi yoksa ya da sekme arka plandaysa en geç
+	// 1,5 sn sonra eklenir.
+	function afterFirstPaint(fn) {
+		let done = false;
+		const go = () => {
+			if (done) return;
+			done = true;
+			fn();
+		};
+		window.setTimeout(go, 1500);
+		try {
+			if (performance.getEntriesByType("paint").length) {
+				go();
+				return;
+			}
+			const po = new PerformanceObserver(() => {
+				po.disconnect();
+				window.requestAnimationFrame(() => window.setTimeout(go, 0));
+			});
+			po.observe({ type: "paint", buffered: true });
+		} catch (e) {
+			go();
+		}
+	}
+
+	// Kayıtlı tercihler sayfa açılır açılmaz uygulanır (koyu mod, yazı boyutu: sayfa önce eski hâliyle
+	// görünüp sonra değişmesin).
 	// Menü sayfanın en başına eklenir: klavyeyle gelen ziyaretçi ilk sekmede menü düğmesine ulaşır.
 	const start = () => {
-		doc.body.prepend(rootHost);
 		applyAll();
+		afterFirstPaint(mount);
+	};
+	const mount = () => {
+		doc.body.prepend(rootHost);
 		render();
 		window.GozKulak = {
 			version: cfg.version,

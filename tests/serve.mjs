@@ -18,6 +18,7 @@
 import { createServer } from "node:http";
 import { readFileSync, existsSync, statSync } from "node:fs";
 import { createHash } from "node:crypto";
+import { gzipSync } from "node:zlib";
 import { extname, join, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -132,8 +133,14 @@ function resolveFile(path) {
 const server = createServer((req, res) => {
 	const url = new globalThis.URL(req.url, ORIGIN);
 	const path = decodeURIComponent(url.pathname);
+	// Metin türleri, gerçek sunucular gibi gzip ile sıkıştırılır (başarım ölçümü gerçeğe yakın olsun).
 	const send = (status, body, type, headers = {}) => {
-		res.writeHead(status, Object.assign({ "Content-Type": type || "text/plain; charset=utf-8", "Cache-Control": "no-store" }, headers));
+		const t = type || "text/plain; charset=utf-8";
+		if (body && /^(text\/|application\/(json|javascript))/.test(t) && /\bgzip\b/.test(req.headers["accept-encoding"] || "")) {
+			body = gzipSync(typeof body === "string" ? Buffer.from(body) : body);
+			headers = Object.assign({ "Content-Encoding": "gzip", Vary: "Accept-Encoding" }, headers);
+		}
+		res.writeHead(status, Object.assign({ "Content-Type": t, "Cache-Control": "no-store" }, headers));
 		res.end(req.method === "HEAD" ? undefined : body);
 	};
 	try {
@@ -172,6 +179,9 @@ const server = createServer((req, res) => {
 		const type = TYPES[extname(file)] || "application/octet-stream";
 		if (extname(file) === ".html" && /\/gk-(mock|oku|tara)\//.test(path)) {
 			body = body.toString("utf8").replace(/("version"\s*:\s*)"[^"]*"/, `$1"${version()}"`);
+			// gk=0: aynı sayfa eklentisiz (başarım karşılaştırması); tts=1: sesli okuma da açık (sitelerdeki gibi)
+			if (url.searchParams.get("gk") === "0") body = body.replace(/<script[^>]*id="gozkulak-config"[^>]*>.*?<\/script>\s*/s, "").replace(/<script[^>]*gozkulak\.js[^>]*><\/script>\s*/, "");
+			if (url.searchParams.get("tts") === "1") body = body.replace(/("features"\s*:\s*\[)/, '$1"text_to_speech",');
 		}
 		return send(200, body, type, { "Access-Control-Allow-Origin": "*" });
 	} catch (e) {
