@@ -27,6 +27,8 @@ final class GozKulak_Updater {
 
 	const CACHE = 'gozkulak_update';
 
+	const STATUS = 'gozkulak_update_status';
+
 	const SIG_FILE = 'gozkulak.sig';
 
 	/**
@@ -48,6 +50,31 @@ final class GozKulak_Updater {
 		add_filter( 'upgrader_source_selection', array( __CLASS__, 'verify' ), 10, 4 );
 		// Güncellemeler → "Tekrar denetle" WordPress'in listesini siler; GitHub'ın sonucu da yeniden alınsın.
 		add_action( 'delete_site_transient_update_plugins', array( __CLASS__, 'forget' ) );
+	}
+
+	/**
+	 * Kurulu sürüm, eklenti dosyasının başlığından. GOZKULAK_VERSION sabiti kullanılmaz: güncellemenin yapıldığı
+	 * istekte bellekte eski kod çalışır; sabit eski sürümü gösterir ve aynı sürüm yeniden önerilirdi.
+	 *
+	 * @return string
+	 */
+	public static function installed() {
+		$data = get_file_data( GOZKULAK_FILE, array( 'Version' => 'Version' ) );
+		return '' !== $data['Version'] ? $data['Version'] : GOZKULAK_VERSION;
+	}
+
+	/**
+	 * Son denetimin sonucu (ayarlar sayfasında gösterilir): array( time, latest, error ).
+	 *
+	 * @return array{time: int, latest: string, error: string}
+	 */
+	public static function status() {
+		$s = get_site_option( self::STATUS );
+		return array(
+			'time'   => is_array( $s ) && isset( $s['time'] ) && is_int( $s['time'] ) ? $s['time'] : 0,
+			'latest' => is_array( $s ) && isset( $s['latest'] ) && is_string( $s['latest'] ) ? $s['latest'] : '',
+			'error'  => is_array( $s ) && isset( $s['error'] ) && is_string( $s['error'] ) ? $s['error'] : '',
+		);
 	}
 
 	/**
@@ -144,9 +171,19 @@ final class GozKulak_Updater {
 				'headers' => array( 'Accept' => 'application/vnd.github+json' ),
 			)
 		);
-		$tags = 200 === wp_remote_retrieve_response_code( $res ) ? json_decode( wp_remote_retrieve_body( $res ), true ) : null;
+		$code = wp_remote_retrieve_response_code( $res );
+		$tags = 200 === $code ? json_decode( wp_remote_retrieve_body( $res ), true ) : null;
 		if ( ! is_array( $tags ) ) {
 			set_site_transient( self::CACHE, array(), HOUR_IN_SECONDS );
+			$error = is_wp_error( $res ) ? $res->get_error_message() : 'HTTP ' . $code;
+			update_site_option(
+				self::STATUS,
+				array(
+					'time'   => time(),
+					'latest' => '',
+					'error'  => mb_substr( sanitize_text_field( $error ), 0, 200 ),
+				)
+			);
 			return null;
 		}
 		$best = null;
@@ -163,6 +200,14 @@ final class GozKulak_Updater {
 			'package' => $src['archive'] . rawurlencode( $tag ) . '.zip',
 		);
 		set_site_transient( self::CACHE, $out, 6 * HOUR_IN_SECONDS );
+		update_site_option(
+			self::STATUS,
+			array(
+				'time'   => time(),
+				'latest' => null === $best ? '' : $best,
+				'error'  => null === $best ? 'GitHub\'da sürüm etiketi bulunamadı' : '',
+			)
+		);
 		return $out ? $out : null;
 	}
 
@@ -180,13 +225,14 @@ final class GozKulak_Updater {
 		if ( null === $latest ) {
 			return $transient;
 		}
-		$file  = plugin_basename( GOZKULAK_FILE );
-		$newer = version_compare( $latest['version'], GOZKULAK_VERSION, '>' );
-		$item  = (object) array(
+		$file      = plugin_basename( GOZKULAK_FILE );
+		$installed = self::installed();
+		$newer     = version_compare( $latest['version'], $installed, '>' );
+		$item      = (object) array(
 			'id'           => 'github.com/' . self::REPO,
 			'slug'         => self::SLUG,
 			'plugin'       => $file,
-			'new_version'  => $newer ? $latest['version'] : GOZKULAK_VERSION,
+			'new_version'  => $newer ? $latest['version'] : $installed,
 			'url'          => 'https://github.com/' . self::REPO,
 			'package'      => $newer ? $latest['package'] : '',
 			'requires'     => '6.4',
@@ -223,7 +269,7 @@ final class GozKulak_Updater {
 		return (object) array(
 			'name'          => 'GözKulak',
 			'slug'          => self::SLUG,
-			'version'       => null === $latest ? GOZKULAK_VERSION : $latest['version'],
+			'version'       => null === $latest ? self::installed() : $latest['version'],
 			'author'        => 'Engin Sezen',
 			'homepage'      => $repo,
 			'requires'      => '6.4',
@@ -251,7 +297,7 @@ final class GozKulak_Updater {
 			return $source;
 		}
 		$dir = trailingslashit( $source );
-		$ok  = self::verify_dir( $dir, GOZKULAK_VERSION );
+		$ok  = self::verify_dir( $dir, self::installed() );
 		if ( is_wp_error( $ok ) ) {
 			// Paket kurulmadı, eski dosyalara dokunulmadı: WordPress'in güncelleme için devre dışı bıraktığı
 			// eklenti yeniden etkinleştirilir (sahte bir paket menüyü sitelerden kaldıramasın).
@@ -310,7 +356,11 @@ final class GozKulak_Updater {
 		}
 		$version = $m[1];
 		if ( ! version_compare( $version, $current, '>' ) ) {
-			return $fail( 'paket kurulu sürümden yeni değil' );
+			return new WP_Error(
+				'gozkulak_update_not_newer',
+				/* translators: 1: paketteki sürüm, 2: kurulu sürüm */
+				sprintf( __( 'GözKulak güncellemesi kurulmadı: paketteki sürüm (%1$s) kurulu sürümden (%2$s) yeni değil. Güncellemeler sayfasında "Tekrar denetle"ye basın.', 'gozkulak' ), $version, $current )
+			);
 		}
 		$want = array();
 		foreach ( $lines as $line ) {

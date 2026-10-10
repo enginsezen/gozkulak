@@ -4,7 +4,7 @@ Tags: accessibility, erişilebilirlik, text-to-speech, sesli okuma
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 0.4.1
+Stable tag: 0.4.2
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -45,6 +45,11 @@ Sitede Content-Security-Policy başlığı varsa gereken izinler:
 Hazır ses hazırlanırken site sayfaları aynı siteden çerçevede açılır; X-Frame-Options: DENY gönderilmemelidir. İzin eksikse menü çalışır, okuma bir sonraki sese (doğal ses ya da tarayıcının sesi) geçer.
 
 == Changelog ==
+
+= 0.4.2 =
+* Düzeltme: Güncellemeler sayfasından toplu güncellemeden sonra aynı sürüm yeniden öneriliyordu ve ikinci denemede hata veriyordu (güncelleme aslında kurulmuştu). Kurulu sürüm artık eklenti dosyasından okunur.
+* "Zaten kurulu" durumu imza hatası gibi değil, ayrı ve açık bir iletiyle bildirilir.
+* Ayarlar → GözKulak altında "Güncelleme" satırı: kurulu sürüm, GitHub'daki en yeni sürüm, son denetimin zamanı ve varsa hatası; "Şimdi denetle" bağlantısı.
 
 = 0.4.1 =
 * İşlevde değişiklik yok. Güncellemenin WordPress panelinden imza doğrulamasıyla kurulduğunu sitelerde denemek için çıkarıldı.

@@ -47,6 +47,7 @@ function pkg(tag, { version = tag, signWith = key, sigVersion = version, header 
 	const name = "gozkulak-" + tag;
 	const dir = join(work, name);
 	cpSync(base, dir, { recursive: true });
+	rmSync(join(dir, "gozkulak.sig"), { force: true }); // depodaki gerçek imza
 	const php = join(dir, "gozkulak.php");
 	writeFileSync(php, readFileSync(php, "utf8").replace(/(\* Version:\s+)[0-9.]+/, "$1" + header).replace(/('GOZKULAK_VERSION', ')[^']+/, "$1" + version));
 	if (signWith) {
@@ -68,14 +69,20 @@ const ZIPS = {
 	"v9.9.3": pkg("9.9.3", { after: (d) => writeFileSync(join(d, "includes", "arka-kapi.php"), "<?php\n") }),
 	"v9.9.4": pkg("9.9.4", { header: "9.9.9" }),
 	"v9.9.5": pkg("9.9.5"),
+	"v9.9.6": pkg("9.9.6"),
 };
 // Eski imzalı paket yeni bir etiketle yeniden sunulur (sürüm geriletme)
 ZIPS["v9.9.9"] = pkg("9.9.9", { version: "9.9.0", sigVersion: "9.9.0", header: "9.9.0" });
 
 // ---------- GitHub'ın yerine geçen sunucu ----------
 let tags = [];
+let broken = false;
 const src = createServer((req, res) => {
 	const u = new globalThis.URL(req.url, SRC);
+	if (u.pathname === "/tags" && broken) {
+		res.writeHead(500);
+		return res.end();
+	}
 	if (u.pathname === "/tags") {
 		res.writeHead(200, { "Content-Type": "application/json" });
 		return res.end(JSON.stringify(tags.map((name) => ({ name }))));
@@ -166,6 +173,26 @@ try {
 	let out = await update("v9.9.5");
 	s = await installed();
 	check("geçerli imzalı paket kurulur, eklenti etkin kalır", s.version === "9.9.5" && s.active, JSON.stringify(s) + " | " + out.slice(0, 200));
+	// Güncellemeden sonra liste yenilenmeden: aynı sürüm yeniden önerilmemeli (güncelleme isteğinde bellekte
+	// eski kod çalışır; kurulu sürüm sabitten değil dosyadan okunmalı).
+	await p.goto(WP + "/wp-admin/update-core.php");
+	await p.goto(WP + "/wp-admin/plugins.php");
+	check("kurulan sürüm yeniden önerilmez", (await p.locator('a[href*="action=upgrade-plugin"][href*="gozkulak"]').count()) === 0);
+	// Güncellemeler sayfasından toplu güncelleme ("Eklentileri güncelle")
+	await offer("v9.9.6");
+	await p.goto(WP + "/wp-admin/update-core.php");
+	await p.check('input[name="checked[]"][value="gozkulak/gozkulak.php"]');
+	await p.click("#upgrade-plugins");
+	await p.waitForLoadState("networkidle");
+	const frame = p.frameLocator("iframe").first();
+	await frame.locator("body").waitFor();
+	await p.waitForTimeout(3000);
+	const bulk = (await frame.locator("body").textContent()).replace(/\s+/g, " ");
+	s = await installed();
+	check("toplu güncelleme kurulur", s.version === "9.9.6" && s.active, JSON.stringify(s) + " | " + bulk.slice(0, 160));
+	await p.goto(WP + "/wp-admin/update-core.php");
+	await p.goto(WP + "/wp-admin/plugins.php");
+	check("toplu güncellemeden sonra aynı sürüm yeniden önerilmez", (await p.locator('a[href*="action=upgrade-plugin"][href*="gozkulak"]').count()) === 0);
 	const folder = await p.evaluate(async (u) => (await fetch(u)).status, WP + "/wp-content/plugins/gozkulak/gozkulak.php");
 	const odd = await p.evaluate(async (u) => (await fetch(u)).status, WP + "/wp-content/plugins/gozkulak-9.9.5/gozkulak.php");
 	check("klasör adı gozkulak kalır", folder !== 404 && odd === 404, folder + " / " + odd);
@@ -174,7 +201,19 @@ try {
 
 	out = await update("v9.9.9");
 	s = await installed();
-	check("eski imzalı paket yeni etiketle sunulursa kurulmaz (geriletme)", /kurulu sürümden yeni değil/.test(out) && s.version === "9.9.5", JSON.stringify(s));
+	check("eski imzalı paket yeni etiketle sunulursa kurulmaz (geriletme)", /paketteki sürüm \(9\.9\.0\) kurulu sürümden \(9\.9\.6\) yeni değil/.test(out) && s.version === "9.9.6", JSON.stringify(s));
+
+	// Ayarlar sayfasındaki güncelleme satırı
+	const SET = WP + "/wp-admin/options-general.php?page=gozkulak";
+	await p.goto(SET);
+	let line = (await p.locator("h2:has-text('Güncelleme') + p").textContent()).replace(/\s+/g, " ");
+	check("ayarlarda kurulu ve en yeni sürüm görünür", /Kurulu sürüm: 9\.9\.6\./.test(line) && /en yeni sürüm: 9\.9\.9/.test(line), line);
+	broken = true;
+	await fetch(WP + "/?gk-yenile=1");
+	await p.goto(WP + "/wp-admin/update-core.php?force-check=1");
+	await p.goto(SET);
+	line = (await p.locator("h2:has-text('Güncelleme') + p").textContent()).replace(/\s+/g, " ");
+	check("GitHub'a ulaşılamazsa ayarlarda hata görünür", /başarısız: HTTP 500/.test(line), line);
 } finally {
 	if (b) await b.close();
 	try {

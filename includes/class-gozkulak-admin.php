@@ -343,8 +343,70 @@ final class GozKulak_Admin {
 				<?php submit_button(); ?>
 			</form>
 
+			<?php self::render_update(); ?>
+
 			<?php self::render_prepare( $s ); ?>
 		</div>
+		<?php
+	}
+
+	/**
+	 * Sitenin tarih ve saat biçimiyle bir zaman.
+	 *
+	 * @param int $time Unix zamanı.
+	 * @return string
+	 */
+	private static function when( $time ) {
+		$date = get_option( 'date_format' );
+		$hour = get_option( 'time_format' );
+		$out  = wp_date( ( is_string( $date ) ? $date : 'Y-m-d' ) . ' ' . ( is_string( $hour ) ? $hour : 'H:i' ), $time );
+		return is_string( $out ) ? $out : '';
+	}
+
+	/**
+	 * Güncelleme durumu: kurulu sürüm, GitHub'daki en yeni sürüm, son denetim ve varsa hatası.
+	 *
+	 * @return void
+	 */
+	private static function render_update() {
+		$st = GozKulak_Updater::status();
+		?>
+		<h2><?php esc_html_e( 'Güncelleme', 'gozkulak' ); ?></h2>
+		<p>
+			<?php
+			echo esc_html(
+				sprintf(
+					/* translators: %s: sürüm */
+					__( 'Kurulu sürüm: %s.', 'gozkulak' ),
+					GozKulak_Updater::installed()
+				)
+			);
+			echo ' ';
+			if ( ! $st['time'] ) {
+				esc_html_e( 'GitHub henüz denetlenmedi.', 'gozkulak' );
+			} elseif ( '' !== $st['error'] ) {
+				echo esc_html(
+					sprintf(
+						/* translators: 1: tarih, 2: hata */
+						__( 'Son denetim (%1$s) başarısız: %2$s.', 'gozkulak' ),
+						self::when( $st['time'] ),
+						$st['error']
+					)
+				);
+			} else {
+				echo esc_html(
+					sprintf(
+						/* translators: 1: sürüm, 2: tarih */
+						__( 'GitHub\'daki en yeni sürüm: %1$s (son denetim %2$s).', 'gozkulak' ),
+						$st['latest'],
+						self::when( $st['time'] )
+					)
+				);
+			}
+			?>
+			<a href="<?php echo esc_url( self_admin_url( 'update-core.php?force-check=1' ) ); ?>"><?php esc_html_e( 'Şimdi denetle', 'gozkulak' ); ?></a>
+		</p>
+		<p class="description"><?php esc_html_e( 'Güncellemeler GitHub\'dan gelir ve kurulmadan önce imzaları doğrulanır.', 'gozkulak' ); ?></p>
 		<?php
 	}
 
