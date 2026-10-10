@@ -9,6 +9,8 @@ defined( 'ABSPATH' ) || exit;
 
 /**
  * Tek bir seçenekte (gozkulak_settings) tutulan site ayarları.
+ *
+ * @phpstan-type Settings array{enabled: bool, visibility: string, position: string, offset_x: int, offset_y: int, size: int, icon: string, color: string, features: array<string, bool>, content_selector: string, tts_base: string, tts_fallback: bool, prepared_audio: bool}
  */
 final class GozKulak_Settings {
 
@@ -51,7 +53,7 @@ final class GozKulak_Settings {
 	/**
 	 * Varsayılan ayarlar.
 	 *
-	 * @return array<string, mixed>
+	 * @return Settings
 	 */
 	public static function defaults() {
 		return array(
@@ -74,7 +76,7 @@ final class GozKulak_Settings {
 	/**
 	 * Kayıtlı ayarları varsayılanlarla birleştirip türlerini garanti ederek döndürür.
 	 *
-	 * @return array<string, mixed>
+	 * @return Settings
 	 */
 	public static function get() {
 		$saved = get_option( self::OPTION, array() );
@@ -87,7 +89,7 @@ final class GozKulak_Settings {
 	 * Geçersiz değerler yok sayılır ve yerine önceki değer korunur.
 	 *
 	 * @param mixed $input Formdan gelen ham değer (options.php tarafından wp_unslash uygulanmış).
-	 * @return array<string, mixed>
+	 * @return Settings
 	 */
 	public static function sanitize( $input ) {
 		$previous = self::get();
@@ -98,13 +100,13 @@ final class GozKulak_Settings {
 		$clean = self::normalize( $input, $previous, true );
 
 		// normalize() geçersiz seçicide önceki değeri korur; burada yalnızca kullanıcıya bildirilir.
-		if ( isset( $input['content_selector'] ) && null === self::sanitize_selector( (string) $input['content_selector'] ) ) {
+		if ( isset( $input['content_selector'] ) && ( ! is_string( $input['content_selector'] ) || null === self::sanitize_selector( $input['content_selector'] ) ) ) {
 			self::error(
 				'gozkulak_selector',
 				__( 'Okunacak alan seçicisi kaydedilmedi: yalnızca CSS seçicilerinde kullanılan karakterlere izin verilir ve en fazla 500 karakter olabilir.', 'gozkulak' )
 			);
 		}
-		if ( isset( $input['tts_base'] ) && null === self::sanitize_tts_base( (string) $input['tts_base'] ) ) {
+		if ( isset( $input['tts_base'] ) && ( ! is_string( $input['tts_base'] ) || null === self::sanitize_tts_base( $input['tts_base'] ) ) ) {
 			self::error(
 				'gozkulak_tts_base',
 				__( 'Ses dosyalarının adresi kaydedilmedi: https:// ile başlayan, soru işareti ya da # içermeyen bir adres olmalı (ör. https://ses.example.com/).', 'gozkulak' )
@@ -117,10 +119,12 @@ final class GozKulak_Settings {
 	/**
 	 * Değerleri izin verilen türlere ve aralıklara indirger.
 	 *
-	 * @param array<string, mixed> $input     Ham değerler.
-	 * @param array<string, mixed> $fallback  Geçersiz değerlerin yerine kullanılacak değerler.
-	 * @param bool                 $from_form Form gönderimi mi (işaretlenmemiş kutular gönderilmez).
-	 * @return array<string, mixed>
+	 * @param array<mixed> $input     Ham değerler.
+	 * @param array        $fallback  Geçersiz değerlerin yerine kullanılacak değerler.
+	 * @param bool         $from_form Form gönderimi mi (işaretlenmemiş kutular gönderilmez).
+	 * @return Settings
+	 *
+	 * @phpstan-param Settings $fallback
 	 */
 	private static function normalize( array $input, array $fallback, $from_form = false ) {
 		$out = array();
@@ -128,52 +132,51 @@ final class GozKulak_Settings {
 		if ( $from_form ) {
 			$out['enabled'] = ! empty( $input['enabled'] );
 		} else {
-			$out['enabled'] = isset( $input['enabled'] ) ? (bool) $input['enabled'] : (bool) $fallback['enabled'];
+			$out['enabled'] = isset( $input['enabled'] ) ? (bool) $input['enabled'] : $fallback['enabled'];
 		}
 
-		$visibility        = isset( $input['visibility'] ) ? (string) $input['visibility'] : '';
+		$visibility        = self::text( $input, 'visibility' );
 		$out['visibility'] = in_array( $visibility, self::VISIBILITY, true ) ? $visibility : $fallback['visibility'];
 
-		$position        = isset( $input['position'] ) ? (string) $input['position'] : '';
+		$position        = self::text( $input, 'position' );
 		$out['position'] = in_array( $position, self::POSITIONS, true ) ? $position : $fallback['position'];
 
-		$out['offset_x'] = self::int_in_range( $input, 'offset_x', 0, 200, (int) $fallback['offset_x'] );
-		$out['offset_y'] = self::int_in_range( $input, 'offset_y', 0, 200, (int) $fallback['offset_y'] );
-		$out['size']     = self::int_in_range( $input, 'size', 44, 80, (int) $fallback['size'] );
+		$out['offset_x'] = self::int_in_range( $input, 'offset_x', 0, 200, $fallback['offset_x'] );
+		$out['offset_y'] = self::int_in_range( $input, 'offset_y', 0, 200, $fallback['offset_y'] );
+		$out['size']     = self::int_in_range( $input, 'size', 44, 80, $fallback['size'] );
 
-		$icon        = isset( $input['icon'] ) ? (string) $input['icon'] : '';
+		$icon        = self::text( $input, 'icon' );
 		$out['icon'] = in_array( $icon, self::ICONS, true ) ? $icon : $fallback['icon'];
 
-		$color        = isset( $input['color'] ) ? sanitize_hex_color( (string) $input['color'] ) : null;
+		$color        = sanitize_hex_color( self::text( $input, 'color' ) );
 		$out['color'] = $color ? $color : $fallback['color'];
 
 		$features        = isset( $input['features'] ) && is_array( $input['features'] ) ? $input['features'] : array();
-		$old_features    = isset( $fallback['features'] ) && is_array( $fallback['features'] ) ? $fallback['features'] : array();
 		$out['features'] = array();
 		foreach ( array_keys( self::features() ) as $key ) {
 			if ( $from_form || array_key_exists( $key, $features ) ) {
 				$out['features'][ $key ] = ! empty( $features[ $key ] );
 			} else {
-				$out['features'][ $key ] = ! empty( $old_features[ $key ] );
+				$out['features'][ $key ] = ! empty( $fallback['features'][ $key ] );
 			}
 		}
 
-		$selector                = isset( $input['content_selector'] ) ? self::sanitize_selector( (string) $input['content_selector'] ) : null;
-		$out['content_selector'] = null === $selector ? (string) $fallback['content_selector'] : $selector;
+		$selector                = isset( $input['content_selector'] ) && is_string( $input['content_selector'] ) ? self::sanitize_selector( $input['content_selector'] ) : null;
+		$out['content_selector'] = null === $selector ? $fallback['content_selector'] : $selector;
 
-		$base            = isset( $input['tts_base'] ) ? self::sanitize_tts_base( (string) $input['tts_base'] ) : null;
-		$out['tts_base'] = null === $base ? (string) $fallback['tts_base'] : $base;
+		$base            = isset( $input['tts_base'] ) && is_string( $input['tts_base'] ) ? self::sanitize_tts_base( $input['tts_base'] ) : null;
+		$out['tts_base'] = null === $base ? $fallback['tts_base'] : $base;
 
 		if ( $from_form ) {
 			$out['tts_fallback'] = ! empty( $input['tts_fallback'] );
 		} else {
-			$out['tts_fallback'] = isset( $input['tts_fallback'] ) ? (bool) $input['tts_fallback'] : (bool) $fallback['tts_fallback'];
+			$out['tts_fallback'] = isset( $input['tts_fallback'] ) ? (bool) $input['tts_fallback'] : $fallback['tts_fallback'];
 		}
 
 		if ( $from_form ) {
 			$out['prepared_audio'] = ! empty( $input['prepared_audio'] );
 		} else {
-			$out['prepared_audio'] = isset( $input['prepared_audio'] ) ? (bool) $input['prepared_audio'] : (bool) $fallback['prepared_audio'];
+			$out['prepared_audio'] = isset( $input['prepared_audio'] ) ? (bool) $input['prepared_audio'] : $fallback['prepared_audio'];
 		}
 
 		return $out;
@@ -189,7 +192,7 @@ final class GozKulak_Settings {
 	 * @return string|null
 	 */
 	public static function sanitize_tts_base( $raw ) {
-		$value = trim( (string) $raw );
+		$value = trim( $raw );
 		if ( '' === $value ) {
 			return '';
 		}
@@ -223,7 +226,7 @@ final class GozKulak_Settings {
 	 * @return string|null
 	 */
 	public static function sanitize_selector( $raw ) {
-		$collapsed = trim( (string) preg_replace( '/\s+/u', ' ', (string) $raw ) );
+		$collapsed = trim( (string) preg_replace( '/\s+/u', ' ', $raw ) );
 		$value     = trim( (string) preg_replace( '/\s+/u', ' ', sanitize_text_field( $raw ) ) );
 		// Temizlik bir şey sildiyse (ör. HTML etiketi) değer sessizce değiştirilmez, reddedilir.
 		if ( $value !== $collapsed ) {
@@ -243,13 +246,24 @@ final class GozKulak_Settings {
 	}
 
 	/**
+	 * Diziden metin okur; yoksa ya da metin/sayı değilse boş metin.
+	 *
+	 * @param array<mixed> $input Değerler.
+	 * @param string       $key   Anahtar.
+	 * @return string
+	 */
+	private static function text( array $input, $key ) {
+		return isset( $input[ $key ] ) && ( is_string( $input[ $key ] ) || is_int( $input[ $key ] ) ) ? (string) $input[ $key ] : '';
+	}
+
+	/**
 	 * Diziden aralık içinde bir tam sayı okur.
 	 *
-	 * @param array<string, mixed> $input    Değerler.
-	 * @param string               $key      Anahtar.
-	 * @param int                  $min      En küçük.
-	 * @param int                  $max      En büyük.
-	 * @param int                  $fallback Geçersizse dönecek değer.
+	 * @param array<mixed> $input    Değerler.
+	 * @param string       $key      Anahtar.
+	 * @param int          $min      En küçük.
+	 * @param int          $max      En büyük.
+	 * @param int          $fallback Geçersizse dönecek değer.
 	 * @return int
 	 */
 	private static function int_in_range( array $input, $key, $min, $max, $fallback ) {
@@ -268,6 +282,11 @@ final class GozKulak_Settings {
 	 * @return void
 	 */
 	private static function error( $code, $message ) {
+		/**
+		 * Bu istekte gösterilen hata kodları.
+		 *
+		 * @var array<string, true> $shown
+		 */
 		static $shown = array();
 		if ( isset( $shown[ $code ] ) || ! function_exists( 'add_settings_error' ) ) {
 			return;

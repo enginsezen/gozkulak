@@ -97,11 +97,11 @@ final class GozKulak_Audio {
 	 * @return WP_REST_Response|WP_Error
 	 */
 	public static function upload( WP_REST_Request $request ) {
-		$hash = (string) $request['hash'];
-		if ( ! preg_match( self::HASH, $hash ) ) {
+		$hash = $request->get_param( 'hash' );
+		if ( ! self::valid_hash( $hash ) ) {
 			return self::fail( 'gozkulak_hash', __( 'Geçersiz dosya adı.', 'gozkulak' ) );
 		}
-		$body = (string) $request->get_body();
+		$body = $request->get_body();
 		if ( ! self::is_opus( $body ) ) {
 			return self::fail( 'gozkulak_body', __( 'Dosya Ogg Opus değil ya da çok büyük.', 'gozkulak' ) );
 		}
@@ -128,7 +128,8 @@ final class GozKulak_Audio {
 	 * @return WP_REST_Response|WP_Error
 	 */
 	public static function save_page( WP_REST_Request $request ) {
-		$post = get_post( (int) $request['id'] );
+		$id   = $request->get_param( 'id' );
+		$post = is_numeric( $id ) ? get_post( (int) $id ) : null;
 		if ( ! $post || ! is_post_publicly_viewable( $post ) ) {
 			return self::fail( 'gozkulak_post', __( 'Yayımlanmış bir sayfa bulunamadı.', 'gozkulak' ), 404 );
 		}
@@ -139,7 +140,7 @@ final class GozKulak_Audio {
 		$keep    = array();
 		$missing = array();
 		foreach ( $files as $hash ) {
-			if ( ! is_string( $hash ) || ! preg_match( self::HASH, $hash ) ) {
+			if ( ! self::valid_hash( $hash ) ) {
 				return self::fail( 'gozkulak_list', __( 'Geçersiz dosya listesi.', 'gozkulak' ) );
 			}
 			if ( isset( $keep[ $hash ] ) ) {
@@ -168,7 +169,7 @@ final class GozKulak_Audio {
 	/**
 	 * Hiçbir sayfanın listesinde olmayan dosyaları siler.
 	 *
-	 * @return WP_REST_Response|WP_Error
+	 * @return WP_REST_Response
 	 */
 	public static function cleanup() {
 		$used = array();
@@ -189,7 +190,7 @@ final class GozKulak_Audio {
 	/**
 	 * Bütün hazır sesleri ve sayfa listelerini siler.
 	 *
-	 * @return WP_REST_Response|WP_Error
+	 * @return WP_REST_Response
 	 */
 	public static function purge() {
 		delete_post_meta_by_key( self::META );
@@ -216,7 +217,7 @@ final class GozKulak_Audio {
 		if ( ! is_singular() ) {
 			return null;
 		}
-		$csv = (string) get_post_meta( (int) get_queried_object_id(), self::META, true );
+		$csv = self::list_of( get_queried_object_id() );
 		if ( '' === $csv ) {
 			return null;
 		}
@@ -237,8 +238,19 @@ final class GozKulak_Audio {
 	 * @return int
 	 */
 	public static function count( $post_id ) {
-		$csv = (string) get_post_meta( (int) $post_id, self::META, true );
+		$csv = self::list_of( $post_id );
 		return '' === $csv ? 0 : substr_count( $csv, ',' ) + 1;
+	}
+
+	/**
+	 * Bir sayfanın kayıtlı listesi (virgülle ayrılmış özetler); yoksa boş metin.
+	 *
+	 * @param int $post_id Yazı.
+	 * @return string
+	 */
+	private static function list_of( $post_id ) {
+		$csv = get_post_meta( $post_id, self::META, true );
+		return is_string( $csv ) ? $csv : '';
 	}
 
 	/**
@@ -246,6 +258,7 @@ final class GozKulak_Audio {
 	 *
 	 * @param mixed $hash Değer.
 	 * @return bool
+	 * @phpstan-assert-if-true string $hash
 	 */
 	public static function valid_hash( $hash ) {
 		return is_string( $hash ) && 1 === preg_match( self::HASH, $hash );
@@ -319,7 +332,7 @@ final class GozKulak_Audio {
 		$found = glob( $dir . '[0-9a-f][0-9a-f]/*.ogg' );
 		foreach ( is_array( $found ) ? $found : array() as $file ) {
 			$hash = basename( $file, '.ogg' );
-			if ( self::valid_hash( $hash ) ) {
+			if ( 1 === preg_match( self::HASH, $hash ) ) {
 				$out[ $hash ] = $file;
 			}
 		}
@@ -333,10 +346,13 @@ final class GozKulak_Audio {
 	 */
 	private static function all_lists() {
 		global $wpdb;
+		if ( ! $wpdb instanceof wpdb ) {
+			return array();
+		}
 		// Meta değerleri toplu okunur; sonuç önbelleğe alınmaz (yalnızca temizlikte, yönetici isteğiyle).
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-		$rows = $wpdb->get_col( $wpdb->prepare( "SELECT meta_value FROM {$wpdb->postmeta} WHERE meta_key = %s", self::META ) );
-		return is_array( $rows ) ? array_map( 'strval', $rows ) : array();
+		$rows = $wpdb->get_col( $wpdb->prepare( 'SELECT meta_value FROM %i WHERE meta_key = %s', $wpdb->postmeta, self::META ) );
+		return array_values( array_filter( $rows, 'is_string' ) );
 	}
 
 	/**
@@ -365,7 +381,7 @@ final class GozKulak_Audio {
 		if ( 'direct' !== get_filesystem_method() || ! WP_Filesystem() ) {
 			return null;
 		}
-		return $wp_filesystem;
+		return $wp_filesystem instanceof WP_Filesystem_Base ? $wp_filesystem : null;
 	}
 
 	/**

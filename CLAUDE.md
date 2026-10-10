@@ -61,6 +61,8 @@ Kişiye özel bilgiler (siteler, sunucu, test cihazları, güncel durum) `CLAUDE
 
 ```
 cd tests && npm run phpcs                   # WordPress kodlama standardı (phpcs.xml.dist); çıktı boş olmalı. PHP gerekmez (WebAssembly)
+cd tests && npm run phpstan                 # PHPStan en sıkı düzey (tests/phpstan.neon.dist); "No errors" olmalı
+cd tests && npm run plugin-check            # WordPress Plugin Check, paket üzerinde (port 9401). Yalnızca readme dil hataları beklenir
 cd tests && npm run wp                      # WordPress Playground (http://127.0.0.1:9400); ardından node e2e/wp-audio.mjs
 node --check assets/js/gozkulak.js assets/js/gozkulak-tts-worker.js
 cd tests && npm install && npx playwright install chromium   # ilk kez
@@ -77,7 +79,7 @@ Tanı için tarayıcı konsolunda `GozKulak.sentences()` bir sayfada okunacak c�
    - `assets/js/gozkulak.js`: `SCRIPT_VERSION`.
    - `readme.txt`: `Stable tag`.
 2. `readme.txt` dosyasında Changelog'a kısa Türkçe maddeler ekle.
-3. `cd tests && npm run phpcs`, `node --check` ve `cd tests && npm test` çalıştır.
+3. `cd tests && npm run phpcs`, `npm run phpstan`, `node --check` ve `cd tests && npm test` çalıştır.
 4. Commit'i at, ardından `git push origin main`.
 5. Paketi oluştur: `git archive --prefix=gozkulak/ -o ../gozkulak-X.Y.Z.zip HEAD`. `tools/` ve `tests/` pakete girmez.
 6. Zip'i kullanıcıya mutlaka ver.

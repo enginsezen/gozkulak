@@ -10,6 +10,8 @@ defined( 'ABSPATH' ) || exit;
 /**
  * Ayar sayfası. Kayıt Settings API ile yapılır: options.php nonce'u ve
  * manage_options yetkisini denetler, değerler GozKulak_Settings::sanitize'dan geçer.
+ *
+ * @phpstan-import-type Settings from GozKulak_Settings
  */
 final class GozKulak_Admin {
 
@@ -340,8 +342,10 @@ final class GozKulak_Admin {
 	 * Hazır ses bölümü: sayfa listesi ve hazırlama düğmeleri. Hazırlamayı gozkulak-prepare.js yapar;
 	 * REST nonce'u yalnızca bu yönetici sayfasına yazılır.
 	 *
-	 * @param array<string, mixed> $s Ayarlar.
+	 * @param array $s Ayarlar.
 	 * @return void
+	 *
+	 * @phpstan-param Settings $s
 	 */
 	private static function render_prepare( array $s ) {
 		$types  = array_diff( get_post_types( array( 'public' => true ) ), array( 'attachment' ) );
@@ -358,7 +362,8 @@ final class GozKulak_Admin {
 		$labels = array();
 		foreach ( $types as $type ) {
 			$obj             = get_post_type_object( $type );
-			$labels[ $type ] = $obj ? $obj->labels->singular_name : $type;
+			$name            = $obj ? $obj->labels->singular_name : null;
+			$labels[ $type ] = is_string( $name ) && '' !== $name ? $name : $type;
 		}
 		$config = array(
 			'rest'     => esc_url_raw( rest_url( GozKulak_Audio::NS . '/' ) ),

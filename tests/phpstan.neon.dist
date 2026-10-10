@@ -1,0 +1,14 @@
+# PHPStan ayarı: eklentinin PHP dosyaları, WordPress işlevleri szepeviktor/phpstan-wordpress ile tanınır.
+parameters:
+	level: max
+	phpVersion: 70400
+	paths:
+		- ../gozkulak.php
+		- ../uninstall.php
+		- ../includes
+	bootstrapFiles:
+		- phpstan-bootstrap.php
+	# PHP WebAssembly'de alt süreç açılamaz: tek süreç.
+	parallel:
+		maximumNumberOfProcesses: 1
+		processTimeout: 900.0

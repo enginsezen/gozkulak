@@ -11,3 +11,5 @@ CLAUDE.local.md
 /tests/node_modules/
 /tests/shots/
 /tests/.phpcs/
+/tests/.phpstan/
+/tests/.plugin-check/

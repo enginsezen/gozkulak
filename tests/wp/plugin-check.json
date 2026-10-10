@@ -1,0 +1,13 @@
+{
+  "steps": [
+    {
+      "step": "installPlugin",
+      "pluginData": { "resource": "wordpress.org/plugins", "slug": "plugin-check" },
+      "options": { "activate": true }
+    },
+    {
+      "step": "activatePlugin",
+      "pluginPath": "gozkulak/gozkulak.php"
+    }
+  ]
+}

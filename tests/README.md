@@ -51,6 +51,9 @@ PHP, WebAssembly ile çalışır (`@php-wasm/cli`, `@wp-playground/cli`); `npx` 
 
 ```
 npm run phpcs       # WordPress kodlama standardı; çıktı boşsa sorun yok (ilk seferde WPCS tests/.phpcs/ altına kurulur)
+npm run phpstan     # PHPStan en sıkı düzeyde (WordPress uzantısıyla); "No errors" görünmeli (ilk seferde tests/.phpstan/ altına kurulur)
+npm run plugin-check  # WordPress Plugin Check: paket (git archive) ayrı bir Playground'da (port 9401) denetlenir.
+                      # Yalnızca readme'nin İngilizce olmadığına dair iki hata beklenir: eklenti WordPress.org'da değil
 npm run wp          # WordPress Playground: http://127.0.0.1:9400, PHP 7.4, eklenti etkin (wp/blueprint.json)
 node e2e/wp-audio.mjs   # hazır ses REST uçları (npm run wp açıkken)
 node e2e/wp-prepare.mjs # hazır ses hazırlama, gerçek modelle (tts.sezen.pro'dan ~40 MB iner; GK_TTS ile değişir)
