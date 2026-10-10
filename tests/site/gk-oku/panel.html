@@ -1,0 +1,39 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><title>Paneller</title>
+<style>body{font:16px/1.6 Arial,sans-serif;margin:20px} .acc-body{padding:4px 8px} [role=tabpanel]{padding:4px 8px}</style></head><body>
+<!-- Açılıp kapanan bölümler hazırlamada açılmış hâlleriyle de taranır (e2e/panel.mjs) -->
+<main>
+<h2>Sık Sorulan Sorular</h2>
+<div class="acc">
+<div class="acc-title" id="t1" role="button" aria-expanded="true" aria-controls="c1">Teslim süresi ne kadar?</div>
+<div class="acc-body" id="c1"><p>Projenin kapsamına göre üç ile on beş gün arasında değişir.</p></div>
+<div class="acc-title" id="t2" role="button" aria-expanded="false" aria-controls="c2">Hosting hizmeti sunuyor musunuz?</div>
+<div class="acc-body" id="c2" style="display: none;"><p>Evet.</p><p>Web sitesiyle birlikte ya da ayrı olarak sunuyoruz.</p></div>
+<div class="acc-title" id="t3" role="button" aria-expanded="false" aria-controls="c3">Uzaktan destek veriyor musunuz?</div>
+<div class="acc-body" id="c3" hidden><p>Türkiye'nin her yerine uzaktan destek sağlıyoruz.</p></div>
+</div>
+<details><summary>Fiyatlar nasıl belirleniyor?</summary><p>İhtiyaç analizinden sonra size özel teklif hazırlanır.</p></details>
+<div role="tablist"><button role="tab" aria-selected="true" aria-controls="p1">Kurumsal</button><button role="tab" aria-selected="false" aria-controls="p2">Bireysel</button></div>
+<div role="tabpanel" id="p1"><p>Kurumsal paketler yıllık sözleşmeyle sunulur.</p></div>
+<div role="tabpanel" id="p2" hidden><p>Bireysel paketler aylık olarak da alınabilir.</p></div>
+<p>Başka sorunuz varsa bize yazın.</p>
+</main>
+<script>
+// Akordeon: biri açılınca diğeri kapanır (Elementor gibi). Sekme: seçilen panel görünür.
+for (const t of document.querySelectorAll(".acc-title")) t.addEventListener("click", () => {
+	for (const o of document.querySelectorAll(".acc-title")) {
+		const on = o === t && o.getAttribute("aria-expanded") !== "true";
+		o.setAttribute("aria-expanded", String(on));
+		const c = document.getElementById(o.getAttribute("aria-controls"));
+		c.removeAttribute("hidden");
+		c.style.display = on ? "block" : "none";
+	}
+});
+for (const t of document.querySelectorAll("[role=tab]")) t.addEventListener("click", () => {
+	for (const o of document.querySelectorAll("[role=tab]")) {
+		o.setAttribute("aria-selected", String(o === t));
+		document.getElementById(o.getAttribute("aria-controls")).hidden = o !== t;
+	}
+});
+</script>
+<script type="application/json" id="gozkulak-config">{"version":"0.2.8","testMode":true,"css":"/wp-content/plugins/gozkulak/assets/css/menu.css","pageCss":"/wp-content/plugins/gozkulak/assets/css/page.css","position":"bottom-right","offset":[20,20],"size":56,"icon":"person","color":"#085e9d","features":["text_to_speech"],"selector":"main"}</script>
+<script src="/wp-content/plugins/gozkulak/assets/js/gozkulak.js?ver=t" defer></script></body></html>

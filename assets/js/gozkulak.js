@@ -20,7 +20,7 @@
 
 	// Betik dosyasının kendi sürümü. Eklentinin sürümüyle uyuşmazsa sayfa eski (önbellekteki) bir
 	// betik dosyası kullanıyordur; test modunda menüde uyarı gösterilir.
-	const SCRIPT_VERSION = "0.4.6";
+	const SCRIPT_VERSION = "0.4.7";
 	const doc = document;
 	const htmlEl = doc.documentElement;
 	const enabledFeatures = new Set(Array.isArray(cfg.features) ? cfg.features : []);
@@ -1658,7 +1658,80 @@
 			}
 		}
 
-		return { page, selection, fromPoint, rangeOf };
+		/*
+		 * Hazırlama için açılıp kapanan bölümler (akordeon, sekme, <details>): okunacak alandaki, sitenin
+		 * kendi işaretleriyle (aria-controls + aria-expanded / aria-selected) bağlı paneller. Kapalı paneller
+		 * okunmaz (görünmez); ziyaretçi açınca okunur. Hazırlamada her biri açılmış hâliyle de taranır.
+		 */
+		function panels() {
+			const rs = roots();
+			const inside = (el) => rs.some((r) => r.contains(el));
+			const out = new Map();
+			for (const d of doc.querySelectorAll("details")) if (inside(d)) out.set(d, { el: d, details: true, open: d.open });
+			for (const c of doc.querySelectorAll("[aria-controls]")) {
+				const state = c.getAttribute("aria-expanded") || (c.getAttribute("role") === "tab" ? c.getAttribute("aria-selected") : null);
+				if (state !== "true" && state !== "false") continue;
+				for (const id of (c.getAttribute("aria-controls") || "").split(/\s+/)) {
+					const t = id ? doc.getElementById(id) : null;
+					if (t && !out.has(t) && inside(t) && !t.contains(c)) out.set(t, { el: t, details: false, open: state === "true" });
+				}
+			}
+			return [...out.values()].slice(0, 60);
+		}
+
+		// Paneli geçici olarak açar ya da kapatır; önceki hâline döndüren işlevi verir.
+		function force(p, show) {
+			const el = p.el;
+			if (p.details) {
+				const was = el.open;
+				el.open = show;
+				return () => {
+					el.open = was;
+				};
+			}
+			const style = el.getAttribute("style");
+			const hidden = el.hasAttribute("hidden");
+			if (show) el.removeAttribute("hidden");
+			if (show !== visible(el)) el.style.setProperty("display", show ? "block" : "none", "important");
+			return () => {
+				if (style === null) el.removeAttribute("style");
+				else el.setAttribute("style", style);
+				if (hidden) el.setAttribute("hidden", "");
+			};
+		}
+
+		/**
+		 * Okunacak alanın her hâli için cümleler: sayfa açıldığı gibi, sonra her kapalı panel tek başına
+		 * açılmış (açık olanlar da açık: aç-kapa kutuları) ve açık olanlar kapatılmış (akordeon ve
+		 * sekmede biri açılınca diğeri kapanır). Hazır sesin birimleri her hâlde ayrı hesaplanır.
+		 */
+		function pageStates() {
+			const states = [page()];
+			const all = panels();
+			const opened = all.filter((p) => p.open);
+			// Tarayıcı, satır içi stil kaldırılınca bazen boş bir style="" bırakıyor: sonda özgün öznitelik yazılır.
+			const styles = all.map((p) => [p.el, p.el.getAttribute("style")]);
+			for (const p of all) {
+				if (p.open) continue;
+				for (const closeOthers of [false, true]) {
+					if (closeOthers && !opened.length) continue;
+					const undo = [force(p, true)];
+					if (closeOthers) for (const o of opened) undo.push(force(o, false));
+					try {
+						states.push(page());
+					} finally {
+						undo.reverse().forEach((f) => f());
+					}
+				}
+			}
+			for (const [el, style] of styles) {
+				if (style === null) el.removeAttribute("style");
+				else if (el.getAttribute("style") !== style) el.setAttribute("style", style);
+			}
+			return states;
+		}
+
+		return { page, pageStates, selection, fromPoint, rangeOf };
 	})();
 
 	/*
@@ -3734,6 +3807,8 @@
 			sentences: () => content.page().map((x) => ({ text: x.text, speech: x.speech, lang: x.lang })),
 			// Hazır ses: bu sayfanın üretim birimleri ve dosya adları (yönetici panelindeki hazırlama kullanır)
 			units: () => Promise.all(prepared.units(content.page()).map(async (u) => ({ text: u.text, hash: await prepared.hash(u.text) }))),
+			// Sayfanın açılıp kapanan bölümleri (akordeon, sekme) açılmış hâlleri dahil bütün birimler
+			unitsAll: () => Promise.all(content.pageStates().flatMap((list) => prepared.units(list)).map(async (u) => ({ text: u.text, hash: await prepared.hash(u.text) }))),
 		};
 	};
 	if (doc.body) start();

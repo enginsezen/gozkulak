@@ -241,7 +241,8 @@
 			for (const w of WIDTHS) {
 				frame.style.width = w + "px";
 				await sleep(500); // yeni genişlikte yerleşim ve temanın yeniden boyutlandırma betikleri
-				list.push(...(await win.GozKulak.units()));
+				// Açılıp kapanan bölümler (akordeon, sekme) de açılmış hâlleriyle taranır.
+				list.push(...(await (win.GozKulak.unitsAll || win.GozKulak.units)()));
 			}
 		} finally {
 			frame.style.width = "";

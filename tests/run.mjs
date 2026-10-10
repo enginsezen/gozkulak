@@ -31,6 +31,7 @@ const CORE = [
 	["reader.mjs"],
 	["hours.mjs"],
 	["sayac.mjs"],
+	["panel.mjs"],
 	["tocsel.mjs"],
 	["group.mjs"],
 	["ema.mjs"],

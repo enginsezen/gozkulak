@@ -4,7 +4,7 @@ Tags: accessibility, erişilebilirlik, text-to-speech, sesli okuma
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 0.4.6
+Stable tag: 0.4.7
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -46,6 +46,10 @@ Sitede Content-Security-Policy başlığı varsa gereken izinler:
 Hazır ses hazırlanırken site sayfaları aynı siteden çerçevede açılır; X-Frame-Options: DENY gönderilmemelidir. İzin eksikse menü çalışır, okuma bir sonraki sese (doğal ses ya da tarayıcının sesi) geçer.
 
 == Changelog ==
+
+= 0.4.7 =
+* Hazır ses: açılıp kapanan bölümler (akordeon, sık sorulan sorular, sekmeler, <details>) de hazırlanır. Eskiden yalnızca sayfa açıldığında görünen panel hazırlanıyordu; ziyaretçi başka bir soruyu açınca indirme onayı soruluyordu. Bölümler sitenin kendi erişilebilirlik işaretlerinden (aria-controls) tanınır.
+* Bu tür bölümler içeren sayfalar yeniden hazırlanmalıdır (Hazırla yalnızca eksik birimleri üretir).
 
 = 0.4.6 =
 * "Okunaklı yazı" artık her cihazda aynı yazı tipini kullanır: Atkinson Hyperlegible Next (az gören okurlar için tasarlandı; I/l/1 ve O/0 kolay ayırt edilir). Yazı tipi eklentiyle gelir; başka bir siteye istek gitmez. Eskiden bu yazı tipi yüklenmiyordu; masaüstünde Verdana ya da Tahoma, telefonda sistemin yazı tipi kullanılıyordu.
