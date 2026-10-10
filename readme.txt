@@ -4,7 +4,7 @@ Tags: accessibility, erişilebilirlik, text-to-speech, sesli okuma
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 0.2.12
+Stable tag: 0.3.0
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -32,6 +32,13 @@ Bu isteklerde yalnızca standart HTTP bilgileri (IP adresi, tarayıcı bilgisi) 
 Üçüncü taraf bileşenler ve lisansları: THIRD-PARTY-NOTICES.txt
 
 == Changelog ==
+
+= 0.3.0 =
+* Hazır ses: Ayarlar → GözKulak altındaki "Hazır ses" bölümünden seçilen sayfaların sesi cümle cümle bir kez üretilip sitede saklanır (uploads/gozkulak/, Ogg Opus). Ziyaretçinin tarayıcısında model çalışmaz.
+* Sayfanın tamamı hazırsa ses modeli indirilmez ve onay sorulmaz. Eksik cümle varsa onaydan sonra hazırlar dosyadan, eksikler tarayıcıda üretilir.
+* Hazır ses hızlandırılınca perde korunur; hız değişince cümle baştan okunmaz.
+* Yönetici panelinden kullanılmayan dosyalar ya da tüm hazır sesler silinebilir. Eklenti kaldırılınca hazır ses dosyaları ve sayfa listeleri de silinir.
+* Hazır ses için yalnızca yöneticilere açık bir REST ucu eklendi (gozkulak/v1); dosya adı ve içerik denetlenir.
 
 = 0.2.12 =
 * Telefonda doğal ses okurken ses arada bitince sık sık kesilip yeniden başlamıyor. Kısa cümlelerde biriktirilen ses, tampon dolmadan çalınıyordu ve hemen yine bitiyordu; artık tampon dolana kadar beklenir. Ses okuma ortasında her bittiğinde biraz daha uzun biriktirilir (en çok 6 sn): sık ve kısa kesilmeler yerine seyrek bir bekleme olur.
