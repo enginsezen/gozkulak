@@ -1,6 +1,6 @@
 # GözKulak — Claude Code talimatı
 
-WordPress için temadan bağımsız erişilebilirlik menüsü ve Türkçe sesli okuma eklentisi. Türkçe ses, EMA Lightning modeliyle ziyaretçinin tarayıcısında (ONNX Runtime Web, Web Worker) üretilir. Sunucuya hiçbir şey kurulmaz.
+WordPress için temadan bağımsız erişilebilirlik menüsü ve Türkçe sesli okuma eklentisi. Türkçe ses, EMA Lightning modeliyle tarayıcıda (ONNX Runtime Web, Web Worker) üretilir: hazırlanmış sayfalarda yöneticinin tarayıcısında bir kez üretilip sitede ses dosyası olarak saklanır (hazır ses), diğer sayfalarda ziyaretçinin tarayıcısında. Sunucuya hiçbir şey kurulmaz.
 
 Kişiye özel bilgiler (siteler, sunucu, test cihazları, güncel durum) `CLAUDE.local.md` dosyasında ve `ozel/` klasöründedir. İkisi de `.gitignore`'dadır ve repoya girmez. Oturum başında bunları oku; kaldığımız yer `ozel/kaldigimiz-yer.md` içinde.
 

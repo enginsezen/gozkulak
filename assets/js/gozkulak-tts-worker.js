@@ -1,7 +1,8 @@
 /*!
  * GözKulak — doğal ses motoru (Web Worker).
  *
- * Türkçe sesi EMA Lightning modeliyle ziyaretçinin tarayıcısında üretir; okunan metin cihazdan çıkmaz.
+ * Türkçe sesi EMA Lightning modeliyle tarayıcıda üretir: ziyaretçide okuma sırasında, yönetici panelinde hazır ses
+ * için. Okunan metin hiçbir ses servisine gönderilmez.
  * Menü betiği (gozkulak.js) bu dosyayı yalnızca ziyaretçi doğal sesle dinlemek istediğinde açar.
  *
  * Motor dosyaları sürüme sabitlenmiştir ve her biri SHA-256 ile doğrulanır. Doğrulaması tutmayan

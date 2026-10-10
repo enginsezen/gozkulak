@@ -8,7 +8,7 @@ Stable tag: 0.4.3
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Erişilebilirlik menüsü ve Türkçe sesli okuma. Ses ziyaretçinin tarayıcısında üretilir.
+Erişilebilirlik menüsü ve Türkçe sesli okuma. Ses tarayıcıda üretilir; sunucuya paket kurulmaz.
 
 == Description ==
 

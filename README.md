@@ -3,7 +3,7 @@
 WordPress için erişilebilirlik menüsü ve Türkçe sesli okuma eklentisi. Adı "göz kulak olmak" deyiminden gelir: göz görsel ayarları, kulak sesli okumayı karşılar.
 
 - **Temadan bağımsız:** menü Shadow DOM içinde çizilir; tema stilleri menüyü, menünün stilleri temayı etkilemez.
-- **Ses tarayıcıda üretilir:** Türkçe sesli okuma [EMA Lightning](https://huggingface.co/canberkkkkkk/ema-lightning) modeliyle ziyaretçinin cihazında çalışır. Sunucuya paket kurulmaz, metin cihazdan çıkmaz.
+- **Ses tarayıcıda üretilir:** Türkçe ses [EMA Lightning](https://huggingface.co/canberkkkkkk/ema-lightning) modeliyle tarayıcıda üretilir. Hazırlanmış sayfalarda yöneticinin tarayıcısında bir kez üretilip sitede ses dosyası olarak saklanır; diğer sayfalarda ziyaretçinin cihazında üretilir. Sunucuya paket kurulmaz; okunan metin hiçbir ses servisine gönderilmez.
 - **Ziyaretçiden veri toplanmaz:** tercihler yalnızca ziyaretçinin tarayıcısında saklanır; ziyaretçiye açık AJAX ya da REST ucu yoktur.
 
 ## Durum

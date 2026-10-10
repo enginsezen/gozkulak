@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name:       GözKulak
- * Description:       Erişilebilirlik menüsü ve Türkçe sesli okuma. Ses ziyaretçinin tarayıcısında üretilir; ziyaretçiden veri toplanmaz.
+ * Description:       Erişilebilirlik menüsü ve Türkçe sesli okuma. Ses tarayıcıda üretilir, sunucuya paket kurulmaz; ziyaretçiden veri toplanmaz.
  * Version:           0.4.3
  * Requires at least: 6.4
  * Requires PHP:      7.4

@@ -274,7 +274,7 @@ final class GozKulak_Admin {
 				</table>
 
 				<h2><?php esc_html_e( 'Sesli okuma', 'gozkulak' ); ?></h2>
-				<p><?php esc_html_e( 'Türkçe sayfalar, ziyaretçi kapatmadıysa doğal sesle (EMA Lightning, yapay zekâ) okunur. Ses ziyaretçinin tarayıcısında üretilir; okunan metin hiçbir sunucuya gönderilmez. İngilizce sayfalarda ve doğal sesin çalışmadığı cihazlarda tarayıcının kendi sesi kullanılır.', 'gozkulak' ); ?></p>
+				<p><?php esc_html_e( 'Türkçe sayfalar, ziyaretçi kapatmadıysa doğal sesle (EMA Lightning, yapay zekâ) okunur. Ses ziyaretçinin tarayıcısında üretilir ya da sitenizde önceden hazırlanmış ses dosyalarından (Hazır ses) çalınır; okunan metin hiçbir ses servisine gönderilmez. İngilizce sayfalarda ve doğal sesin çalışmadığı cihazlarda tarayıcının kendi sesi kullanılır.', 'gozkulak' ); ?></p>
 				<table class="form-table" role="presentation">
 					<tr>
 						<th scope="row"><label for="gozkulak-selector"><?php esc_html_e( 'Okunacak alan (CSS seçici)', 'gozkulak' ); ?></label></th>
