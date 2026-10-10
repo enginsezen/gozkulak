@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GözKulak — hazır ses dinleme denemesi</title>
+<!--
+  Faz 2.4 hazır ses, 1. adım: Opus kalitesi ve hız seçeneklerinin dinleme karşılaştırması.
+  Eklenti paketine girmez. Yerel test sunucusuyla açılır:
+    cd tests && npm run serve
+    http://127.0.0.1:8080/wp-content/plugins/gozkulak/tools/hazir-ses/dinleme.html
+  Model dosyaları "Ses dosyalarının adresi"nden (varsayılan tts.sezen.pro) indirilir ve doğrulanır.
+-->
+<style>
+	body { font: 16px/1.5 system-ui, sans-serif; margin: 0; color: #1d2327; background: #f6f7f7; }
+	main { max-width: 900px; margin: 0 auto; padding: 20px 16px 60px; }
+	h1 { font-size: 1.5rem; }
+	h2 { font-size: 1.15rem; margin-top: 2rem; }
+	label { display: block; margin: .8rem 0 .3rem; font-weight: 600; }
+	input[type=url], textarea { width: 100%; box-sizing: border-box; font: inherit; padding: 6px 8px; }
+	textarea { min-height: 9em; }
+	button { font: inherit; padding: 6px 14px; margin: .8rem .5rem 0 0; cursor: pointer; }
+	.row { display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; margin: .6rem 0; padding: .6rem .8rem; background: #fff; border: 1px solid #dcdcde; border-radius: 6px; }
+	.row b { min-width: 9rem; }
+	.row audio { flex: 1 1 280px; min-width: 0; }
+	.meta { color: #50575e; font-size: .9rem; }
+	#log { white-space: pre-wrap; font: 13px/1.5 ui-monospace, monospace; background: #fff; border: 1px solid #dcdcde; padding: 8px; max-height: 14em; overflow: auto; }
+	.err { color: #b32d2e; }
+</style>
+</head>
+<body>
+<main>
+	<h1>Hazır ses: dinleme denemesi</h1>
+	<p>Aynı metin dört hızda iki yolla üretilir. <b>Model</b>: sesi model o hızda üretir (her hız ayrı dosya). <b>Hızlandırma</b>: 1× ses tarayıcıda hızlandırılır ya da yavaşlatılır (tek dosya, ses perdesi korunur). Ayrıca Opus 24 ve 32 kbps, sıkıştırılmamış sesle karşılaştırılır.</p>
+
+	<label for="base">Ses dosyalarının adresi</label>
+	<input id="base" type="url" value="https://tts.sezen.pro/">
+	<label><input id="gpu" type="checkbox"> WebGPU kullan (masaüstü Chrome)</label>
+	<label for="text">Metin</label>
+	<textarea id="text">Safranbolu Eski Çarşı'da bulunan Kaymakamlar Gezi Evi, geleneksel Safranbolu ev yaşamını tanıtmak amacıyla müzeye dönüştürülmüş tarihi bir konaktır. Yapı on dokuzuncu yüzyıl başlarında inşa edilmiştir. Müze her gün sabah dokuzdan akşam altıya kadar açıktır. Bilet gişede satılır. Grup ziyaretleri için önceden haber verilmesi önerilir.</textarea>
+	<button id="run" type="button">Örnekleri üret</button>
+	<div id="log" role="status" aria-live="polite"></div>
+
+	<section id="quality" hidden>
+		<h2>Kalite (1×)</h2>
+		<p class="meta">Opus 24 kbps, sıkıştırılmamış sesten ayırt edilemiyorsa 24 kbps yeterli; değilse 32 kbps.</p>
+	</section>
+	<section id="speeds" hidden>
+		<h2>Hız: model mi, hızlandırma mı?</h2>
+		<p class="meta">Her hızda iki oynatıcı: önce "Model", sonra "Hızlandırma". Hangisi daha doğal?</p>
+	</section>
+</main>
+<script src="dinleme.js"></script>
+</body>
+</html>
