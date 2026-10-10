@@ -4,7 +4,7 @@ Tags: accessibility, erişilebilirlik, text-to-speech, sesli okuma
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 0.2.2
+Stable tag: 0.2.3
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -21,6 +21,12 @@ GözKulak, temadan bağımsız bir erişilebilirlik menüsü ekler. Menü Shadow
 Ayarlar: Ayarlar → GözKulak.
 
 == Changelog ==
+
+= 0.2.3 =
+* Koyu mod yeniden yazıldı: ters çevirme filtresi yerine renkler öğe öğe dönüştürülür. Fotoğraflar, slaytlar ve logolar özgün renklerinde kalır; sitenin kendi efektleri (ör. griden renkliye geçen logolar) çalışır; fotoğraflı bölümlerdeki kutular da koyulaşır; düğme ve bağlantıların üzerine gelme renkleri uyarlanır.
+* Yüksek kontrast: yarı saydam katmanlar ve renk geçişleri özgün saydamlıklarıyla siyaha döner (görseller gereğinden fazla kararmaz).
+* Yüksek kontrast: bağlantılar yeniden sarı.
+* Geçiş efekti olan öğeler (Elementor bölümleri gibi) ve sonradan yüklenen satır içi zemin görselleri (Slider Revolution gibi) doğru işlenir.
 
 = 0.2.2 =
 * Yüksek kontrast: renk geçişli zeminler (ör. Listeo ilan başlığı) siyaha döner; açık renkli ::before / ::after görsel katmanları (Listeo manşeti, Elementor kapsayıcıları) yarı saydam siyaha çevrilir; fotoğraf zeminleri korunur.

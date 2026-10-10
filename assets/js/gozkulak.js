@@ -306,16 +306,63 @@
 	const HEADER_SEL = 'header, nav, [role="banner"], [role="navigation"], #Header_wrapper, #Header_creative, #Top_bar, #masthead, .lhb-frontend-header, .elementor-location-header';
 
 	/**
+	 * Çalışma zamanı stil sayfası: renk kuralları ve ölçüm sırasında geçiş efektlerini kapatan kural.
+	 * Oluşturulabilir stil sayfası (adoptedStyleSheets) CSP'nin satır içi stil kısıtına takılmaz;
+	 * desteklenmeyen tarayıcıda boş bir <style> öğesine CSSOM ile kural eklenir.
+	 */
+	const runtime = (() => {
+		let sheet;
+		function init() {
+			try {
+				const created = new CSSStyleSheet();
+				doc.adoptedStyleSheets = [...doc.adoptedStyleSheets, created];
+				return created;
+			} catch (e) {
+				const el = h("style", { id: "gozkulak-runtime" });
+				doc.head.append(el);
+				return el.sheet || null;
+			}
+		}
+		function insert(text) {
+			if (!sheet) return false;
+			try {
+				sheet.insertRule(text, sheet.cssRules.length);
+				return true;
+			} catch (e) {
+				return false;
+			}
+		}
+		function ensure() {
+			if (sheet !== undefined) return;
+			sheet = init();
+			insert("html.gk-measure *, html.gk-measure *::before, html.gk-measure *::after, .gk-pm, .gk-pm::before, .gk-pm::after { transition: none !important; }");
+		}
+		return {
+			ensure,
+			add(text) {
+				ensure();
+				return insert(text);
+			},
+		};
+	})();
+
+	/**
 	 * Ölçümü GözKulak'ın sayfa sınıfları kaldırılmışken yapar; böylece sitenin özgün değerleri okunur.
-	 * Sınıflar aynı görev içinde geri eklendiği için ekranda bir değişiklik görünmez.
+	 * Ölçüm boyunca geçiş efektleri kapalıdır: açık olsalardı tarayıcı geçişin başlangıç değerini (yani
+	 * GözKulak'ın rengini) döndürürdü. Sınıflar geri eklendikten sonra stil bir kez daha hesaplanır;
+	 * böylece ekranda hiçbir geçiş tetiklenmez ve görünür bir değişiklik olmaz.
 	 */
 	function measureOriginal(fn) {
+		runtime.ensure();
 		const ours = [...htmlEl.classList].filter((c) => c.startsWith("gk-"));
+		htmlEl.classList.add("gk-measure");
 		if (ours.length) htmlEl.classList.remove(...ours);
 		try {
 			return fn();
 		} finally {
 			if (ours.length) htmlEl.classList.add(...ours);
+			void htmlEl.offsetWidth;
+			htmlEl.classList.remove("gk-measure");
 		}
 	}
 
@@ -447,165 +494,450 @@
 	})();
 
 	/*
-	 * ---------- sayfa işaretleri ----------
-	 * Koyu mod: CSS ile verilmiş arka plan görselleri (ör. Elementor bölümleri) gk-bgimg ile işaretlenir
-	 * ve tekrar çevrilerek özgün renklerinde kalır.
-	 * Yüksek kontrast: zemini saydam olan öğeler gk-c0, yarı saydam katmanlar ve renk geçişleri gk-c1
-	 * alır; böylece manşet görselleri ve slaytların üstündeki katmanlar opak siyaha dönüp görseli
-	 * örtmez. Fotoğraf zeminleri (gk-cimg) korunur, renk geçişleri ve sayfa desenleri kaldırılır.
-	 * Büyük öğelerin ::before / ::after katmanları (ör. Listeo ve Elementor görsel katmanları) açık
-	 * renkliyse yazı okunmaz olur; bunlar gk-cpb / gk-cpa ile yarı saydam siyaha çevrilir.
+	 * ---------- sayfa boyama: yüksek kontrast ve koyu mod ----------
+	 * Görsellere filtre uygulanmaz; fotoğraflar, slaytlar, videolar ve logolar özgün renklerinde kalır.
+	 * Yalnızca öğelerin zemin, yazı, kenarlık ve simge renkleri değiştirilir: her öğenin özgün renkleri
+	 * okunur, dönüştürülür ve ortak sınıflar (gk-p…) olarak çalışma zamanı stil sayfasına yazılır.
+	 * Öğelere satır içi stil yazılmaz.
+	 *
+	 * Yüksek kontrast: opak zeminler siyah, yazılar beyaz (page.css). Betik ayrıca şunları ekler:
+	 *   gk-cimg  fotoğraf zemini korunur
+	 *   gk-c0    saydam zemin saydam kalır (alttaki görsel örtülmez)
+	 *   gk-p…    yarı saydam katmanlar ve renk geçişleri aynı saydamlıkta siyaha döner
+	 * Koyu mod: açık zeminler koyulaşır, koyu yazılar açılır; renk tonu korunur. Fotoğraf zeminli
+	 * alanlardaki yarı saydam katmanlara ve yazılara dokunulmaz (tasarım görselle birlikte kalır).
 	 */
-	const marks = (() => {
+	const paint = (() => {
 		const XHTML = "http://www.w3.org/1999/xhtml";
+		const SVGNS = "http://www.w3.org/2000/svg";
 		const SKIP = new Set(["SCRIPT", "STYLE", "NOSCRIPT", "TEMPLATE", "LINK", "META", "BR", "GOZKULAK-ROOT", "GOZKULAK-OVERLAY"]);
-		const OURS = ["gk-bgimg", "gk-cimg", "gk-c0", "gk-c1", "gk-cpb", "gk-cpa"];
+		const isPaintClass = (c) => c === "gk-c0" || c === "gk-cimg" || c.startsWith("gk-p");
 		const marked = new Set();
-		let wantImages = false;
-		let wantColors = false;
+		const effOf = new WeakMap();
+		const palette = new Map();
+		let serial = 0;
+		let mode = null;
 		let observer = null;
 		let pending = new Map();
 		let timer = 0;
 		let lateTimer = 0;
+		let hoverTimer = 0;
+		const hoverTargets = new Set();
+		const page = { h: 0, w: 0 };
 
+		// ---- renk yardımcıları ----
+		const COLOR_RE = /rgba?\([^()]*\)/g;
+
+		function parse(str) {
+			if (!str) return null;
+			if (str === "transparent") return { r: 0, g: 0, b: 0, a: 0 };
+			const m = /^rgba?\(\s*([\d.]+)[\s,]+([\d.]+)[\s,]+([\d.]+)\s*(?:[,/]\s*([\d.]+)(%?)\s*)?\)$/.exec(str);
+			if (!m) return null;
+			const a = m[4] === undefined ? 1 : parseFloat(m[4]) / (m[5] ? 100 : 1);
+			return { r: +m[1], g: +m[2], b: +m[3], a };
+		}
+
+		const fmt = (c) => (c.a >= 1 ? `rgb(${c.r}, ${c.g}, ${c.b})` : `rgba(${c.r}, ${c.g}, ${c.b}, ${Math.round(c.a * 1000) / 1000})`);
+		const luma = (c) => (0.299 * c.r + 0.587 * c.g + 0.114 * c.b) / 255;
+
+		function toHsl(c) {
+			const r = c.r / 255;
+			const g = c.g / 255;
+			const b = c.b / 255;
+			const max = Math.max(r, g, b);
+			const min = Math.min(r, g, b);
+			const l = (max + min) / 2;
+			let hue = 0;
+			let sat = 0;
+			if (max !== min) {
+				const d = max - min;
+				sat = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+				if (max === r) hue = (g - b) / d + (g < b ? 6 : 0);
+				else if (max === g) hue = (b - r) / d + 2;
+				else hue = (r - g) / d + 4;
+				hue /= 6;
+			}
+			return { hue, sat, l };
+		}
+
+		function fromHsl(hue, sat, l, a) {
+			const k = (n) => (n + hue * 12) % 12;
+			const ch = (n) => Math.round(255 * (l - sat * Math.min(l, 1 - l) * Math.max(-1, Math.min(k(n) - 3, 9 - k(n), 1))));
+			return { r: ch(0), g: ch(8), b: ch(4), a };
+		}
+
+		/** Gradyan ya da gölge dizesindeki her rengi dönüştürür; dönüştürülemeyen renk aynen kalır. */
+		const mapColors = (str, fn) => str.replace(COLOR_RE, (m) => {
+			const c = parse(m);
+			const t = c && fn(c);
+			return t ? fmt(t) : m;
+		});
+
+		const black = (c) => ({ r: 0, g: 0, b: 0, a: c.a });
+
+		/** Koyu mod zemini: açık renkler koyulaşır; zaten koyu olanlar ve marka renkleri (düğme, şerit) kalır. */
+		function darkBg(c) {
+			if (c.a === 0) return null;
+			const y = luma(c);
+			if (y <= 0.3) return null;
+			const { hue, sat, l } = toHsl(c);
+			if (sat >= 0.4 && y <= 0.7 && l <= 0.7) return null;
+			return fromHsl(hue, Math.min(sat, 0.55), 0.08 + (1 - l) * 0.35, c.a);
+		}
+
+		/** Koyu mod yazısı ve simgesi: koyu renkler açılır, ton korunur. */
+		function darkInk(c) {
+			if (c.a === 0 || luma(c) >= 0.55) return null;
+			const { hue, sat, l } = toHsl(c);
+			let target = Math.min(0.9, 0.95 - l * 0.5);
+			let out = fromHsl(hue, sat, target, c.a);
+			while (luma(out) < 0.6 && target < 0.95) {
+				target += 0.03;
+				out = fromHsl(hue, sat, target, c.a);
+			}
+			return out;
+		}
+
+		/** Koyu mod kenarlığı: açık çizgiler koyulaşır, siyah çizgiler görünür griye döner. */
+		function darkLine(c) {
+			if (c.a === 0) return null;
+			const y = luma(c);
+			const { hue, sat, l } = toHsl(c);
+			if (y > 0.6) return fromHsl(hue, Math.min(sat, 0.4), 0.18 + (1 - l) * 0.3, c.a);
+			if (y < 0.15) return fromHsl(hue, sat, 0.32, c.a);
+			return null;
+		}
+
+		/** Bildirimi ortak bir sınıfa bağlar; kural yalnızca ilgili kip açıkken geçerlidir. */
+		function rule(pseudo, decls) {
+			if (/[{}<>\\]/.test(decls)) return "";
+			const key = mode + "|" + pseudo + "|" + decls;
+			let cls = palette.get(key);
+			if (cls !== undefined) return cls;
+			cls = "gk-p" + (serial++).toString(36);
+			// Kimlik seçicili :not() yalnızca önceliği artırır; temanın !important kurallarını da geçer.
+			const ok = runtime.add(`html.gk-${mode} .${cls}:not(#gk-z):not(#gk-z)${pseudo} { ${decls} }`);
+			if (!ok) cls = "";
+			palette.set(key, cls);
+			return cls;
+		}
+
+		// ---- öğe listesi ----
 		const usable = (el) => el.namespaceURI === XHTML && !SKIP.has(el.tagName);
+		const svgRoot = (el) => el.namespaceURI === SVGNS && el.localName === "svg" && !!el.parentElement && el.parentElement.namespaceURI === XHTML;
 
-		function alphaOf(color) {
-			if (!color || color === "transparent") return 0;
-			const slash = /\/\s*([\d.]+)(%?)\s*\)\s*$/.exec(color);
-			if (slash) return parseFloat(slash[1]) / (slash[2] ? 100 : 1);
-			const m = /^rgba?\(([^)]*)\)$/.exec(color);
-			if (!m) return 1;
-			const parts = m[1].split(/[\s,]+/).filter(Boolean);
-			return parts.length >= 4 ? parseFloat(parts[3]) : 1;
-		}
-
-		/**
-		 * Öğeyi büyük ölçüde kaplayan, renk geçişli ya da yarı saydam bir ::before / ::after katmanı var mı?
-		 * Fotoğraf içeren katmanlar ve küçük süsler (çizgi, madde imi, simge) dokunulmadan kalır.
-		 */
-		function overlayPseudo(el, which, r) {
-			const ps = getComputedStyle(el, which);
-			if (!ps.content || ps.content === "none" || ps.content === "normal" || ps.display === "none") return false;
-			if (/url\(/.test(ps.backgroundImage)) return false;
-			const w = parseFloat(ps.width);
-			const hgt = parseFloat(ps.height);
-			if (!(w >= 0.5 * r.width && hgt >= 0.5 * r.height)) return false;
-			const alpha = alphaOf(ps.backgroundColor);
-			const opacity = parseFloat(ps.opacity);
-			return /gradient\(/.test(ps.backgroundImage) || (alpha > 0 && (alpha < 1 || opacity < 1));
-		}
-
-		function elementsOf(root, deep, out) {
-			if (root.nodeType !== 1 || !usable(root)) return;
+		function elementsOf(root, deep, out, cap) {
+			if (root.nodeType !== 1) return;
+			if (svgRoot(root)) {
+				out.push(root);
+				return;
+			}
+			if (!usable(root)) return;
+			const start = out.length;
 			out.push(root);
 			if (!deep) return;
 			const walker = doc.createTreeWalker(root, NodeFilter.SHOW_ELEMENT, {
-				acceptNode: (n) => (usable(n) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT),
+				acceptNode: (n) => {
+					if (n.namespaceURI === SVGNS) {
+						if (svgRoot(n)) out.push(n);
+						return NodeFilter.FILTER_REJECT;
+					}
+					return usable(n) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+				},
 			});
 			let n;
-			while ((n = walker.nextNode())) out.push(n);
+			while ((n = walker.nextNode())) {
+				out.push(n);
+				// Çok büyük bir alt ağaç değiştiyse (ör. <body> sınıfı) yalnızca öğenin kendisine bakılır.
+				if (cap && out.length - start > cap) {
+					out.length = start + 1;
+					return;
+				}
+			}
 		}
 
-		function scan(list) {
-			if (!list.length) return;
-			// Özgün değerler okunur, sonra işaretler tek seferde yazılır.
-			const found = measureOriginal(() => {
-				const root = doc.documentElement;
-				const pageH = root.scrollHeight;
-				const pageW = root.clientWidth;
-				return list.map((el) => {
-					const cs = getComputedStyle(el);
-					const bg = cs.backgroundImage;
-					const url = /url\(/.test(bg);
-					const r = url || wantColors ? el.getBoundingClientRect() : null;
-					// Sayfanın tamamını saran zemin desenleri görsel sayılmaz; yoksa koyu mod tüm sayfada geri alınır.
-					const page = url && (el === doc.body || (r.height >= 0.75 * pageH && r.width >= 0.9 * pageW));
-					const out = { image: url && !page, gradient: !url && /gradient\(/.test(bg), alpha: alphaOf(cs.backgroundColor), before: false, after: false };
-					if (wantColors && r.width >= 150 && r.height >= 80) {
-						out.before = overlayPseudo(el, "::before", r);
-						out.after = overlayPseudo(el, "::after", r);
+		// ---- ölçüm ----
+		function pseudoLayer(el, which, r) {
+			const ps = getComputedStyle(el, which);
+			if (!ps.content || ps.content === "none" || ps.content === "normal" || ps.display === "none") return null;
+			const w = parseFloat(ps.width);
+			const hgt = parseFloat(ps.height);
+			if (!(w >= 0.5 * r.width && hgt >= 0.5 * r.height)) return null;
+			if (/url\(/.test(ps.backgroundImage)) return null;
+			return {
+				bg: parse(ps.backgroundColor),
+				gradient: /gradient\(/.test(ps.backgroundImage) ? ps.backgroundImage : null,
+				opacity: parseFloat(ps.opacity),
+			};
+		}
+
+		function measure(el) {
+			const cs = getComputedStyle(el);
+			const r = el.getBoundingClientRect();
+			if (el.namespaceURI === SVGNS) return { svg: true, fill: parse(cs.fill), stroke: parse(cs.stroke), small: r.width <= 64 && r.height <= 64 };
+			const img = cs.backgroundImage;
+			const m = {
+				bg: parse(cs.backgroundColor),
+				img,
+				url: /url\(/.test(img),
+				gradient: !/url\(/.test(img) && /gradient\(/.test(img),
+				color: parse(cs.color),
+				opacity: parseFloat(cs.opacity),
+				big: r.width >= 150 && r.height >= 80,
+				page: false,
+				borders: null,
+				before: null,
+				after: null,
+			};
+			// Sayfanın tamamını saran zemin desenleri fotoğraf sayılmaz.
+			if (m.url) m.page = el === doc.body || (r.height >= 0.75 * page.h && r.width >= 0.9 * page.w);
+			if (mode === "dark") {
+				const widths = [cs.borderTopWidth, cs.borderRightWidth, cs.borderBottomWidth, cs.borderLeftWidth];
+				if (widths.some((v) => parseFloat(v) > 0)) m.borders = [cs.borderTopColor, cs.borderRightColor, cs.borderBottomColor, cs.borderLeftColor].map(parse);
+			}
+			// Kaplayan ::before / ::after katmanları konumlandırılmış öğelerde olur; diğerlerine bakılmaz.
+			if (m.big && cs.position !== "static") {
+				m.before = pseudoLayer(el, "::before", r);
+				m.after = pseudoLayer(el, "::after", r);
+			}
+			return m;
+		}
+
+		// ---- karar ----
+		function decideContrast(m) {
+			const cls = [];
+			if (m.svg) {
+				// Simge boyutundaki SVG'ler yazı rengini alır (beyaz; bağlantı içinde sarı).
+				if (m.small && m.fill && m.fill.a > 0) cls.push(rule("", "fill: currentColor !important"));
+				if (m.small && m.stroke && m.stroke.a > 0) cls.push(rule("", "stroke: currentColor !important"));
+				return cls;
+			}
+			if (m.url && !m.page) cls.push("gk-cimg");
+			if (m.gradient) cls.push(rule("", `background-image: ${mapColors(m.img, black)} !important`));
+			const a = m.bg ? m.bg.a : 1;
+			if (a === 0) cls.push("gk-c0");
+			else if (a < 1) cls.push(rule("", `background-color: ${fmt(black(m.bg))} !important`));
+			for (const [which, p] of [["::before", m.before], ["::after", m.after]]) {
+				if (!p) continue;
+				const decls = [];
+				if (p.gradient) decls.push(`background-image: ${mapColors(p.gradient, black)} !important`);
+				if (p.bg && p.bg.a > 0) decls.push(`background-color: ${fmt(black(p.bg))} !important`);
+				if (decls.length) cls.push(rule(which, decls.join("; ")));
+			}
+			return cls;
+		}
+
+		function decideDark(m, parentEff) {
+			const cls = [];
+			if (m.svg) {
+				if (parentEff === "dark") {
+					const f = m.fill && darkInk(m.fill);
+					const s2 = m.stroke && darkInk(m.stroke);
+					if (f) cls.push(rule("", `fill: ${fmt(f)} !important`));
+					if (s2) cls.push(rule("", `stroke: ${fmt(s2)} !important`));
+				}
+				return { cls, eff: parentEff };
+			}
+			const photo = m.url && !m.page && m.big;
+			const inPhoto = parentEff === "image";
+			const translucent = (c, opacity) => c.a < 0.85 || opacity < 0.85;
+			let finalBg = m.bg;
+			let pseudoBg = null;
+
+			if (m.url && m.page) cls.push(rule("", "background-image: none !important"));
+			if (m.bg && m.bg.a > 0 && !(inPhoto && translucent(m.bg, m.opacity))) {
+				const t = darkBg(m.bg);
+				if (t) {
+					cls.push(rule("", `background-color: ${fmt(t)} !important`));
+					finalBg = t;
+				}
+			}
+			if (m.gradient && !inPhoto) {
+				const g = mapColors(m.img, darkBg);
+				if (g !== m.img) cls.push(rule("", `background-image: ${g} !important`));
+			}
+			for (const [which, p] of [["::before", m.before], ["::after", m.after]]) {
+				if (!p) continue;
+				const overPhoto = inPhoto || photo;
+				const decls = [];
+				if (p.gradient && !overPhoto) {
+					const g = mapColors(p.gradient, darkBg);
+					if (g !== p.gradient) decls.push(`background-image: ${g} !important`);
+				}
+				if (p.bg && p.bg.a > 0) {
+					const thin = translucent(p.bg, p.opacity);
+					if (!(overPhoto && thin)) {
+						const t = darkBg(p.bg);
+						if (t) decls.push(`background-color: ${fmt(t)} !important`);
+						if (!thin) pseudoBg = t || p.bg;
 					}
-					return out;
-				});
-			});
+				}
+				if (decls.length) cls.push(rule(which, decls.join("; ")));
+			}
+
+			let eff = parentEff;
+			if (photo) eff = "image";
+			else if (finalBg && finalBg.a >= 0.85 && m.opacity >= 0.85) eff = luma(finalBg) < 0.5 ? "dark" : "light";
+			else if (pseudoBg) eff = luma(pseudoBg) < 0.5 ? "dark" : "light";
+			else if (m.gradient && !inPhoto) eff = "dark";
+
+			if (eff === "dark" && m.color) {
+				const t = darkInk(m.color);
+				if (t) cls.push(rule("", `color: ${fmt(t)} !important`));
+			}
+			if (m.borders && eff !== "image" && m.borders.every(Boolean)) {
+				const t = m.borders.map((c) => darkLine(c) || c);
+				if (t.some((c, i) => c !== m.borders[i])) cls.push(rule("", `border-color: ${t.map(fmt).join(" ")} !important`));
+			}
+			return { cls, eff };
+		}
+
+		function apply(el, cls) {
+			const want = cls.filter(Boolean);
+			for (const c of [...el.classList]) if (isPaintClass(c) && !want.includes(c)) el.classList.remove(c);
+			for (const c of want) if (!el.classList.contains(c)) el.classList.add(c);
+			if (want.length) marked.add(el);
+			else marked.delete(el);
+		}
+
+		/**
+		 * Koyu modda sayfa değişikliklerinde yalnızca ilgili öğelerin boyama sınıfları geçici olarak
+		 * kaldırılıp ölçülür (koyu modun tüm renkleri öğe sınıflarıyla verildiği için yeterlidir).
+		 * Böylece her değişiklikte bütün sayfanın stili yeniden hesaplanmaz.
+		 */
+		function measureLocal(list, fn) {
+			const saved = list.map((el) => [...el.classList].filter(isPaintClass));
 			list.forEach((el, i) => {
-				const f = found[i];
-				const add = [];
-				if (wantImages && f.image) add.push("gk-bgimg");
-				if (wantColors) {
-					if (f.image) add.push("gk-cimg");
-					if (f.gradient || (f.alpha > 0 && f.alpha < 1)) add.push("gk-c1");
-					else if (f.alpha === 0) add.push("gk-c0");
-					if (f.before) add.push("gk-cpb");
-					if (f.after) add.push("gk-cpa");
+				el.classList.add("gk-pm");
+				if (saved[i].length) el.classList.remove(...saved[i]);
+			});
+			try {
+				return fn();
+			} finally {
+				list.forEach((el, i) => {
+					if (saved[i].length) el.classList.add(...saved[i]);
+				});
+				void htmlEl.offsetWidth;
+				for (const el of list) el.classList.remove("gk-pm");
+			}
+		}
+
+		function scan(list, partial) {
+			if (!list.length || !mode) return;
+			const read = () => {
+				page.h = htmlEl.scrollHeight;
+				page.w = htmlEl.clientWidth;
+				return list.map(measure);
+			};
+			runtime.ensure();
+			const measured = partial && mode === "dark" ? measureLocal(list, read) : measureOriginal(read);
+			const local = new Map();
+			list.forEach((el, i) => {
+				const m = measured[i];
+				if (mode === "contrast") {
+					apply(el, decideContrast(m));
+					return;
 				}
-				for (const c of OURS) if (!add.includes(c) && el.classList.contains(c)) el.classList.remove(c);
-				if (add.length) {
-					for (const c of add) if (!el.classList.contains(c)) el.classList.add(c);
-					marked.add(el);
-				} else {
-					marked.delete(el);
-				}
+				const parent = el.parentElement;
+				const parentEff = (parent && (local.get(parent) || effOf.get(parent))) || "dark";
+				const d = decideDark(m, parentEff);
+				local.set(el, d.eff);
+				effOf.set(el, d.eff);
+				apply(el, d.cls);
 			});
 		}
 
 		function full() {
+			for (const el of marked) if (!el.isConnected) marked.delete(el);
 			const list = [];
-			elementsOf(doc.body, true, list);
+			elementsOf(doc.body, true, list, 0);
 			scan(list);
 		}
 
 		function flush() {
 			timer = 0;
 			const list = [];
-			for (const [node, deep] of pending) elementsOf(node, deep, list);
+			for (const [node, deep] of pending) if (node.isConnected) elementsOf(node, deep, list, 1500);
 			pending = new Map();
-			scan(list);
+			scan(list, true);
 		}
 
 		const ourClassesOnly = (oldValue, el) => {
-			const strip = (v) => (v || "").split(/\s+/).filter((c) => c && !OURS.includes(c)).sort().join(" ");
+			const strip = (v) => (v || "").split(/\s+/).filter((c) => c && !c.startsWith("gk-")).sort().join(" ");
 			return strip(oldValue) === strip(el.getAttribute("class"));
 		};
+		// Satır içi stilde yalnızca renk ve zemin değişiklikleri önemlidir (ör. sonradan yüklenen slayt
+		// görseli, kaydırınca renklenen başlık). Hareket ve saydamlık animasyonları yok sayılır.
+		const STYLE_RE = /(?:^|;)\s*(?:background(?:-color|-image)?|color)\s*:[^;]*/gi;
+		const styleKey = (v) => ((v || "").match(STYLE_RE) || []).join("|");
 
 		function onMutations(list) {
 			for (const m of list) {
 				if (m.type === "childList") {
 					for (const node of m.addedNodes) if (node.nodeType === 1) pending.set(node, true);
-				} else if (!ourClassesOnly(m.oldValue, m.target)) {
-					// Sınıfı değişen öğenin yalnızca kendisi yeniden ölçülür (ör. gecikmeli yüklenen arka plan).
-					if (!pending.has(m.target)) pending.set(m.target, false);
+				} else if (m.attributeName === "class") {
+					if (!ourClassesOnly(m.oldValue, m.target)) pending.set(m.target, true);
+				} else if (styleKey(m.oldValue) !== styleKey(m.target.getAttribute("style"))) {
+					pending.set(m.target, true);
 				}
 			}
 			if (pending.size && !timer) timer = window.setTimeout(flush, 250);
 		}
 
-		function set(images, colors) {
-			if (images === wantImages && colors === wantColors) return;
-			wantImages = images;
-			wantColors = colors;
-			if (!images && !colors) {
+		// Koyu mod: fareyle üzerine gelinen öğenin renkleri kısa bir gecikmeyle yeniden okunur; böylece
+		// düğme ve bağlantıların üzerine gelme renkleri de koyu moda uyarlanır.
+		function onHover(e) {
+			const t = e.target;
+			if (mode !== "dark" || !t || t.nodeType !== 1 || t.tagName === "GOZKULAK-ROOT") return;
+			hoverTargets.add(t);
+			window.clearTimeout(hoverTimer);
+			hoverTimer = window.setTimeout(() => {
+				const list = [];
+				for (const el of hoverTargets) {
+					if (!el.isConnected) continue;
+					const chain = [];
+					for (let a = el.parentElement, i = 0; a && a !== doc.body && i < 3; a = a.parentElement, i++) chain.unshift(a);
+					for (const a of chain) elementsOf(a, false, list, 0);
+					elementsOf(el, true, list, 150);
+				}
+				hoverTargets.clear();
+				scan(list, true);
+			}, 300);
+		}
+
+		const LISTEN = { capture: true, passive: true };
+
+		function set(next) {
+			if (next === mode) return;
+			mode = next;
+			window.clearTimeout(timer);
+			window.clearTimeout(lateTimer);
+			window.clearTimeout(hoverTimer);
+			timer = 0;
+			pending = new Map();
+			hoverTargets.clear();
+			if (!mode) {
 				if (observer) observer.disconnect();
 				observer = null;
-				window.clearTimeout(timer);
-				window.clearTimeout(lateTimer);
-				timer = 0;
-				for (const el of marked) el.classList.remove(...OURS);
+				doc.removeEventListener("pointerover", onHover, LISTEN);
+				doc.removeEventListener("pointerout", onHover, LISTEN);
+				for (const el of marked) apply(el, []);
 				marked.clear();
 				return;
 			}
-			pending = new Map();
 			full();
 			if (!observer) {
 				observer = new MutationObserver(onMutations);
-				observer.observe(doc.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["class"], attributeOldValue: true });
+				observer.observe(doc.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["class", "style"], attributeOldValue: true });
 			}
-			// Sayfa yüklendikten sonra devreye giren slaytlar ve gecikmeli görseller için bir kez daha
-			window.clearTimeout(lateTimer);
-			lateTimer = window.setTimeout(() => {
-				if (wantImages || wantColors) full();
-			}, 1500);
+			doc.addEventListener("pointerover", onHover, LISTEN);
+			doc.addEventListener("pointerout", onHover, LISTEN);
+			// Sayfa yüklenirken açıldıysa, sonradan devreye giren slaytlar ve gecikmeli stiller için bir kez daha
+			if (doc.readyState !== "complete" || performance.now() < 8000) {
+				lateTimer = window.setTimeout(() => {
+					if (mode) full();
+				}, 1500);
+			}
 		}
 
 		return { set };
@@ -718,7 +1050,7 @@
 		htmlEl.classList.toggle("gk-lh2", prefs.lineHeight === 2);
 		htmlEl.classList.toggle("gk-ls1", prefs.letterSpacing === 1);
 		htmlEl.classList.toggle("gk-ls2", prefs.letterSpacing === 2);
-		marks.set(!!prefs.darkMode, !!prefs.contrast);
+		paint.set(prefs.contrast ? "contrast" : prefs.darkMode ? "dark" : null);
 		fontScale.set(FONT_STEPS[prefs.fontSize], prefs.lineHeight);
 		overlay.set(prefs.readingMask ? "mask" : prefs.readingGuide ? "guide" : null);
 		media.set(prefs.stopAnimations);

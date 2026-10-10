@@ -37,12 +37,13 @@ html.gk-ls2 body :is(p, li, dt, dd, td, th, caption, blockquote, figcaption, lab
 }
 
 /*
- * Yüksek kontrast: siyah zemin, beyaz yazı, sarı bağlantı.
- * Opak zeminler siyaha döner, renk geçişleri ve sayfa desenleri kaldırılır. Betik şu işaretleri koyar:
+ * Yüksek kontrast: siyah zemin, beyaz yazı, sarı bağlantı. Görsellere filtre uygulanmaz.
+ * Opak zeminler siyaha döner, sayfa desenleri kaldırılır. Betik (gozkulak.js, "sayfa boyama")
+ * şu işaretleri koyar:
  *   gk-cimg  fotoğraf zemini korunur (manşet, slayt, kart görseli)
  *   gk-c0    zemini saydam öğe saydam kalır (alttaki görsel örtülmez)
- *   gk-c1    yarı saydam katman ya da renk geçişi yarı saydam siyaha döner
- *   gk-cpb / gk-cpa  büyük ::before / ::after katmanı yarı saydam siyaha döner
+ *   gk-p…    yarı saydam katmanlar ve renk geçişleri aynı saydamlıkta siyaha döner
+ *            (kuralları çalışma zamanında üretilir)
  * Görsellerin üstündeki yazılar siyah bir hale ile okunur kalır.
  */
 html.gk-contrast,
@@ -68,17 +69,6 @@ html.gk-contrast body .gk-c0 {
 	background-color: transparent !important;
 }
 
-html.gk-contrast body .gk-c1 {
-	background-color: rgba(0, 0, 0, 0.6) !important;
-}
-
-html.gk-contrast body .gk-cpb::before,
-html.gk-contrast body .gk-cpa::after {
-	background-color: rgba(0, 0, 0, 0.5) !important;
-	background-image: none !important;
-	opacity: 1 !important;
-}
-
 /* SVG'lerin zemini saydam kalır (simgelerin arkasında siyah kutu oluşmaz) */
 html.gk-contrast body :is(svg, svg *):not(gozkulak-root):not(gozkulak-overlay) {
 	background-color: transparent !important;
@@ -93,8 +83,8 @@ html.gk-contrast body :is([class*="icon"] > svg, svg[class*="icon"])[fill="none"
 	stroke: currentColor !important;
 }
 
-html.gk-contrast a,
-html.gk-contrast a * {
+/* Bağlantılar sarı (genel beyaz yazı kuralından daha öncelikli olmalı) */
+html.gk-contrast body :is(a, a *):not(#gk-z) {
 	color: #ffff00 !important;
 }
 
@@ -108,38 +98,22 @@ html.gk-contrast ::placeholder {
 }
 
 /*
- * Koyu mod ve gri tonlama <html>'e filtre olarak uygulanır. Kök öğedeki filtre, sabit konumlu
- * öğelerin (ör. yapışkan başlıklar) yerleşimini bozmaz. Görseller ve menü koyu modda tekrar
- * çevrilerek özgün renklerinde kalır.
+ * Koyu mod: renkleri betik dönüştürür (açık zeminler koyulaşır, koyu yazılar açılır, ton korunur).
+ * Görsellere, videolara ve gömülü içeriğe dokunulmaz; sitenin kendi efektleri (ör. griden renkliye
+ * geçen logolar) çalışmaya devam eder. Burada yalnızca sayfa zemini ve tarayıcı denetimleri var.
  */
 html.gk-dark {
-	--gk-invert: invert(1) hue-rotate(180deg);
+	background-color: #141414 !important;
+	color-scheme: dark;
 }
 
+html.gk-dark ::placeholder {
+	color: #a0a4a8 !important;
+}
+
+/* Gri tonlama <html>'e filtre olarak uygulanır; kök öğedeki filtre sabit konumlu öğeleri bozmaz. */
 html.gk-gray {
-	--gk-gray: grayscale(1);
-}
-
-html.gk-dark,
-html.gk-gray {
-	filter: var(--gk-invert, ) var(--gk-gray, ) !important;
-}
-
-html.gk-dark {
-	background-color: #ffffff !important;
-}
-
-/*
- * Görseller tekrar çevrilir. CSS ile verilen arka plan görselleri betik tarafından gk-bgimg ile
- * işaretlenir. Slider Revolution modülleri bütün olarak çevrilir (slayt yazıları görselle uyumlu kalır).
- * Çevrilmiş bir öğenin içindeki görsel ikinci kez çevrilmez (yoksa negatif görünür).
- */
-html.gk-dark :is(img, picture, video, iframe, canvas, embed, object, .gk-bgimg, rs-module-wrap, sr7-module, gozkulak-root, gozkulak-overlay) {
-	filter: invert(1) hue-rotate(180deg) !important;
-}
-
-html.gk-dark :is(img, picture, video, iframe, canvas, embed, object, .gk-bgimg, rs-module-wrap, sr7-module, gozkulak-root, gozkulak-overlay) :is(img, picture, video, iframe, canvas, embed, object, .gk-bgimg) {
-	filter: none !important;
+	filter: grayscale(1) !important;
 }
 
 /* Okunaklı yazı tipi: simge yazı tipleri (Font Awesome, Listeo, BeTheme, Elementor) hariç */
