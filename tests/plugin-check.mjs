@@ -4,6 +4,7 @@ import { execFileSync, spawn } from "node:child_process";
 import { mkdirSync, rmSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
+import { packageInto } from "./paket.mjs";
 
 const T = fileURLToPath(new globalThis.URL(".", import.meta.url)).replace(/\/$/, "");
 const R = fileURLToPath(new globalThis.URL("..", import.meta.url)).replace(/\/$/, "");
@@ -14,8 +15,7 @@ const WP = "http://127.0.0.1:" + PORT;
 // Çalışma kopyasındaki dosyalar paketlenir (commit edilmemiş değişiklikler dahil).
 rmSync(D, { recursive: true, force: true });
 mkdirSync(D, { recursive: true });
-const tree = execFileSync("git", ["stash", "create"], { cwd: R }).toString().trim() || "HEAD";
-execFileSync("sh", ["-c", `git archive --prefix=gozkulak/ ${tree} | tar -x -C "${D}"`], { cwd: R });
+packageInto(D + "/gozkulak");
 
 const server = spawn("npx", ["-y", "@wp-playground/cli@3.1.57", "server", "--php=7.4", "--port=" + PORT, "--workers=1",
 	"--mount=" + D + "/gozkulak:/wordpress/wp-content/plugins/gozkulak", "--blueprint=wp/plugin-check.json"], { cwd: T, stdio: "ignore", detached: true });

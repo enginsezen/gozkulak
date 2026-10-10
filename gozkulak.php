@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       GözKulak
  * Description:       Erişilebilirlik menüsü ve Türkçe sesli okuma. Ses ziyaretçinin tarayıcısında üretilir; ziyaretçiden veri toplanmaz.
- * Version:           0.3.5
+ * Version:           0.4.0
  * Requires at least: 6.4
  * Requires PHP:      7.4
  * Author:            Engin Sezen
@@ -15,7 +15,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'GOZKULAK_VERSION', '0.3.5' );
+define( 'GOZKULAK_VERSION', '0.4.0' );
 define( 'GOZKULAK_FILE', __FILE__ );
 define( 'GOZKULAK_DIR', plugin_dir_path( __FILE__ ) );
 define( 'GOZKULAK_URL', plugin_dir_url( __FILE__ ) );
@@ -23,6 +23,7 @@ define( 'GOZKULAK_URL', plugin_dir_url( __FILE__ ) );
 require_once GOZKULAK_DIR . 'includes/class-gozkulak-settings.php';
 require_once GOZKULAK_DIR . 'includes/class-gozkulak-frontend.php';
 require_once GOZKULAK_DIR . 'includes/class-gozkulak-audio.php';
+require_once GOZKULAK_DIR . 'includes/class-gozkulak-updater.php';
 
 if ( is_admin() ) {
 	require_once GOZKULAK_DIR . 'includes/class-gozkulak-admin.php';
@@ -31,3 +32,4 @@ if ( is_admin() ) {
 
 GozKulak_Frontend::init();
 GozKulak_Audio::init();
+GozKulak_Updater::init();

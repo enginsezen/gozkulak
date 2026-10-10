@@ -20,7 +20,7 @@
 
 	// Betik dosyasının kendi sürümü. Eklentinin sürümüyle uyuşmazsa sayfa eski (önbellekteki) bir
 	// betik dosyası kullanıyordur; test modunda menüde uyarı gösterilir.
-	const SCRIPT_VERSION = "0.3.5";
+	const SCRIPT_VERSION = "0.4.0";
 	const doc = document;
 	const htmlEl = doc.documentElement;
 	const enabledFeatures = new Set(Array.isArray(cfg.features) ? cfg.features : []);
@@ -1213,7 +1213,7 @@
 		// (Türkçe I/ı, İ/i dahil) ve bütün kelime olarak eşleşir; en uzun kelime önce denenir. Okunuş, metin
 		// hazırlamanın başında yer tutucuyla değiştirilir (sonraki kurallar okunuşu değiştirmesin) ve sonda
 		// yerine konur. Yer tutucular özel kullanım alanı karakterleridir: harf ya da rakam sayılmazlar.
-		// Büyük harfli bir kelime kendisiyle eşleştirilirse ("MZA = MZA") harf harf okunur: Türkçe ve İngilizce
+		// Büyük harfli bir kelime kendisiyle eşleştirilirse ("ABC = ABC") harf harf okunur: Türkçe ve İngilizce
 		// sayfalarda, büyük harfli başlıkların içinde de.
 		let SAY = [];
 		const SPELL = new Set();

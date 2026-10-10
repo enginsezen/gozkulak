@@ -28,6 +28,10 @@ Faz 4'e kadar eklenti canlı sitelerde **test modunda** çalışır: menüyü ya
 
 Gereksinimler: WordPress 6.4+, PHP 7.4+.
 
+### Güncellemeler
+
+0.4.0'dan sonra yeni sürümler WordPress panelindeki Güncellemeler listesinde görünür (GitHub etiketleri, `vX.Y.Z`; 6 saatte bir ya da "Tekrar denetle" ile denetlenir). Paket GitHub'ın etiket arşividir. Kurulmadan önce eklenti paketteki `gozkulak.sig` dosyasını doğrular: dosya listesinin Ed25519 imzası eklentiye gömülü açık anahtarla tutmalı, her dosya listeyle birebir aynı olmalı ve sürüm kurulu olandan yeni olmalı. Doğrulama tutmazsa güncelleme kurulmaz, eski sürüm yerinde ve etkin kalır. Gizli anahtar repoda değil, sürümü çıkaranın bilgisayarındadır; GitHub hesabı ele geçirilse bile sitelere imzasız kod kurulamaz.
+
 ## Ayarlar
 
 - Kimler görsün: yalnızca yöneticiler (test modu) ya da herkes
@@ -35,7 +39,7 @@ Gereksinimler: WordPress 6.4+, PHP 7.4+.
 - Menüde sunulacak özellikler (görme; okuma ve dikkat)
 - Okunacak alan: virgülle ayrılmış CSS seçicileri; eşleşme yoksa ana içerik otomatik bulunur
 - Ses dosyalarının adresi: model ve ONNX Runtime dosyalarını barındıran kendi sunucunuz (isteğe bağlı). Dosyalar bu adresin altında `ema-lightning-onnx/13c431d/` ve `onnxruntime-web/1.30.0/` klasörlerinde aranır; boşsa ya da dosya alınamazsa sürüme sabitli Hugging Face ve jsDelivr adresleri kullanılır (adres yazılıysa "Yedek kaynaklar" ile kapatılabilir). Her dosya tarayıcıda SHA-256 ile doğrulanır.
-- Okunuş sözlüğü: sitenize özel kelimelerin okunuşu, her satırda `kelime = okunuş` (ör. `Wireless = vayırlıs`). Büyük-küçük harf fark etmez, bütün kelime eşleşir. Büyük harfli bir kısaltma kendisiyle eşleştirilirse (`MZA = MZA`) harf harf okunur; bu İngilizce sayfalarda da geçerlidir, diğer okunuşlar yalnızca Türkçe sayfalarda.
+- Okunuş sözlüğü: sitenize özel kelimelerin okunuşu, her satırda `kelime = okunuş` (ör. `Wireless = vayırlıs`). Büyük-küçük harf fark etmez, bütün kelime eşleşir. Büyük harfli bir kısaltma kendisiyle eşleştirilirse (`ABC = ABC`) harf harf okunur; bu İngilizce sayfalarda da geçerlidir, diğer okunuşlar yalnızca Türkçe sayfalarda.
 - Hazır ses: seçilen sayfaların sesi yönetici panelinde bir kez üretilip sitede saklanır (aşağıda).
 
 ## Sesli okuma nasıl çalışır

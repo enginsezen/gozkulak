@@ -294,9 +294,9 @@ final class GozKulak_Admin {
 					<tr>
 						<th scope="row"><label for="gozkulak-say"><?php esc_html_e( 'Okunuş sözlüğü', 'gozkulak' ); ?></label></th>
 						<td>
-							<textarea id="gozkulak-say" class="large-text code" rows="6" name="<?php echo esc_attr( $name ); ?>[pronunciations]" placeholder="MZA = MZA&#10;Wireless = vayırlıs"><?php echo esc_textarea( $s['pronunciations'] ); ?></textarea>
+							<textarea id="gozkulak-say" class="large-text code" rows="6" name="<?php echo esc_attr( $name ); ?>[pronunciations]" placeholder="Wireless = vayırlıs&#10;ABC = ABC"><?php echo esc_textarea( $s['pronunciations'] ); ?></textarea>
 							<p class="description">
-								<?php esc_html_e( 'Sitenize özel kelimelerin nasıl okunacağı. Her satıra "kelime = okunuş" yazın; # ile başlayan satırlar açıklamadır. Büyük-küçük harf fark etmez, yalnızca bütün kelime eşleşir ("MZA" kelimesi "MZA\'nın" içinde de eşleşir). Okunuşu Türkçe okunduğu gibi yazın (ör. "Wireless = vayırlıs"). Bir kısaltma harf harf okunsun istiyorsanız kendisiyle eşleştirin (ör. "MZA = MZA"); bu, İngilizce sayfalarda da geçerlidir. Diğer okunuşlar yalnızca Türkçe sayfalarda uygulanır.', 'gozkulak' ); ?>
+								<?php esc_html_e( 'Sitenize özel kelimelerin nasıl okunacağı. Her satıra "kelime = okunuş" yazın; # ile başlayan satırlar açıklamadır. Büyük-küçük harf fark etmez, yalnızca bütün kelime eşleşir ("ABC" kelimesi "ABC\'nin" içinde de eşleşir). Okunuşu Türkçe okunduğu gibi yazın (ör. "Wireless = vayırlıs"). Bir kısaltma harf harf okunsun istiyorsanız kendisiyle eşleştirin (ör. "ABC = ABC"); bu, İngilizce sayfalarda da geçerlidir. Diğer okunuşlar yalnızca Türkçe sayfalarda uygulanır.', 'gozkulak' ); ?>
 							</p>
 							<p class="description"><?php esc_html_e( 'Sözlük değişince, değişen kelimeleri içeren sayfaların hazır sesi yeniden hazırlanmalıdır.', 'gozkulak' ); ?></p>
 						</td>

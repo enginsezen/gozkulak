@@ -4,7 +4,7 @@ Tags: accessibility, erişilebilirlik, text-to-speech, sesli okuma
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 0.3.5
+Stable tag: 0.4.0
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -46,9 +46,13 @@ Hazır ses hazırlanırken site sayfaları aynı siteden çerçevede açılır; 
 
 == Changelog ==
 
+= 0.4.0 =
+* GitHub'dan imzalı güncelleme: yeni sürümler WordPress panelindeki Güncellemeler listesinde görünür. Paket kurulmadan önce imzası ve her dosyası doğrulanır; tutmazsa güncelleme kurulmaz, eski sürüm yerinde ve etkin kalır. Bu sürüm sitelere bir kez elle kurulur; sonrakiler panelden gelir.
+* Okunuş sözlüğü örneklerinde şirket adı yerine genel örnekler.
+
 = 0.3.5 =
-* Okunuş sözlüğü: Ayarlar → GözKulak → Sesli okuma altında sitenize özel kelimelerin okunuşu yazılır (her satırda "kelime = okunuş"). Büyük harfli bir kısaltma kendisiyle eşleştirilirse ("MZA = MZA") harf harf okunur.
-* Eklentinin içindeki siteye özel kelimeler (MZA, KARDEMİR) kaldırıldı. MZA'nın büyük harfli başlıklarda harf harf okunması için sözlüğe "MZA = MZA" yazılmalıdır.
+* Okunuş sözlüğü: Ayarlar → GözKulak → Sesli okuma altında sitenize özel kelimelerin okunuşu yazılır (her satırda "kelime = okunuş"). Büyük harfli bir kısaltma kendisiyle eşleştirilirse ("ABC = ABC") harf harf okunur.
+* Eklentinin içindeki siteye özel kelimeler kaldırıldı; bunlar artık sitenin okunuş sözlüğüne yazılır.
 
 = 0.3.4 =
 * Güvenlik: şifreyle korunan sayfalar hazır ses için hazırlanamaz ve ses listeleri sayfaya yazılmaz. "Kullanılmayan dosyaları sil", artık herkese açık olmayan (taslak, çöp, özel, şifreli) sayfaların seslerini de siler. Ses alt klasörlerine boş index.php konur.

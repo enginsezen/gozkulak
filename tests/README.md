@@ -68,6 +68,8 @@ npm run wp          # WordPress Playground: http://127.0.0.1:9400, PHP 7.4, ekle
 node e2e/wp-audio.mjs   # hazır ses REST uçları (npm run wp açıkken)
 node e2e/wp-prepare.mjs # hazır ses hazırlama, gerçek modelle (~40 MB iner: GK_TTS=https://ses-sunucunuz/ ya da yedek kaynaklar)
 node e2e/wp-play.mjs    # ziyaretçide hazır sesin çalınması: tamamı hazır sayfa, karışık sayfa (gerçek modelle)
+node e2e/wp-update.mjs  # imzalı GitHub güncellemesi: kendi Playground'unu (9403) ve GitHub benzeri sunucusunu (9402) açar.
+                        # Değiştirilmiş/imzasız/başka anahtarla/fazla dosyalı/geri sürümlü paketler kurulmaz, geçerli olan kurulur
 ```
 
 Site Türkçe kurulur (`<html lang="tr-TR">`); İngilizce sayfada Türkçe birim çıkmaz. Playground'da yönetici `admin` / `password`, abone `abone` / `abone-Parola-123`, yayımlanmış sayfa `?page_id=500`, taslak `501`. Site her açılışta sıfırdan kurulur. `--workers=1` gerekir: birden çok işçide bir istekte silinen klasör öteki işçide görünmeye devam ediyor.

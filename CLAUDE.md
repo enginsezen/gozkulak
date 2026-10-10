@@ -79,15 +79,16 @@ Tanı için tarayıcı konsolunda `GozKulak.sentences()` bir sayfada okunacak c�
    - `assets/js/gozkulak.js`: `SCRIPT_VERSION`.
    - `readme.txt`: `Stable tag`.
 2. `readme.txt` dosyasında Changelog'a kısa Türkçe maddeler ekle.
-3. `cd tests && npm run phpcs`, `npm run phpstan`, `node --check` ve `cd tests && npm test` çalıştır.
-4. Commit'i at, ardından `git push origin main`.
-5. Paketi oluştur: `git archive --prefix=gozkulak/ -o ../gozkulak-X.Y.Z.zip HEAD`. `tools/` ve `tests/` pakete girmez.
-6. Zip'i kullanıcıya mutlaka ver.
-7. Kullanıcıya her güncellemeden sonra sitenin önbelleğini temizlemesini hatırlat. Eski betik önbellekten gelebilir; betik kendi sürümünü eklentiyle karşılaştırır ve uyuşmazsa test modunda uyarı verir.
+3. `cd tests && npm run phpcs`, `npm run phpstan`, `node --check` ve `cd tests && npm test` çalıştır. Güncelleme koduna dokunulduysa `node e2e/wp-update.mjs`.
+4. Commit'i at.
+5. İmzala: `node tools/surum/imzala.mjs` (gizli anahtar `~/.config/gozkulak/imza-anahtari.pem`; repoya girmez). Ardından `git add gozkulak.sig && git commit -m "X.Y.Z imzası" && git tag vX.Y.Z && git push origin main --tags`.
+6. Doğrula: `node tools/surum/dogrula.mjs X.Y.Z` (GitHub'ın arşivini indirip eklentinin yaptığı denetimi yapar). Tutmazsa sürümü sitelere duyurma.
+7. Paketi oluştur: `git archive --prefix=gozkulak/ -o ../gozkulak-X.Y.Z.zip HEAD`. `tools/` ve `tests/` pakete girmez. Siteler 0.4.0'dan sonra güncellemeyi panelden alır; zip elle kurulum ve yedek içindir. Zip'i kullanıcıya mutlaka ver.
+8. Kullanıcıya her güncellemeden sonra sitenin önbelleğini temizlemesini hatırlat. Eski betik önbellekten gelebilir; betik kendi sürümünü eklentiyle karşılaştırır ve uyuşmazsa test modunda uyarı verir.
 
 ## Bilinen tuzaklar
 
-- Eklenti geneldir: metin hazırlamaya siteye özel kelime ya da kural yazılmaz. Koda yalnızca genel kurallar (saat, telefon, adres kısaltmaları, sıra sayıları, işaretler) ve Türkçede herkesin aynı okuduğu kısaltmalar girer. Siteye özel okunuşlar Ayarlar → GözKulak → "Okunuş sözlüğü"ne yazılır (`kelime = okunuş`; büyük harfli kısaltma kendisiyle eşleşirse harf harf okunur: `MZA = MZA`). Testlerdeki site cümleleri kural değil, genel kuralların sınama örnekleridir.
+- Eklenti geneldir: metin hazırlamaya siteye özel kelime ya da kural yazılmaz. Koda yalnızca genel kurallar (saat, telefon, adres kısaltmaları, sıra sayıları, işaretler) ve Türkçede herkesin aynı okuduğu kısaltmalar girer. Siteye özel okunuşlar Ayarlar → GözKulak → "Okunuş sözlüğü"ne yazılır (`kelime = okunuş`; büyük harfli kısaltma kendisiyle eşleşirse harf harf okunur: `ABC = ABC`). Arayüzdeki ve belgelerdeki örneklerde de şirket ya da site adı kullanılmaz. Testlerdeki site cümleleri kural değil, genel kuralların sınama örnekleridir.
 
 - JS düzenli ifadelerinde `\b` Türkçe harflerde çalışmaz. Yerine `(?<![\p{L}\p{N}])` ve `u` bayrağı kullanılır.
 - Float ya da flex yüzünden blok olan satır içi öğeler (`span`, `a`…) okumada satırın parçasıdır: `content.kindOf` → `"soft"`.
