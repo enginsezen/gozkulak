@@ -87,6 +87,8 @@ Tanı için tarayıcı konsolunda `GozKulak.sentences()` bir sayfada okunacak c�
 
 ## Bilinen tuzaklar
 
+- Eklenti geneldir: metin hazırlamaya siteye özel kelime ya da kural yazılmaz. Koda yalnızca genel kurallar (saat, telefon, adres kısaltmaları, sıra sayıları, işaretler) ve Türkçede herkesin aynı okuduğu kısaltmalar girer. Siteye özel okunuşlar Ayarlar → GözKulak → "Okunuş sözlüğü"ne yazılır (`kelime = okunuş`; büyük harfli kısaltma kendisiyle eşleşirse harf harf okunur: `MZA = MZA`). Testlerdeki site cümleleri kural değil, genel kuralların sınama örnekleridir.
+
 - JS düzenli ifadelerinde `\b` Türkçe harflerde çalışmaz. Yerine `(?<![\p{L}\p{N}])` ve `u` bayrağı kullanılır.
 - Float ya da flex yüzünden blok olan satır içi öğeler (`span`, `a`…) okumada satırın parçasıdır: `content.kindOf` → `"soft"`.
 - Model tek kelimelik girdiyi zayıf seslendirir. `emaEngine.job()` kısa cümleyi bir sonrakiyle birlikte üretir.

@@ -20,7 +20,7 @@
 
 	// Betik dosyasının kendi sürümü. Eklentinin sürümüyle uyuşmazsa sayfa eski (önbellekteki) bir
 	// betik dosyası kullanıyordur; test modunda menüde uyarı gösterilir.
-	const SCRIPT_VERSION = "0.3.4";
+	const SCRIPT_VERSION = "0.3.5";
 	const doc = document;
 	const htmlEl = doc.documentElement;
 	const enabledFeatures = new Set(Array.isArray(cfg.features) ? cfg.features : []);
@@ -1120,9 +1120,9 @@
 		const LOW = "a-zçğıöşüâîû";
 		const VOWEL = /[AEIİOÖUÜÂÎÛaeıioöuüâîû]/;
 		// Harf harf okunması gereken kısaltmalar (ünlü içerse bile)
-		const KEEP = new Set(["MZA", "OSB", "SSL", "SEO", "PDF", "AVM", "KDV", "SGK", "PTT", "TL", "TC", "ABD", "AB", "AŞ", "SMS", "GPS", "USB", "SSD", "CNC", "LED", "TV", "WC", "DNS", "VPN", "PHP", "CSS", "HTML", "URL", "API", "AI", "TDK", "TBMM", "TCDD", "KVKK", "OSB", "ISO", "TSE", "CE", "AR", "GE", "BT", "IT", "HR", "IK", "İK", "ÖSYM", "KPSS", "YKS", "LGS", "TRT", "THY", "SSK", "BAĞ-KUR"]);
+		const KEEP = new Set(["OSB", "SSL", "SEO", "PDF", "AVM", "KDV", "SGK", "PTT", "TL", "TC", "ABD", "AB", "AŞ", "SMS", "GPS", "USB", "SSD", "CNC", "LED", "TV", "WC", "DNS", "VPN", "PHP", "CSS", "HTML", "URL", "API", "AI", "TDK", "TBMM", "TCDD", "KVKK", "OSB", "ISO", "TSE", "CE", "AR", "GE", "BT", "IT", "HR", "IK", "İK", "ÖSYM", "KPSS", "YKS", "LGS", "TRT", "THY", "SSK", "BAĞ-KUR"]);
 		// Kelime gibi okunan büyük harfli kısaltmalar
-		const AS_WORD = { IP: "ip", NATO: "nato", ASELSAN: "aselsan", TÜBİTAK: "tübitak", KARDEMİR: "kardemir", TÜİK: "tüik", İŞKUR: "işkur", AFAD: "afad" };
+		const AS_WORD = { IP: "ip", NATO: "nato", ASELSAN: "aselsan", TÜBİTAK: "tübitak", TÜİK: "tüik", İŞKUR: "işkur", AFAD: "afad" };
 		const DAYS = "pazartesi|salı|çarşamba|perşembe|cuma|cumartesi|pazar|monday|tuesday|wednesday|thursday|friday|saturday|sunday";
 
 		// Türkçe sıra sayısı eki: sayının okunuşundaki son kelimeye göre (19 → on dokuz → "uncu")
@@ -1172,7 +1172,7 @@
 				const spelled = (w) => pre + w + (suffix ? " " + suffix.toLocaleLowerCase(locale) : "") + post;
 				const spoken = (w) => pre + w + (suffix ? "'" + suffix.toLocaleLowerCase(locale) : "") + post;
 				if (AS_WORD[word]) return spoken(AS_WORD[word]);
-				if (KEEP.has(word) || /\d/.test(word) || !VOWEL.test(word)) return spelled(word);
+				if (KEEP.has(word) || SPELL.has(word) || /\d/.test(word) || !VOWEL.test(word)) return spelled(word);
 				const inPhrase = (i >= 2 && isCaps[i - 2]) || (i + 2 < tokens.length && isCaps[i + 2]);
 				if (word.length <= 3 && !inPhrase) return spelled(word);
 				return spoken(word.toLocaleLowerCase(locale));
@@ -1209,11 +1209,47 @@
 			[abbr("unesco(?![\\p{L}\\p{N}])", "gi"), "yunesko"],
 		];
 
+		// Sitenin okunuş sözlüğü (Ayarlar → GözKulak): kelime → okunuş. Kelime büyük-küçük harf fark etmeden
+		// (Türkçe I/ı, İ/i dahil) ve bütün kelime olarak eşleşir; en uzun kelime önce denenir. Okunuş, metin
+		// hazırlamanın başında yer tutucuyla değiştirilir (sonraki kurallar okunuşu değiştirmesin) ve sonda
+		// yerine konur. Yer tutucular özel kullanım alanı karakterleridir: harf ya da rakam sayılmazlar.
+		// Büyük harfli bir kelime kendisiyle eşleştirilirse ("MZA = MZA") harf harf okunur: Türkçe ve İngilizce
+		// sayfalarda, büyük harfli başlıkların içinde de.
+		let SAY = [];
+		const SPELL = new Set();
+		const MARK_A = "\uE000";
+		const MARK_B = "\uE001";
+		const esc = (c) => c.replace(/[.*+?^${}()|[\]\\/-]/g, "\\$&");
+		function setDictionary(list) {
+			SAY = [];
+			SPELL.clear();
+			if (!Array.isArray(list)) return;
+			const pairs = list.filter((x) => Array.isArray(x) && typeof x[0] === "string" && typeof x[1] === "string" && x[0].trim() && x[0].length <= 60 && x[1].length <= 100).slice(0, 200);
+			pairs.sort((a, b) => b[0].length - a[0].length);
+			for (const [word, say] of pairs) {
+				const w = word.trim();
+				if (w === say.trim() && w === w.toLocaleUpperCase("tr") && /^[\p{Lu}0-9-]+$/u.test(w)) {
+					SPELL.add(w);
+					continue;
+				}
+				let body = "";
+				for (const ch of word.trim().replace(/[‘’]/g, "'")) {
+					if (/\s/.test(ch)) body += "\\s+";
+					else if (ch === "'") body += "['’]";
+					else body += "[" + [...new Set([ch, ch.toLocaleLowerCase("tr"), ch.toLocaleUpperCase("tr"), ch.toLowerCase(), ch.toUpperCase()])].map(esc).join("") + "]";
+				}
+				SAY.push({ re: new RegExp(W + body + "(?![\\p{L}\\p{N}])", "gu"), out: say.replace(/\s+/g, " ").trim() });
+			}
+		}
+
 		// Alan adı uzantıları: "Sezen.Pro" ve "karabuk78.com" gibi yazımlarda nokta okunur.
 		const TLD = new Set(["com", "net", "org", "pro", "info", "biz", "io", "app", "dev", "co", "tr", "edu", "gov", "bel", "gen", "web", "tv", "me", "eu", "de", "uk", "us", "xyz", "site", "online", "store", "shop", "blog", "tech", "ai", "name", "mobi", "az", "cy", "nl", "fr", "it", "es", "ru", "k12", "av", "tsk", "pol"]);
 
 		function tr(input) {
-			let t = " " + String(input) + " ";
+			let t = " " + String(input).replace(/[\uE000-\uF8FF]/g, "") + " ";
+			SAY.forEach((x, i) => {
+				t = t.replace(x.re, MARK_A + String.fromCharCode(0xe100 + i) + MARK_B);
+			});
 			t = t.replace(/[“”„«»″]/g, '"').replace(/[‘’‚′]/g, "'");
 			t = t.replace(/\p{Extended_Pictographic}|️|‍/gu, "");
 			t = t.replace(/[•·▪►▶→←↗↘✓✔]/g, ", ");
@@ -1270,6 +1306,10 @@
 			t = t.replace(new RegExp("([" + UP + LOW + "])\\s*/\\s*(?=[" + UP + LOW + "])", "g"), "$1, ");
 			t = t.replace(/\s[-–—]\s/g, ", ");
 			t = t.replace(/\s&\s/g, " ve ");
+			t = t.replace(/\uE000([\uE100-\uE1FF])\uE001/g, (m, c) => {
+				const x = SAY[c.charCodeAt(0) - 0xe100];
+				return x ? x.out : " ";
+			});
 			return finish(t);
 		}
 
@@ -1297,7 +1337,7 @@
 			return t;
 		}
 
-		return { tr, en, ordinalSuffix };
+		return { tr, en, ordinalSuffix, setDictionary };
 	})();
 
 	/**
@@ -1341,6 +1381,8 @@
 			}
 		};
 	})();
+
+	speechText.setDictionary(cfg.say);
 
 	/*
 	 * ---------- okunacak içerik ----------

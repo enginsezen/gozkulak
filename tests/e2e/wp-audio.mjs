@@ -151,5 +151,31 @@ cfg = await config(adm, "/?page_id=500");
 const gone = await adm.evaluate(async (u) => (await fetch(u)).status, WP + "/wp-content/uploads/gozkulak/01/" + H1 + ".ogg");
 check("silmeden sonra dosya ve liste yok", !!cfg && !cfg.audio && gone === 404, gone + " " + JSON.stringify(cfg && cfg.audio));
 
+// ---------- okunuş sözlüğü (ayar sayfası) ----------
+const SET = WP + "/wp-admin/options-general.php?page=gozkulak";
+const saveSay = async (text) => {
+	await adm.goto(SET);
+	await adm.fill("#gozkulak-say", text);
+	await adm.click("#submit");
+	await adm.waitForLoadState("networkidle");
+	return { value: await adm.inputValue("#gozkulak-say"), error: await adm.locator("#setting-error-gozkulak_pronunciations").count() };
+};
+let say = await saveSay("# açıklama\nMZA   =   MZA\nWireless = vayırlıs\n\nKahve Dünyası = kahve dünyası");
+check("sözlük kaydedilir, boşluklar düzenlenir", !say.error && say.value === "# açıklama\nMZA = MZA\nWireless = vayırlıs\n\nKahve Dünyası = kahve dünyası", JSON.stringify(say));
+cfg = await config(adm, "/?page_id=500");
+check("sözlük ön yüze kelime/okunuş çiftleri olarak gider", JSON.stringify(cfg && cfg.say) === JSON.stringify([["MZA", "MZA"], ["Wireless", "vayırlıs"], ["Kahve Dünyası", "kahve dünyası"]]), JSON.stringify(cfg && cfg.say));
+await adm.goto(WP + "/?page_id=500");
+await adm.waitForFunction(() => window.GozKulak, null, { timeout: 10000 });
+const spoken = await adm.evaluate(() => GozKulak.prepare("Wireless ve MZA DEMİRYOLU"));
+check("okunuşa uygulanır", spoken === "vayırlıs ve MZA demiryolu.", spoken);
+for (const [bad, why] of [["Wireless vayırlıs", "eşittir yok"], ["Wireless = <b>x</b>", "HTML"], ["<script> = x", "kelimede işaret"], ["Wireless = ", "okunuş boş"], ["a".repeat(61) + " = x", "kelime çok uzun"]]) {
+	say = await saveSay("Kardemir = kardemir\n" + bad);
+	check("geçersiz satır reddedilir (" + why + "), önceki değer korunur", say.error === 1 && say.value.startsWith("# açıklama\nMZA = MZA"), JSON.stringify(say));
+}
+say = await saveSay(Array.from({ length: 201 }, (_, i) => "k" + i + " = x").join("\n"));
+check("200 satırdan fazlası reddedilir", say.error === 1, JSON.stringify(say.error));
+say = await saveSay("");
+check("sözlük boşaltılabilir", !say.error && say.value === "", JSON.stringify(say));
+
 console.log("HATA SAYISI:", errs.length);
 await b.close();

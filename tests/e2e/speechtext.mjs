@@ -9,7 +9,7 @@ import { fileURLToPath as __f } from "node:url";
 const __R = __f(new globalThis.URL("../..", import.meta.url)).replace(/\/$/, ""); // depo kökü
 const src = readFileSync(process.argv[2] || __R + "/assets/js/gozkulak.js", "utf8");
 const body = src.slice(src.indexOf("\tconst speechText = (() => {"), src.indexOf("\t/*\n\t * ---------- okunacak içerik"));
-const { speechText, splitSentences } = new Function(body + "\nreturn { speechText, splitSentences };")();
+const { speechText, splitSentences } = new Function("const cfg = {};\n" + body + "\nreturn { speechText, splitSentences };")();
 
 let fail = 0;
 const check = (name, ok, info) => {
@@ -148,7 +148,7 @@ const TR = {
 	],
 };
 const EN = [
-	["MZA RAILWAY MACHINERY - About us / Contact: +90 370 415 61 90", "MZA railway machinery, About us, Contact: plus 90, 370, 415, 61, 90."],
+	["MZA RAILWAY MACHINERY - About us / Contact: +90 370 415 61 90", "mza railway machinery, About us, Contact: plus 90, 370, 415, 61, 90."],
 	["Email: info@mza.com.tr", "Email: info at mza dot com dot tr."],
 	["1. Introduction", "1, Introduction."],
 	["NASA and the USA", "nasa and the USA."],
@@ -183,6 +183,32 @@ for (const [input, expect] of EN) {
 	const out = speechText.en(input);
 	check(JSON.stringify(input) + " → " + JSON.stringify(out), out === expect, "(beklenen: " + JSON.stringify(expect) + ")");
 }
+
+console.log("\nOkunuş sözlüğü (site ayarı)");
+speechText.setDictionary([["MZA", "MZA"], ["KARDEMİR", "kardemir"], ["Wireless", "vayırlıs"], ["Sezen.Pro", "sezen pro"], ["Kahve Dünyası", "kahve dünyası"], ["A101", "a yüz bir"], ["İstanbul", "istanbul"], "bozuk", ["", "x"], [1, 2]]);
+const SAY = [
+	["MZA'nın ürünleri", "MZA nın ürünleri."],
+	["MZA DEMİRYOLU MAKASI", "MZA demiryolu makası."],
+	["MZAX ve XMZA", "mzax ve xmza."],
+	["Wireless Internet", "vayırlıs Internet."],
+	["WIRELESS", "vayırlıs."],
+	["Kardemir'in", "kardemir'in."],
+	["Sezen.Pro web", "sezen pro web."],
+	["Kahve  Dünyası'nda", "kahve dünyası'nda."],
+	["A101 market", "a yüz bir market."],
+	["İSTANBUL ve istanbul", "istanbul ve istanbul."],
+	["Telefon 0370 712 34 56", "Telefon 0, 370, 712, 34, 56."],
+	["Karayolu 7. km", "Karayolu 7'nci kilometre."],
+];
+for (const [input, expect] of SAY) {
+	const out = speechText.tr(input);
+	check(JSON.stringify(input) + " → " + JSON.stringify(out), out === expect, "(beklenen: " + JSON.stringify(expect) + ")");
+}
+let en = speechText.en("MZA RAILWAY MACHINERY. Wireless internet.");
+check("İngilizcede yalnızca harf harf okunacaklar uygulanır → " + JSON.stringify(en), en === "MZA railway machinery. Wireless internet.");
+speechText.setDictionary([]);
+en = speechText.tr("MZA DEMİRYOLU MAKASI ve Wireless");
+check("sözlük boşaltılınca genel kurallar → " + JSON.stringify(en), en === "mza demiryolu makası ve Wireless.");
 
 console.log("\nSıra sayısı ekleri");
 const ORD = { 0: "ıncı", 1: "inci", 2: "nci", 3: "üncü", 4: "üncü", 5: "inci", 6: "ncı", 7: "nci", 8: "inci", 9: "uncu", 10: "uncu", 11: "inci", 19: "uncu", 20: "nci", 30: "uncu", 40: "ıncı", 50: "nci", 60: "ıncı", 70: "inci", 80: "inci", 90: "ıncı", 100: "üncü", 200: "üncü", 1000: "inci", 1001: "inci", 1937: "nci", 2026: "ncı", 1000000: "uncu", 1000000000: "ıncı" };

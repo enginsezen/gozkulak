@@ -87,6 +87,8 @@ final class GozKulak_Frontend {
 			'color'    => $s['color'],
 			'features' => $features,
 			'selector' => $s['content_selector'],
+			// Okunuş sözlüğü: kelime → okunuş (yalnızca okunacak metne uygulanır).
+			'say'      => GozKulak_Settings::pronunciation_list( $s['pronunciations'] ),
 			// Doğal ses motoru: Worker dosyası eklentinin kendi klasöründen açılır; motor dosyalarının adresi isteğe bağlı.
 			'tts'      => array(
 				'worker'   => GOZKULAK_URL . 'assets/js/gozkulak-tts-worker.js?ver=' . rawurlencode( GOZKULAK_VERSION ),

@@ -10,7 +10,7 @@ defined( 'ABSPATH' ) || exit;
 /**
  * Tek bir seçenekte (gozkulak_settings) tutulan site ayarları.
  *
- * @phpstan-type Settings array{enabled: bool, visibility: string, position: string, offset_x: int, offset_y: int, size: int, icon: string, color: string, features: array<string, bool>, content_selector: string, tts_base: string, tts_fallback: bool, prepared_audio: bool}
+ * @phpstan-type Settings array{enabled: bool, visibility: string, position: string, offset_x: int, offset_y: int, size: int, icon: string, color: string, features: array<string, bool>, content_selector: string, tts_base: string, tts_fallback: bool, prepared_audio: bool, pronunciations: string}
  */
 final class GozKulak_Settings {
 
@@ -25,6 +25,12 @@ final class GozKulak_Settings {
 	const SELECTOR_MAX = 500;
 
 	const TTS_BASE_MAX = 200;
+
+	const SAY_LINES = 200;
+
+	const SAY_WORD_MAX = 60;
+
+	const SAY_TEXT_MAX = 100;
 
 	/**
 	 * Menüdeki özellikler: anahtar => grup. Etiketler yönetici sayfasında verilir.
@@ -70,6 +76,7 @@ final class GozKulak_Settings {
 			'tts_base'         => '',
 			'tts_fallback'     => true,
 			'prepared_audio'   => true,
+			'pronunciations'   => '',
 		);
 	}
 
@@ -105,6 +112,22 @@ final class GozKulak_Settings {
 				'gozkulak_selector',
 				__( 'Okunacak alan seçicisi kaydedilmedi: yalnızca CSS seçicilerinde kullanılan karakterlere izin verilir ve en fazla 500 karakter olabilir.', 'gozkulak' )
 			);
+		}
+		if ( isset( $input['pronunciations'] ) ) {
+			$bad = is_string( $input['pronunciations'] ) ? self::bad_pronunciation_line( $input['pronunciations'] ) : 1;
+			if ( $bad ) {
+				self::error(
+					'gozkulak_pronunciations',
+					sprintf(
+						/* translators: 1: satır numarası, 2: en çok satır, 3: kelime uzunluğu, 4: okunuş uzunluğu */
+						__( 'Okunuş sözlüğü kaydedilmedi: %1$d. satır geçersiz. Her satır "kelime = okunuş" biçiminde olmalı; en çok %2$d satır, kelime en çok %3$d, okunuş en çok %4$d karakter. Kelimede harf, rakam, boşluk ve . - \' & + işaretleri kullanılabilir.', 'gozkulak' ),
+						$bad,
+						self::SAY_LINES,
+						self::SAY_WORD_MAX,
+						self::SAY_TEXT_MAX
+					)
+				);
+			}
 		}
 		if ( isset( $input['tts_base'] ) && ( ! is_string( $input['tts_base'] ) || null === self::sanitize_tts_base( $input['tts_base'] ) ) ) {
 			self::error(
@@ -179,6 +202,9 @@ final class GozKulak_Settings {
 			$out['prepared_audio'] = isset( $input['prepared_audio'] ) ? (bool) $input['prepared_audio'] : $fallback['prepared_audio'];
 		}
 
+		$say                   = isset( $input['pronunciations'] ) && is_string( $input['pronunciations'] ) ? self::sanitize_pronunciations( $input['pronunciations'] ) : null;
+		$out['pronunciations'] = null === $say ? $fallback['pronunciations'] : $say;
+
 		return $out;
 	}
 
@@ -215,6 +241,113 @@ final class GozKulak_Settings {
 			return null;
 		}
 		return '/' === substr( $url, -1 ) ? $url : $url . '/';
+	}
+
+	/**
+	 * Okunuş sözlüğünü temizler: her satır "kelime = okunuş". Boş satırlar ve # ile başlayan açıklamalar
+	 * korunur. Geçersiz bir satır varsa null döner (alan kaydedilmez).
+	 *
+	 * Sözlük yalnızca ziyaretçinin tarayıcısında okunacak metne uygulanır; HTML'e yazılmaz.
+	 *
+	 * @param string $raw Ham metin.
+	 * @return string|null
+	 */
+	public static function sanitize_pronunciations( $raw ) {
+		if ( self::bad_pronunciation_line( $raw ) ) {
+			return null;
+		}
+		$out = array();
+		foreach ( self::lines( $raw ) as $line ) {
+			$line = trim( $line );
+			if ( '' === $line || '#' === $line[0] ) {
+				$out[] = $line;
+				continue;
+			}
+			$pair  = self::pronunciation_pair( $line );
+			$out[] = null === $pair ? $line : $pair[0] . ' = ' . $pair[1];
+		}
+		return trim( implode( "\n", $out ) );
+	}
+
+	/**
+	 * Metni satırlara ayırır.
+	 *
+	 * @param string $text Metin.
+	 * @return string[]
+	 */
+	private static function lines( $text ) {
+		$lines = preg_split( '/\r\n|\r|\n/', $text );
+		return is_array( $lines ) ? $lines : array();
+	}
+
+	/**
+	 * Sözlükteki ilk geçersiz satırın numarası; hepsi geçerliyse 0.
+	 *
+	 * @param string $raw Ham metin.
+	 * @return int
+	 */
+	private static function bad_pronunciation_line( $raw ) {
+		$lines = self::lines( $raw );
+		$count = 0;
+		foreach ( $lines as $i => $line ) {
+			$line = trim( $line );
+			if ( '' === $line || '#' === $line[0] ) {
+				continue;
+			}
+			++$count;
+			if ( $count > self::SAY_LINES || null === self::pronunciation_pair( $line ) ) {
+				return $i + 1;
+			}
+		}
+		return 0;
+	}
+
+	/**
+	 * Bir sözlük satırını ayırır: array( kelime, okunuş ); geçersizse null.
+	 *
+	 * @param string $line Satır (boş ya da açıklama değil).
+	 * @return array{0: string, 1: string}|null
+	 */
+	private static function pronunciation_pair( $line ) {
+		$at = strpos( $line, '=' );
+		if ( false === $at ) {
+			return null;
+		}
+		$word = trim( (string) preg_replace( '/\s+/u', ' ', substr( $line, 0, $at ) ) );
+		$say  = trim( (string) preg_replace( '/\s+/u', ' ', substr( $line, $at + 1 ) ) );
+		if ( '' === $word || '' === $say || mb_strlen( $word ) > self::SAY_WORD_MAX || mb_strlen( $say ) > self::SAY_TEXT_MAX ) {
+			return null;
+		}
+		// Kelime harf ya da rakamla başlar ve biter; arada boşluk ve . - ' ’ & + olabilir.
+		if ( ! preg_match( "/^[\\p{L}\\p{N}](?:[\\p{L}\\p{N} .\\-'’&+]*[\\p{L}\\p{N}])?$/u", $word ) ) {
+			return null;
+		}
+		// Okunuş düz metin: HTML ya da denetim karakteri içeremez.
+		if ( sanitize_text_field( $say ) !== $say || preg_match( '/[<>=]/', $say ) ) {
+			return null;
+		}
+		return array( $word, $say );
+	}
+
+	/**
+	 * Ön yüz için sözlük: array( array( kelime, okunuş ), … ).
+	 *
+	 * @param string $text Kayıtlı sözlük.
+	 * @return array<int, array{0: string, 1: string}>
+	 */
+	public static function pronunciation_list( $text ) {
+		$out = array();
+		foreach ( self::lines( $text ) as $line ) {
+			$line = trim( $line );
+			if ( '' === $line || '#' === $line[0] ) {
+				continue;
+			}
+			$pair = self::pronunciation_pair( $line );
+			if ( null !== $pair ) {
+				$out[] = $pair;
+			}
+		}
+		return $out;
 	}
 
 	/**
