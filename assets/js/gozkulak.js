@@ -20,7 +20,7 @@
 
 	// Betik dosyasının kendi sürümü. Eklentinin sürümüyle uyuşmazsa sayfa eski (önbellekteki) bir
 	// betik dosyası kullanıyordur; test modunda menüde uyarı gösterilir.
-	const SCRIPT_VERSION = "0.3.1";
+	const SCRIPT_VERSION = "0.3.2";
 	const doc = document;
 	const htmlEl = doc.documentElement;
 	const enabledFeatures = new Set(Array.isArray(cfg.features) ? cfg.features : []);
@@ -1184,9 +1184,12 @@
 		const abbr = (src, flags) => new RegExp(W + src, flags + "u");
 		const ABBR = [
 			[abbr("(?:Mah\\.?|Mh\\.)(?=\\s|,|$)", "gi"), "Mahallesi"],
-			[abbr("(?:Sok\\.?|Sk\\.)(?=\\s|,|$)", "gi"), "Sokak"],
+			// "sok" ve "bul" aynı zamanda fiildir ("tek platformda bul."): yalnızca büyük harfle kısaltma sayılır.
+			[abbr("Sok\\.?(?=\\s|,|$)", "g"), "Sokak"],
+			[abbr("Sk\\.(?=\\s|,|$)", "gi"), "Sokak"],
 			[abbr("(?:Cad\\.?|Cd\\.)(?=\\s|,|$)", "gi"), "Caddesi"],
-			[abbr("(?:Bulv?|Blv)\\.(?=\\s)", "gi"), "Bulvarı"],
+			[abbr("Bul\\.(?=\\s)", "g"), "Bulvarı"],
+			[abbr("(?:Bulv|Blv)\\.(?=\\s)", "gi"), "Bulvarı"],
 			[abbr("Apt\\.(?=\\s)", "gi"), "Apartmanı"],
 			[abbr("vb\\.(?=\\s|,|$)", "g"), "ve benzeri"],
 			[abbr("vs\\.(?=\\s|,|$)", "g"), "vesaire"],
