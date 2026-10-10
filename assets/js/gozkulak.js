@@ -20,7 +20,7 @@
 
 	// Betik dosyasının kendi sürümü. Eklentinin sürümüyle uyuşmazsa sayfa eski (önbellekteki) bir
 	// betik dosyası kullanıyordur; test modunda menüde uyarı gösterilir.
-	const SCRIPT_VERSION = "0.2.9";
+	const SCRIPT_VERSION = "0.2.10";
 	const doc = document;
 	const htmlEl = doc.documentElement;
 	const enabledFeatures = new Set(Array.isArray(cfg.features) ? cfg.features : []);
@@ -1332,7 +1332,10 @@
 	 * vurgulama DOM'a dokunmadan (CSS Highlight API) yapılır.
 	 */
 	const content = (() => {
-		const SKIP = "nav, form, button, select, textarea, input, script, style, noscript, template, svg, iframe, canvas, video, audio, object, [aria-hidden='true'], [hidden], .screen-reader-text, .sr-only, .visually-hidden, .wpa-test-msg, #wpadminbar, .lwptoc_toggle, .ez-toc-title-toggle, .ez-toc-toggle, gozkulak-root, gozkulak-overlay";
+		const SKIP = "nav, form, button, select, textarea, input, script, style, noscript, template, svg, iframe, canvas, video, audio, object, [aria-hidden='true'], [hidden], .screen-reader-text, .sr-only, .visually-hidden, .wpa-test-msg, #wpadminbar, gozkulak-root, gozkulak-overlay";
+		// İçindekiler tabloları sayfa okunurken atlanır (başlıklar sayfada zaten okunuyor; kullanıcı kararı,
+		// 2026-10-10). Seçilen metin okunurken atlanmaz.
+		const TOC = ".lwptoc, #ez-toc-container, .ez-toc-container, #toc_container, .wp-block-rank-math-toc-block, .wp-block-yoast-seo-table-of-contents, .elementor-widget-table-of-contents, .wp-block-uagb-table-of-contents, .kb-table-of-content-nav, .wp-block-ht-block-toc, .wpj-jtoc, #ftwp-container, .simple-toc, [role='doc-toc'], #toc, .toc";
 		const AUTO = ["main", "[role='main']", ".entry-content", ".post-content", "article", "#content", "#Content", ".site-content", ".content-area"];
 		const INLINE = /^(inline|inline-block|inline-flex|inline-grid|contents|ruby)$/;
 		// Satır içi öğeler (span, a, strong…) float ya da flex/grid kapsayıcısı yüzünden blok olabilir; ör.
@@ -1402,8 +1405,10 @@
 		 */
 		function blocksOf(root, range, seen) {
 			const out = [];
-			// Bütün sayfa okunuyorsa sitenin başlığı, alt bilgisi ve kenar çubukları atlanır.
-			const skip = root === doc.body ? SKIP + ", header, footer, aside, [role='banner'], [role='contentinfo'], [role='complementary']" : SKIP;
+			// Sayfa okunurken içindekiler tablosu, bütün sayfa okunuyorsa ayrıca sitenin başlığı, alt bilgisi ve
+			// kenar çubukları atlanır.
+			let skip = range ? SKIP : SKIP + ", " + TOC;
+			if (root === doc.body) skip += ", header, footer, aside, [role='banner'], [role='contentinfo'], [role='complementary']";
 			const okCache = new Map();
 			const allowed = (el) => {
 				if (okCache.has(el)) return okCache.get(el);
