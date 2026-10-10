@@ -7,3 +7,39 @@
 	display: inline-block;
 	margin: 0 16px 6px 0;
 }
+
+.gozkulak-prepare {
+	margin-top: 32px;
+	max-width: 960px;
+}
+
+.gozkulak-prepare .gozkulak-prep-tools .button,
+.gozkulak-prepare .gozkulak-prep-tools label {
+	margin: 0 8px 6px 0;
+	vertical-align: middle;
+}
+
+.gozkulak-prepare .gozkulak-prep-status {
+	min-height: 1.5em;
+	font-weight: 600;
+}
+
+.gozkulak-prepare .gozkulak-prep-table .check-column {
+	width: 2.2em;
+}
+
+/* Hazırlanan sayfa: masaüstü genişliğinde ama ekran dışında (görünmeyen öğeler okunmaz). */
+.gozkulak-prep-frame {
+	position: fixed;
+	left: -20000px;
+	top: 0;
+	width: 1280px;
+	height: 900px;
+	border: 0;
+	visibility: visible;
+}
+
+/* WordPress'in .button stili hidden özniteliğini ezmesin. */
+.gozkulak-prepare [hidden] {
+	display: none !important;
+}

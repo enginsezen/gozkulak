@@ -15,6 +15,8 @@ final class GozKulak_Admin {
 
 	const PAGE = 'gozkulak';
 
+	const PREPARE_MAX = 1000;
+
 	/**
 	 * Kancaları bağlar.
 	 *
@@ -95,6 +97,8 @@ final class GozKulak_Admin {
 		wp_enqueue_style( 'wp-color-picker' );
 		wp_enqueue_style( 'gozkulak-admin', GOZKULAK_URL . 'assets/css/admin.css', array(), GOZKULAK_VERSION );
 		wp_enqueue_script( 'gozkulak-admin', GOZKULAK_URL . 'assets/js/admin.js', array( 'wp-color-picker' ), GOZKULAK_VERSION, true );
+		wp_enqueue_script( 'gozkulak-opus', GOZKULAK_URL . 'assets/js/gozkulak-opus.js', array(), GOZKULAK_VERSION, true );
+		wp_enqueue_script( 'gozkulak-prepare', GOZKULAK_URL . 'assets/js/gozkulak-prepare.js', array( 'gozkulak-opus' ), GOZKULAK_VERSION, true );
 	}
 
 	/**
@@ -326,6 +330,122 @@ final class GozKulak_Admin {
 
 				<?php submit_button(); ?>
 			</form>
+
+			<?php self::render_prepare( $s ); ?>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Hazır ses bölümü: sayfa listesi ve hazırlama düğmeleri. Hazırlamayı gozkulak-prepare.js yapar;
+	 * REST nonce'u yalnızca bu yönetici sayfasına yazılır.
+	 *
+	 * @param array<string, mixed> $s Ayarlar.
+	 * @return void
+	 */
+	private static function render_prepare( array $s ) {
+		$types  = array_diff( get_post_types( array( 'public' => true ) ), array( 'attachment' ) );
+		$posts  = get_posts(
+			array(
+				'post_type'        => array_values( $types ),
+				'post_status'      => 'publish',
+				'numberposts'      => self::PREPARE_MAX,
+				'orderby'          => 'modified',
+				'order'            => 'DESC',
+				'suppress_filters' => false,
+			)
+		);
+		$labels = array();
+		foreach ( $types as $type ) {
+			$obj             = get_post_type_object( $type );
+			$labels[ $type ] = $obj ? $obj->labels->singular_name : $type;
+		}
+		$config = array(
+			'rest'     => esc_url_raw( rest_url( GozKulak_Audio::NS . '/' ) ),
+			'nonce'    => wp_create_nonce( 'wp_rest' ),
+			'uploads'  => GozKulak_Audio::base_url(),
+			'worker'   => GOZKULAK_URL . 'assets/js/gozkulak-tts-worker.js?ver=' . rawurlencode( GOZKULAK_VERSION ),
+			'base'     => $s['tts_base'],
+			'fallback' => (bool) $s['tts_fallback'],
+		);
+		$json   = wp_json_encode( $config, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
+		?>
+		<div id="gozkulak-prepare" class="gozkulak-prepare">
+			<h2><?php esc_html_e( 'Hazır ses', 'gozkulak' ); ?></h2>
+			<p><?php esc_html_e( 'Seçilen sayfaların sesi bu tarayıcıda bir kez üretilir ve sitenize yüklenir. Ziyaretçiler hazırlanmış sayfaları modeli indirmeden, kesilmeden dinler. Sayfa değişirse yalnızca değişen cümleler yeniden üretilir.', 'gozkulak' ); ?></p>
+			<p class="description"><?php esc_html_e( 'Masaüstünde Chrome önerilir (WebGPU ile hızlı). Hazırlama sırasında bu sekme açık kalmalıdır. Bittikten sonra sitenin önbelleğini temizleyin.', 'gozkulak' ); ?></p>
+			<?php if ( ! $s['prepared_audio'] ) : ?>
+				<div class="notice notice-warning inline"><p><?php esc_html_e( '"Hazır ses" seçeneği kapalı: dosyalar hazırlanır ama ziyaretçilere çalınmaz.', 'gozkulak' ); ?></p></div>
+			<?php endif; ?>
+			<p class="gozkulak-prep-tools">
+				<label>
+					<?php esc_html_e( 'Tür:', 'gozkulak' ); ?>
+					<select class="gozkulak-prep-type">
+						<option value=""><?php esc_html_e( 'Hepsi', 'gozkulak' ); ?></option>
+						<?php foreach ( $labels as $type => $label ) : ?>
+							<option value="<?php echo esc_attr( $type ); ?>"><?php echo esc_html( $label ); ?></option>
+						<?php endforeach; ?>
+					</select>
+				</label>
+				<button type="button" class="button button-primary gozkulak-prep-run"><?php esc_html_e( 'Seçilenleri hazırla', 'gozkulak' ); ?></button>
+				<button type="button" class="button gozkulak-prep-stop" hidden><?php esc_html_e( 'Durdur', 'gozkulak' ); ?></button>
+				<button type="button" class="button gozkulak-prep-cleanup"><?php esc_html_e( 'Kullanılmayan dosyaları sil', 'gozkulak' ); ?></button>
+				<button type="button" class="button-link button-link-delete gozkulak-prep-purge"><?php esc_html_e( 'Bütün hazır sesleri sil', 'gozkulak' ); ?></button>
+			</p>
+			<p class="gozkulak-prep-status" role="status" aria-live="polite"></p>
+			<table class="widefat striped gozkulak-prep-table">
+				<thead>
+					<tr>
+						<td class="check-column"><input type="checkbox" class="gozkulak-prep-all" aria-label="<?php esc_attr_e( 'Görünen sayfaların hepsini seç', 'gozkulak' ); ?>"></td>
+						<th scope="col"><?php esc_html_e( 'Sayfa', 'gozkulak' ); ?></th>
+						<th scope="col"><?php esc_html_e( 'Tür', 'gozkulak' ); ?></th>
+						<th scope="col"><?php esc_html_e( 'Hazır ses', 'gozkulak' ); ?></th>
+					</tr>
+				</thead>
+				<tbody>
+					<?php foreach ( $posts as $post ) : ?>
+						<?php
+						$title = get_the_title( $post );
+						$title = '' === $title ? __( '(başlıksız)', 'gozkulak' ) : $title;
+						$count = GozKulak_Audio::count( $post->ID );
+						?>
+						<tr data-id="<?php echo esc_attr( (string) $post->ID ); ?>" data-url="<?php echo esc_url( get_permalink( $post ) ); ?>" data-type="<?php echo esc_attr( $post->post_type ); ?>" data-title="<?php echo esc_attr( $title ); ?>" data-count="<?php echo esc_attr( (string) $count ); ?>">
+							<th scope="row" class="check-column"><input type="checkbox" class="gozkulak-prep-pick" aria-label="<?php echo esc_attr( sprintf( /* translators: %s: sayfa başlığı */ __( 'Seç: %s', 'gozkulak' ), $title ) ); ?>"></th>
+							<td><a href="<?php echo esc_url( get_permalink( $post ) ); ?>" target="_blank" rel="noopener"><?php echo esc_html( $title ); ?></a></td>
+							<td><?php echo esc_html( isset( $labels[ $post->post_type ] ) ? $labels[ $post->post_type ] : $post->post_type ); ?></td>
+							<td class="gozkulak-prep-state">
+								<?php
+								echo esc_html(
+									$count
+										/* translators: %d: dosya sayısı */
+										? sprintf( _n( '%d dosya', '%d dosya', $count, 'gozkulak' ), $count )
+										: '—'
+								);
+								?>
+							</td>
+						</tr>
+					<?php endforeach; ?>
+				</tbody>
+			</table>
+			<?php if ( count( $posts ) >= self::PREPARE_MAX ) : ?>
+				<p class="description">
+					<?php
+					/* translators: %d: en çok gösterilen sayfa sayısı */
+					echo esc_html( sprintf( __( 'En son değişen %d sayfa gösteriliyor.', 'gozkulak' ), self::PREPARE_MAX ) );
+					?>
+				</p>
+			<?php endif; ?>
+			<?php
+			if ( false !== $json ) {
+				wp_print_inline_script_tag(
+					$json,
+					array(
+						'type' => 'application/json',
+						'id'   => 'gozkulak-prepare-config',
+					)
+				);
+			}
+			?>
 		</div>
 		<?php
 	}

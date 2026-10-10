@@ -2306,6 +2306,7 @@
 		return {
 			play,
 			stop,
+			job,
 			// Test modundaki tanı notu: üretim hızı (gerçek zamana oranı) ve okuma ortasında sesin kaç kez bittiği
 			diag() {
 				if (!stats || !ema.build) return "";
@@ -2322,6 +2323,43 @@
 				return true;
 			},
 		};
+	})();
+
+	/*
+	 * ---------- hazır ses ----------
+	 * Yöneticinin önceden üretip siteye yüklediği ses dosyaları (uploads/gozkulak/). Her dosya bir üretim
+	 * birimidir (kısa cümle sonrakiyle birlikte: emaEngine.job). Dosya adı, birimin okunacak metninin
+	 * özetidir; önek, biçim, model ya da kodlama değişince bütün adları değiştirir. Birimler, okuyucunun
+	 * Türkçe bölümleri ürettiği gibi, her bölümün başından hesaplanır.
+	 */
+	const prepared = (() => {
+		const PREFIX = "gk1|ema-13c431d|opus24|";
+
+		async function hash(text) {
+			const d = await window.crypto.subtle.digest("SHA-256", new TextEncoder().encode(PREFIX + text));
+			return [...new Uint8Array(d)].slice(0, 16).map((x) => x.toString(16).padStart(2, "0")).join("");
+		}
+
+		// Listenin Türkçe bölümlerindeki birimler: { from, to, text } (to hariç)
+		function units(list) {
+			const out = [];
+			for (let i = 0; i < list.length;) {
+				let end = i + 1;
+				while (end < list.length && list[end].lang === list[i].lang) end++;
+				if (list[i].lang === "tr") {
+					const run = list.slice(0, end);
+					for (let k = i; k < end;) {
+						const w = emaEngine.job(run, k);
+						out.push({ from: k, to: w.next, text: w.text });
+						k = w.next;
+					}
+				}
+				i = end;
+			}
+			return out;
+		}
+
+		return { hash, units };
 	})();
 
 	/*
@@ -3303,6 +3341,8 @@
 			// Tanı için: bir metnin nasıl okunacağı ve bu sayfada okunacak cümleler
 			prepare: (text, language) => (language === "en" ? speechText.en(text) : speechText.tr(text)),
 			sentences: () => content.page().map((x) => ({ text: x.text, speech: x.speech, lang: x.lang })),
+			// Hazır ses: bu sayfanın üretim birimleri ve dosya adları (yönetici panelindeki hazırlama kullanır)
+			units: () => Promise.all(prepared.units(content.page()).map(async (u) => ({ text: u.text, hash: await prepared.hash(u.text) }))),
 		};
 	};
 	if (doc.body) start();

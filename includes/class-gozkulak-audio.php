@@ -225,9 +225,20 @@ final class GozKulak_Audio {
 			return null;
 		}
 		return array(
-			'base'  => self::url(),
+			'base'  => self::base_url(),
 			'files' => $files,
 		);
+	}
+
+	/**
+	 * Bir sayfanın hazır ses dosyası sayısı.
+	 *
+	 * @param int $post_id Yazı.
+	 * @return int
+	 */
+	public static function count( $post_id ) {
+		$csv = (string) get_post_meta( (int) $post_id, self::META, true );
+		return '' === $csv ? 0 : substr_count( $csv, ',' ) + 1;
 	}
 
 	/**
@@ -266,7 +277,7 @@ final class GozKulak_Audio {
 	 *
 	 * @return string
 	 */
-	private static function url() {
+	public static function base_url() {
 		$up = wp_upload_dir( null, false );
 		return set_url_scheme( trailingslashit( $up['baseurl'] ) . self::DIR . '/' );
 	}
