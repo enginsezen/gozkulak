@@ -65,11 +65,12 @@ Sitede `Content-Security-Policy` başlığı varsa GözKulak'ın istediği izinl
 | `connect-src` | `'self'` | Hazır ses dosyaları (yükleme klasörü başka bir alan adındaysa o da). |
 | `media-src` | `'self' blob:` | Hazır ses. |
 | `style-src` | `'self'` | `'unsafe-inline'` gerekmez: çalışma zamanı stilleri oluşturulabilir stil sayfasıyla eklenir. |
+| `font-src` | `'self'` | Okunaklı yazı tipi (eklentinin kendi klasöründen). |
 
 Örnek (yedek kaynaklar kapalı):
 
 ```
-script-src 'self' 'wasm-unsafe-eval' blob:; worker-src 'self'; connect-src 'self' https://tts.example.com; media-src 'self' blob:; style-src 'self'
+script-src 'self' 'wasm-unsafe-eval' blob:; worker-src 'self'; connect-src 'self' https://tts.example.com; media-src 'self' blob:; style-src 'self'; font-src 'self'
 ```
 
 - Başlık genellikle Worker dosyasına da gönderilir (nginx `add_header` bütün yanıtlara ekler); bu durumda `script-src` ve `connect-src` izinleri Worker için de geçerlidir.

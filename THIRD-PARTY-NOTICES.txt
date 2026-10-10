@@ -1,8 +1,8 @@
 GözKulak — üçüncü taraf bileşenler
 ==================================
 
-GözKulak eklentisi GPL-2.0-or-later lisanslıdır. Doğal ses (Türkçe sesli okuma) için aşağıdaki
-bileşenler kullanılır. Model ve ONNX Runtime dosyaları eklenti paketinde yer almaz; ziyaretçi
+GözKulak eklentisi GPL-2.0-or-later lisanslıdır. Doğal ses (Türkçe sesli okuma) için 1-4 numaralı,
+"Okunaklı yazı" seçeneği için 5 numaralı bileşen kullanılır. Model ve ONNX Runtime dosyaları eklenti paketinde yer almaz; ziyaretçi
 doğal sesle dinlemeyi onayladığında ziyaretçinin tarayıcısı tarafından, sürüme sabitlenmiş
 adreslerden indirilir ve SHA-256 ile doğrulanır.
 
@@ -38,3 +38,11 @@ adreslerden indirilir ve SHA-256 ile doğrulanır.
    Kaynak: https://www.npmjs.com/package/onnxruntime-web (dist/)
    Lisans: MIT
    Çalışma anında indirilir; eklentide dağıtılmaz.
+
+
+5. Atkinson Hyperlegible Next (değişken yazı tipi, düz), The Atkinson Hyperlegible Next Project Authors
+   Kaynak: https://github.com/googlefonts/atkinson-hyperlegible-next
+   Paket: @fontsource-variable/atkinson-hyperlegible-next 5.3.0 (files/…-latin-wght-normal.woff2,
+   files/…-latin-ext-wght-normal.woff2)
+   Lisans: SIL Open Font License 1.1 (licenses/OFL-1.1.txt)
+   Eklentide dağıtılır (assets/fonts/); değiştirilmemiştir.

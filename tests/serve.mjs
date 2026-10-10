@@ -49,7 +49,7 @@ const cspOf = (q) => (Object.hasOwn(CSP, q.get("csp") || "") ? CSP[q.get("csp")]
 const TYPES = {
 	".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".mjs": "text/javascript; charset=utf-8",
 	".css": "text/css; charset=utf-8", ".json": "application/json", ".wasm": "application/wasm", ".onnx": "application/octet-stream",
-	".svg": "image/svg+xml", ".png": "image/png", ".txt": "text/plain; charset=utf-8",
+	".svg": "image/svg+xml", ".png": "image/png", ".txt": "text/plain; charset=utf-8", ".woff2": "font/woff2",
 };
 
 const version = () => (/define\(\s*'GOZKULAK_VERSION',\s*'([^']+)'/.exec(readFileSync(join(R, "gozkulak.php"), "utf8")) || [])[1] || "0";

@@ -20,7 +20,7 @@
 
 	// Betik dosyasının kendi sürümü. Eklentinin sürümüyle uyuşmazsa sayfa eski (önbellekteki) bir
 	// betik dosyası kullanıyordur; test modunda menüde uyarı gösterilir.
-	const SCRIPT_VERSION = "0.4.5";
+	const SCRIPT_VERSION = "0.4.6";
 	const doc = document;
 	const htmlEl = doc.documentElement;
 	const enabledFeatures = new Set(Array.isArray(cfg.features) ? cfg.features : []);
@@ -3682,6 +3682,9 @@
 	shadow.append(sheet, panel);
 	if (speechUi) shadow.append(speechUi.mini);
 	shadow.append(button, live);
+	// Chromium, Shadow DOM içinde büyük harf dönüşümünde sayfanın dilini kullanmıyor ("Sesli okuma" →
+	// "SESLI OKUMA"); dil, menünün kendi öğelerine de yazılır.
+	for (const el of [panel, button, live, speechUi && speechUi.mini]) if (el) el.setAttribute("lang", lang);
 
 	// Menü, sayfanın ilk boyamasından sonra eklenir: menünün stil dosyası ilk boyamadan önce istenirse
 	// Lighthouse / PageSpeed benzetimi onu ve betiği boyamayı engelleyen zincire katıp sayfanın puanını

@@ -23,6 +23,7 @@ const CORE = [
 	["heading.mjs"],
 	["late.mjs"],
 	["koyu-kalici.mjs"],
+	["yazi.mjs"],
 	["listeo.mjs"],
 	["kbd.mjs", BASE + "/gk-tara/menu.html"],
 	["mobile.mjs"],

@@ -33,6 +33,7 @@ Kişiye özel bilgiler (siteler, sunucu, test cihazları, güncel durum) `CLAUDE
 | `assets/js/gozkulak-tts-worker.js` | Doğal ses motoru (module Worker): sabitlenmiş dosya listesi ve SHA-256, Cache Storage, ORT içe aktarma, EMA (tts.js uyarlaması) |
 | `assets/css/menu.css` | Shadow DOM içindeki menü |
 | `assets/css/page.css` | Sayfaya uygulanan sınıflar (`html.gk-*`) |
+| `assets/fonts/` | Okunaklı yazı tipi: Atkinson Hyperlegible Next, değişken, latin + latin-ext (SIL OFL 1.1, `licenses/OFL-1.1.txt`) |
 | `tools/` | Faz 0 ölçüm sayfası, tarama ve tanı betikleri, `tools/vps/tts-dosyalari.sh`. Pakete girmez |
 | `tests/` | Uçtan uca testler, deneme sayfaları, yerel test sunucusu (`tests/README.md`). Pakete girmez |
 

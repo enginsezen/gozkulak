@@ -4,7 +4,7 @@ Tags: accessibility, erişilebilirlik, text-to-speech, sesli okuma
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 0.4.5
+Stable tag: 0.4.6
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -40,11 +40,17 @@ Sitede Content-Security-Policy başlığı varsa gereken izinler:
 * connect-src: 'self', ses sunucusunun adresi; yedek kaynaklar açıksa https://huggingface.co https://*.huggingface.co https://*.hf.co https://cdn.jsdelivr.net
 * media-src: 'self' blob: (hazır ses)
 * style-src: 'self' ('unsafe-inline' gerekmez)
+* font-src: 'self' (okunaklı yazı tipi)
 * Trusted Types politika adları sınırlıysa: gozkulak
 
 Hazır ses hazırlanırken site sayfaları aynı siteden çerçevede açılır; X-Frame-Options: DENY gönderilmemelidir. İzin eksikse menü çalışır, okuma bir sonraki sese (doğal ses ya da tarayıcının sesi) geçer.
 
 == Changelog ==
+
+= 0.4.6 =
+* "Okunaklı yazı" artık her cihazda aynı yazı tipini kullanır: Atkinson Hyperlegible Next (az gören okurlar için tasarlandı; I/l/1 ve O/0 kolay ayırt edilir). Yazı tipi eklentiyle gelir; başka bir siteye istek gitmez. Eskiden bu yazı tipi yüklenmiyordu; masaüstünde Verdana ya da Tahoma, telefonda sistemin yazı tipi kullanılıyordu.
+* Yazı tipi dosyaları (yaklaşık 53 KB) yalnızca seçenek açılınca iner. Sitede güvenlik başlığı (CSP) varsa font-src 'self' izni gerekir.
+* Düzeltme: Menüdeki büyük harfli başlıklarda i, I olarak görünüyordu ("SESLI OKUMA", "OKUMA VE DIKKAT"); artık "SESLİ OKUMA". Chromium menünün içinde sayfanın dilini büyük harf dönüşümünde kullanmıyordu.
 
 = 0.4.5 =
 * Düzeltme: Okunuş sözlüğünde sonu noktayla biten kısaltmalar ("Şti. = Şirketi", "Doç. = doçent") geçersiz sayılıyordu; artık kaydedilir.
