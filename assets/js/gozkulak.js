@@ -1904,12 +1904,34 @@
 			build = "";
 		}
 
+		// Trusted Types zorunlu sayfalarda (require-trusted-types-for 'script') Worker adresi bir politikadan
+		// geçmelidir. "gozkulak" politikası yalnızca ayarlardaki Worker adresini kabul eder. Site politika
+		// adlarını sınırlıyorsa (trusted-types …) listeye "gozkulak" eklenmelidir; eklenmezse tarayıcı sesi okur.
+		let policy;
+		function workerUrl() {
+			const tt = window.trustedTypes;
+			if (!tt || typeof tt.createPolicy !== "function") return TTS.worker;
+			if (policy === undefined) {
+				try {
+					policy = tt.createPolicy("gozkulak", {
+						createScriptURL: (u) => {
+							if (u !== TTS.worker) throw new TypeError("GözKulak: beklenmeyen Worker adresi");
+							return u;
+						},
+					});
+				} catch (e) {
+					policy = null;
+				}
+			}
+			return policy ? policy.createScriptURL(TTS.worker) : TTS.worker;
+		}
+
 		function spawn() {
 			if (starting) return starting;
 			starting = new Promise((resolve, reject) => {
 				let w;
 				try {
-					w = new window.Worker(TTS.worker, { type: "module", name: "gozkulak-tts" });
+					w = new window.Worker(workerUrl(), { type: "module", name: "gozkulak-tts" });
 				} catch (e) {
 					starting = null;
 					reject(e);

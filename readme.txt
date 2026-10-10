@@ -16,7 +16,7 @@ GözKulak, temadan bağımsız bir erişilebilirlik menüsü ekler. Menü Shadow
 
 * Ziyaretçiden veri toplanmaz; tercihler yalnızca ziyaretçinin tarayıcısında saklanır.
 * Ziyaretçiye açık AJAX veya REST ucu yoktur.
-* Eklenti silinince kendi ayarlarını kaldırır.
+* Eklenti silinince kendi ayarlarını, hazır ses dosyalarını ve sayfa listelerini kaldırır.
 
 Ayarlar: Ayarlar → GözKulak.
 
@@ -30,6 +30,19 @@ Türkçe doğal ses (EMA Lightning) için gereken model ve ONNX Runtime dosyalar
 Bu isteklerde yalnızca standart HTTP bilgileri (IP adresi, tarayıcı bilgisi) iletilir; sayfa adresi (Referer) ve çerez gönderilmez. Okunan metin ve ziyaretçi tercihleri hiçbir sunucuya gönderilmez. Her dosya SHA-256 ile doğrulanır. Hugging Face: https://huggingface.co/privacy — jsDelivr: https://www.jsdelivr.com/terms/privacy-policy-jsdelivr-net
 
 Üçüncü taraf bileşenler ve lisansları: THIRD-PARTY-NOTICES.txt
+
+== Güvenlik başlığı (CSP) ==
+
+Sitede Content-Security-Policy başlığı varsa gereken izinler:
+
+* script-src: 'self'; doğal ses için ayrıca 'wasm-unsafe-eval' ve blob:
+* worker-src: 'self'
+* connect-src: 'self', ses sunucusunun adresi; yedek kaynaklar açıksa https://huggingface.co https://*.huggingface.co https://*.hf.co https://cdn.jsdelivr.net
+* media-src: 'self' blob: (hazır ses)
+* style-src: 'self' ('unsafe-inline' gerekmez)
+* Trusted Types politika adları sınırlıysa: gozkulak
+
+Hazır ses hazırlanırken site sayfaları aynı siteden çerçevede açılır; X-Frame-Options: DENY gönderilmemelidir. İzin eksikse menü çalışır, okuma bir sonraki sese (doğal ses ya da tarayıcının sesi) geçer.
 
 == Changelog ==
 

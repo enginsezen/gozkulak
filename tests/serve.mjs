@@ -11,6 +11,8 @@
 //   /gk-tts/{,alt/}onnxruntime-web/1.30.0/…      gerçek ONNX Runtime (tests/node_modules/onnxruntime-web/dist)
 //   /gk-tts/bad/…                   bozuk kaynak (text.onnx aynı boyutta bozuk, ONNX Runtime yok)
 //   /gk-tts/big/… /gk-tts/bigc/…    text.onnx beklenenden 3 MB büyük (Content-Length ile / parça parça)
+//   /gk-tts/page.php?csp=…&files=…  aynı sayfa, güvenlik başlığıyla (CSP; Worker'a da aynısı) ve hazır ses listesiyle
+//   /gk-hazir/xx/<özet>.ogg         hazır ses: her özet için aynı deneme sesi (tests/fixtures/hazir/ton.ogg)
 //
 // Deneme sayfalarındaki "version" alanı eklentinin güncel sürümüyle değiştirilir (eski betik uyarısı çıkmasın).
 import { createServer } from "node:http";
@@ -27,6 +29,21 @@ const ORIGIN = `http://127.0.0.1:${PORT}`;
 const FAKE = join(T, "fixtures/ema-fake");
 const ORT = join(T, "node_modules/onnxruntime-web/dist");
 const MODEL_FILES = ["meta.json", "normalizer.wasm", "text.onnx", "sound.onnx", "decoder.onnx"];
+
+// Güvenlik başlığı (CSP) denemeleri. "onerilen": eklentinin belgede önerilen en dar kuralı.
+const CSP_BASE = "default-src 'self'; object-src 'none'; base-uri 'self'; img-src 'self' data:; style-src 'self'; connect-src 'self'; frame-src 'self'";
+const CSP = {
+	onerilen: CSP_BASE + "; script-src 'self' 'wasm-unsafe-eval' blob:; worker-src 'self'; media-src 'self' blob:",
+	// Doğal sesin istediği izinler yok (WebAssembly ve blob: modülü): menü ve hazır ses çalışmalı
+	katı: CSP_BASE + "; script-src 'self'; worker-src 'self'; media-src 'self' blob:",
+	// Hazır ses blob: adresinden çalınamaz: doğal sese geçilmeli
+	medyasız: CSP_BASE + "; script-src 'self' 'wasm-unsafe-eval' blob:; worker-src 'self'; media-src 'self'",
+	// Trusted Types zorunlu: Worker adresi düz metinle verilemez
+	tt: CSP_BASE + "; script-src 'self' 'wasm-unsafe-eval' blob:; worker-src 'self'; media-src 'self' blob:; require-trusted-types-for 'script'",
+	// Trusted Types zorunlu ve politika adları sınırlı ("gozkulak" listede yok): tarayıcı sesi okumalı
+	ttdar: CSP_BASE + "; script-src 'self' 'wasm-unsafe-eval' blob:; worker-src 'self'; media-src 'self' blob:; require-trusted-types-for 'script'; trusted-types baska",
+};
+const cspOf = (q) => (Object.hasOwn(CSP, q.get("csp") || "") ? CSP[q.get("csp")] : "");
 
 const TYPES = {
 	".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".mjs": "text/javascript; charset=utf-8",
@@ -77,12 +94,14 @@ function ttsPage(q) {
 		position: "bottom-right", offset: [20, 20], size: 56, icon: "person", color: "#085e9d",
 		features: ["font_size", "contrast", "dark_mode", "text_to_speech"],
 		selector: "#main",
-		tts: { worker: ORIGIN + "/gk-tts/" + w, base: b, fallback: q.get("fb") !== "0" },
+		tts: { worker: ORIGIN + "/gk-tts/" + w + (cspOf(q) ? "?csp=" + encodeURIComponent(q.get("csp")) : ""), base: b, fallback: q.get("fb") !== "0" },
 	};
+	const files = (q.get("files") || "").split(",").filter((x) => /^[0-9a-f]{32}$/.test(x));
+	if (files.length) cfg.audio = { base: ORIGIN + "/gk-hazir/", files };
 	const mix = q.get("mix") ? '<p lang="en">The house is open every day. Tickets are sold at the door.</p>\n' : "";
 	const json = JSON.stringify(cfg).replace(/</g, "\\u003c");
 	return `<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Doğal ses testi</title>
-<style>body{font:16px/1.6 Arial,sans-serif;margin:0;color:#333} main{max-width:760px;margin:0 auto;padding:20px}</style></head><body>
+${cspOf(q) ? "" : "<style>body{font:16px/1.6 Arial,sans-serif;margin:0;color:#333} main{max-width:760px;margin:0 auto;padding:20px}</style>"}</head><body>
 <main id="main"><h1>Kaymakamlar Gezi Evi</h1>
 <p>Safranbolu Eski Çarşı'da bulunan Kaymakamlar Gezi Evi, geleneksel Safranbolu ev yaşamını tanıtmak amacıyla müzeye dönüştürülmüş tarihi bir konaktır. Yapı on dokuzuncu yüzyıl başlarında inşa edilmiştir.</p>
 <p>Konakta odalar, mutfak ve günlük kullanım eşyaları sergilenir. Ziyaretçiler şehrin dokusunu yakından görür.</p>
@@ -118,8 +137,11 @@ const server = createServer((req, res) => {
 		res.end(req.method === "HEAD" ? undefined : body);
 	};
 	try {
-		if (path === "/gk-tts/page.php") return send(200, ttsPage(url.searchParams), TYPES[".html"]);
-		if (/^\/gk-tts\/worker-(test|slow|slow2|hang|lag)\.js$/.test(path)) return send(200, worker(path.split("/").pop()), TYPES[".js"]);
+		const csp = cspOf(url.searchParams);
+		const cspHeader = csp ? { "Content-Security-Policy": csp } : {};
+		if (path === "/gk-tts/page.php") return send(200, ttsPage(url.searchParams), TYPES[".html"], cspHeader);
+		if (/^\/gk-tts\/worker-(test|slow|slow2|hang|lag)\.js$/.test(path)) return send(200, worker(path.split("/").pop()), TYPES[".js"], cspHeader);
+		if (/^\/gk-hazir\/[0-9a-f]{2}\/[0-9a-f]{32}\.ogg$/.test(path)) return send(200, readFileSync(join(T, "fixtures/hazir/ton.ogg")), "audio/ogg");
 		// Katı güvenlik başlığıyla Worker: blob: modülü ve WebAssembly engellenir
 		if (path === "/gk-tts/worker-csp.php") return send(200, worker("worker-test.js"), TYPES[".js"], { "Content-Security-Policy": "script-src 'self'" });
 		// Bozuk kaynak: text.onnx bozuk, diğer model dosyaları sağlam, ONNX Runtime yok

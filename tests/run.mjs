@@ -35,6 +35,7 @@ const CORE = [
 	["ema4.mjs"],
 	["ema5.mjs"],
 	["ema-limit.mjs"],
+	["ema-csp.mjs"],
 ];
 const EXTRA = [["perf.mjs"], ["ema-shots.mjs"]];
 const list = process.argv.includes("--all") ? CORE.concat(EXTRA) : CORE;

@@ -87,7 +87,22 @@
 	function spawn() {
 		if (worker) return Promise.resolve();
 		return new Promise((resolve, reject) => {
-			const w = new Worker(cfg.worker, { type: "module", name: "gozkulak-prepare" });
+			// Trusted Types zorunluysa adres "gozkulak" politikasından geçer (yalnızca ayarlardaki adres).
+			const tt = window.trustedTypes;
+			let url = cfg.worker;
+			if (tt && typeof tt.createPolicy === "function") {
+				try {
+					url = tt.createPolicy("gozkulak", {
+						createScriptURL: (u) => {
+							if (u !== cfg.worker) throw new TypeError("GözKulak: beklenmeyen Worker adresi");
+							return u;
+						},
+					}).createScriptURL(cfg.worker);
+				} catch (e) {
+					// Politika kurulamadı: düz adresle denenir.
+				}
+			}
+			const w = new Worker(url, { type: "module", name: "gozkulak-prepare" });
 			worker = w;
 			const timer = setTimeout(() => reject(new Error("Doğal ses motoru başlatılamadı")), 15000);
 			w.onmessage = (e) => {
