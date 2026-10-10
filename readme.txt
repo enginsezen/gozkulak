@@ -4,7 +4,7 @@ Tags: accessibility, erişilebilirlik, text-to-speech, sesli okuma
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 0.2.4
+Stable tag: 0.2.5
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -21,6 +21,11 @@ GözKulak, temadan bağımsız bir erişilebilirlik menüsü ekler. Menü Shadow
 Ayarlar: Ayarlar → GözKulak.
 
 == Changelog ==
+
+= 0.2.5 =
+* Klavye: menü düğmesi sayfanın ilk sekme durağı; odak menüden çıkınca panel kapanır.
+* İki tonlu odak çerçevesi (sarı iç halka, koyu dış çizgi) her zeminde görünür.
+* Ekran okuyucu: aç/kapa kutularında "Açık/Kapalı" yazısı tekrar okunmaz (durum aria-pressed ile bildirilir); yazı boyutu değeri okunur.
 
 = 0.2.4 =
 * Koyu mod ve yüksek kontrast, sayfa açıldıktan sonra yüklenen stil dosyalarında (ertelenmiş CSS kullanan hız eklentileri) sayfayı yeniden okur. Geç gelen beyaz zeminler artık koyulaşıyor.

@@ -56,9 +56,11 @@ button {
 	margin: 0;
 }
 
+/* İki tonlu odak çerçevesi: sarı iç halka ve koyu dış çizgi açık da koyu da her zeminde görünür. */
 button:focus-visible {
-	outline: 3px solid #ffbf00;
-	outline-offset: 2px;
+	outline: 2px solid #18212b;
+	outline-offset: 3px;
+	box-shadow: 0 0 0 3px #ffbf00;
 }
 
 /* Panel açılınca odak başlığa taşınır (ekran okuyucu için); başlık etkileşimli olmadığından çerçeve gösterilmez. */
@@ -288,6 +290,10 @@ button:focus-visible {
 	background: #eaf2fa;
 	background: color-mix(in srgb, var(--gk-color) 12%, #ffffff);
 	box-shadow: inset 0 0 0 1px var(--gk-color);
+}
+
+.gk-tile[aria-pressed="true"]:focus-visible {
+	box-shadow: inset 0 0 0 1px var(--gk-color), 0 0 0 3px #ffbf00;
 }
 
 .gk-tile[aria-pressed="true"] .gk-tile-icon {

@@ -20,7 +20,7 @@
 
 	// Betik dosyasının kendi sürümü. Eklentinin sürümüyle uyuşmazsa sayfa eski (önbellekteki) bir
 	// betik dosyası kullanıyordur; test modunda menüde uyarı gösterilir.
-	const SCRIPT_VERSION = "0.2.4";
+	const SCRIPT_VERSION = "0.2.5";
 	const doc = document;
 	const htmlEl = doc.documentElement;
 	const enabledFeatures = new Set(Array.isArray(cfg.features) ? cfg.features : []);
@@ -1160,7 +1160,9 @@
 
 	function tile(key, iconName, label) {
 		const multi = typeof DEFAULTS[key] === "number";
-		const state = h("span", { class: "gk-tile-state" });
+		// Aç/kapa kutularında durum aria-pressed ile bildirilir; görünen "Açık/Kapalı" yazısı ekran
+		// okuyucuda tekrar okunmasın. Düzeyli kutularda (satır/harf aralığı) düzeyin adı okunur.
+		const state = h("span", { class: "gk-tile-state", "aria-hidden": multi ? null : "true" });
 		const btn = h("button", { type: "button", class: "gk-tile", "aria-pressed": "false" },
 			h("span", { class: "gk-tile-icon" }, icon(iconName)),
 			h("span", { class: "gk-tile-label", text: label }),
@@ -1188,7 +1190,7 @@
 	}
 
 	function fontStepper() {
-		const value = h("span", { class: "gk-step-value", "aria-hidden": "true" });
+		const value = h("span", { class: "gk-step-value" });
 		const down = h("button", { type: "button", class: "gk-step-btn", "aria-label": STR.fontDown }, "A−");
 		const up = h("button", { type: "button", class: "gk-step-btn gk-step-up", "aria-label": STR.fontUp }, "A+");
 		const percent = () => "%" + Math.round(FONT_STEPS[prefs.fontSize] * 100);
@@ -1304,6 +1306,10 @@
 	doc.addEventListener("pointerdown", (e) => {
 		if (isOpen() && !e.composedPath().includes(rootHost)) close(false);
 	});
+	// Klavye odağı menüden çıkınca panel kapanır (sayfanın üstünde açık kalıp içeriği örtmesin).
+	doc.addEventListener("focusin", (e) => {
+		if (isOpen() && !e.composedPath().includes(rootHost)) close(false);
+	});
 	doc.addEventListener("keydown", (e) => {
 		if (e.altKey && e.shiftKey && !e.ctrlKey && !e.metaKey && e.code === SHORTCUT.code) {
 			e.preventDefault();
@@ -1315,8 +1321,9 @@
 	shadow.append(sheet, panel, button, live);
 
 	// Kayıtlı tercihler sayfa açılır açılmaz uygulanır.
+	// Menü sayfanın en başına eklenir: klavyeyle gelen ziyaretçi ilk sekmede menü düğmesine ulaşır.
 	const start = () => {
-		doc.body.append(rootHost);
+		doc.body.prepend(rootHost);
 		applyAll();
 		render();
 		window.GozKulak = {
