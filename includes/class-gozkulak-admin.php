@@ -268,7 +268,7 @@ final class GozKulak_Admin {
 				</table>
 
 				<h2><?php esc_html_e( 'Sesli okuma', 'gozkulak' ); ?></h2>
-				<p><?php esc_html_e( 'Sesli okuma bir sonraki aşamada eklenecek. Okunacak alan şimdiden kaydedilebilir.', 'gozkulak' ); ?></p>
+				<p><?php esc_html_e( 'Türkçe sayfalar, ziyaretçi kapatmadıysa doğal sesle (EMA Lightning, yapay zekâ) okunur. Ses ziyaretçinin tarayıcısında üretilir; okunan metin hiçbir sunucuya gönderilmez. İngilizce sayfalarda ve doğal sesin çalışmadığı cihazlarda tarayıcının kendi sesi kullanılır.', 'gozkulak' ); ?></p>
 				<table class="form-table" role="presentation">
 					<tr>
 						<th scope="row"><label for="gozkulak-selector"><?php esc_html_e( 'Okunacak alan (CSS seçici)', 'gozkulak' ); ?></label></th>
@@ -282,6 +282,31 @@ final class GozKulak_Admin {
 								<code>#titlebar, #listing-overview, .opening-hours, .listing-details-sidebar, .post-content</code> (Listeo),
 								<code>article .entry-content</code> (Blocksy),
 								<code>#Content</code> (BeTheme)
+							</p>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row"><label for="gozkulak-tts-base"><?php esc_html_e( 'Ses dosyalarının adresi', 'gozkulak' ); ?></label></th>
+						<td>
+							<input id="gozkulak-tts-base" type="url" class="regular-text code" maxlength="200" name="<?php echo esc_attr( $name ); ?>[tts_base]" value="<?php echo esc_attr( $s['tts_base'] ); ?>" placeholder="https://ses.example.com/">
+							<p class="description">
+								<?php esc_html_e( 'Doğal sesin model ve ONNX Runtime dosyalarının bulunduğu kendi sunucunuz. Dosyalar bu adresin altındaki şu klasörlerde aranır:', 'gozkulak' ); ?>
+								<code>ema-lightning-onnx/13c431d/</code>, <code>onnxruntime-web/1.30.0/</code>
+							</p>
+							<p class="description">
+								<?php esc_html_e( 'Boş bırakılırsa dosyalar sürüme sabitlenmiş Hugging Face (model) ve jsDelivr (ONNX Runtime) adreslerinden indirilir. Her dosya SHA-256 ile doğrulanır; tutmayan dosya kullanılmaz. Dosyalar yalnızca ziyaretçi doğal sesle dinlemeyi onayladığında indirilir.', 'gozkulak' ); ?>
+							</p>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row"><?php esc_html_e( 'Yedek kaynaklar', 'gozkulak' ); ?></th>
+						<td>
+							<label>
+								<input type="checkbox" name="<?php echo esc_attr( $name ); ?>[tts_fallback]" value="1" <?php checked( $s['tts_fallback'] ); ?>>
+								<?php esc_html_e( 'Kendi sunucumdan alınamayan dosyaları Hugging Face ve jsDelivr\'den indir', 'gozkulak' ); ?>
+							</label>
+							<p class="description">
+								<?php esc_html_e( 'Kapatılırsa ziyaretçinin tarayıcısı yalnızca yukarıdaki adrese bağlanır (ziyaretçinin IP adresi üçüncü taraflara gitmez); o sunucuya ulaşılamazsa tarayıcının kendi sesi kullanılır. Adres boşsa bu seçenek etkisizdir.', 'gozkulak' ); ?>
 							</p>
 						</td>
 					</tr>

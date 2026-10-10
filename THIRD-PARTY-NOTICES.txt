@@ -1,0 +1,40 @@
+GözKulak — üçüncü taraf bileşenler
+==================================
+
+GözKulak eklentisi GPL-2.0-or-later lisanslıdır. Doğal ses (Türkçe sesli okuma) için aşağıdaki
+bileşenler kullanılır. Model ve ONNX Runtime dosyaları eklenti paketinde yer almaz; ziyaretçi
+doğal sesle dinlemeyi onayladığında ziyaretçinin tarayıcısı tarafından, sürüme sabitlenmiş
+adreslerden indirilir ve SHA-256 ile doğrulanır.
+
+
+1. ozcancelik/ema-lightning-onnx — tarayıcı sürümü (web/tts.js, web/normalizer.js)
+   Kaynak: https://huggingface.co/ozcancelik/ema-lightning-onnx
+   Sürüm: commit 13c431db0356b2f7fafb1247cd823ec0d777c820
+   Lisans: Apache License 2.0 (licenses/Apache-2.0.txt)
+
+   assets/js/gozkulak-tts-worker.js dosyasındaki ses üretme bölümü (metin hazırlama, parçalama,
+   süre planı, gürültü üreteci, EMA sınıfı) ve normalleştirici yükleyicisi bu dosyalardan
+   uyarlanmıştır. Değişiklikler: Web Worker mesajları, dosya indirme ve SHA-256 doğrulaması,
+   ilk parçada kademeli büyüyen çözme pencereleri, iptal; kod biçimi.
+
+   Aynı depodaki model dosyaları (meta.json, normalizer.wasm, text.onnx, sound.onnx,
+   decoder.onnx) çalışma anında indirilir; eklentide dağıtılmaz.
+
+
+2. EMA Lightning ses modeli
+   Kaynak: https://huggingface.co/canberkkkkkk/ema-lightning
+   Lisans: Apache License 2.0 (licenses/Apache-2.0.txt)
+
+   Model sahibinin isteği doğrultusunda okuyucuda "Bu ses yapay zekâ ile üretilmiştir" notu
+   gösterilir.
+
+
+3. normalizer-tr (Türkçe metin normalleştirme, normalizer.wasm), Erdem Tuna
+   Lisans: Apache License 2.0 (licenses/Apache-2.0.txt)
+   Çalışma anında indirilir; eklentide dağıtılmaz.
+
+
+4. ONNX Runtime Web 1.30.0, Microsoft Corporation
+   Kaynak: https://www.npmjs.com/package/onnxruntime-web (dist/)
+   Lisans: MIT
+   Çalışma anında indirilir; eklentide dağıtılmaz.

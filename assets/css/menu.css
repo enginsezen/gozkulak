@@ -403,9 +403,70 @@ button:focus-visible {
 }
 
 .gk-tts-status {
-	margin: 8px 0 0;
+	margin: 0 0 10px;
 	font-size: 13px;
 	color: #4a5562;
+}
+
+.gk-tts-status:has(+ .gk-tts-note:not([hidden])) {
+	margin-bottom: 2px;
+}
+
+.gk-tts-note {
+	margin: 0 0 10px;
+	font-size: 13px;
+	font-style: italic;
+	color: #4a5562;
+}
+
+/* Doğal sesin indirilme durumu */
+.gk-tts-progress {
+	display: block;
+	width: 100%;
+	height: 8px;
+	margin: 2px 0 6px;
+	accent-color: var(--gk-color);
+}
+
+/* İlk kullanımda indirme onayı */
+.gk-ask {
+	margin: 0 0 10px;
+	padding: 12px;
+	border: 2px solid var(--gk-color);
+	border-radius: 10px;
+	background: #f6f8fa;
+}
+
+.gk-ask-text {
+	margin: 0 0 10px;
+	font-size: 14px;
+}
+
+.gk-ask-row {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+
+.gk-ask-yes,
+.gk-ask-no {
+	min-height: 44px;
+	padding: 0 14px;
+	border-radius: 8px;
+	font-weight: 700;
+	cursor: pointer;
+}
+
+.gk-ask-yes {
+	border: 0;
+	background: var(--gk-color);
+	color: var(--gk-ink);
+}
+
+.gk-ask-no {
+	border: 2px solid #b9c2cc;
+	background: #ffffff;
+	font-weight: 600;
 }
 
 /* Panel kapalıyken okuma denetimi */

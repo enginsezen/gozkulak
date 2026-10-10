@@ -22,6 +22,8 @@ final class GozKulak_Settings {
 
 	const SELECTOR_MAX = 500;
 
+	const TTS_BASE_MAX = 200;
+
 	/**
 	 * Menüdeki özellikler: anahtar => grup. Etiketler yönetici sayfasında verilir.
 	 *
@@ -63,6 +65,8 @@ final class GozKulak_Settings {
 			'color'            => '#085e9d',
 			'features'         => array_fill_keys( array_keys( self::features() ), true ),
 			'content_selector' => '',
+			'tts_base'         => '',
+			'tts_fallback'     => true,
 		);
 	}
 
@@ -97,6 +101,12 @@ final class GozKulak_Settings {
 			self::error(
 				'gozkulak_selector',
 				__( 'Okunacak alan seçicisi kaydedilmedi: yalnızca CSS seçicilerinde kullanılan karakterlere izin verilir ve en fazla 500 karakter olabilir.', 'gozkulak' )
+			);
+		}
+		if ( isset( $input['tts_base'] ) && null === self::sanitize_tts_base( (string) $input['tts_base'] ) ) {
+			self::error(
+				'gozkulak_tts_base',
+				__( 'Ses dosyalarının adresi kaydedilmedi: https:// ile başlayan, soru işareti ya da # içermeyen bir adres olmalı (ör. https://ses.example.com/).', 'gozkulak' )
 			);
 		}
 
@@ -150,7 +160,51 @@ final class GozKulak_Settings {
 		$selector                = isset( $input['content_selector'] ) ? self::sanitize_selector( (string) $input['content_selector'] ) : null;
 		$out['content_selector'] = null === $selector ? (string) $fallback['content_selector'] : $selector;
 
+		$base            = isset( $input['tts_base'] ) ? self::sanitize_tts_base( (string) $input['tts_base'] ) : null;
+		$out['tts_base'] = null === $base ? (string) $fallback['tts_base'] : $base;
+
+		if ( $from_form ) {
+			$out['tts_fallback'] = ! empty( $input['tts_fallback'] );
+		} else {
+			$out['tts_fallback'] = isset( $input['tts_fallback'] ) ? (bool) $input['tts_fallback'] : (bool) $fallback['tts_fallback'];
+		}
+
 		return $out;
+	}
+
+	/**
+	 * Ses dosyalarının (model ve ONNX Runtime) bulunduğu sunucu adresini temizler. Geçersizse null döner.
+	 *
+	 * Yalnızca https adresi kabul edilir; sorgu, # ve kullanıcı bilgisi içeremez. Sonuna / eklenir.
+	 * Dosyalar tarayıcıda SHA-256 ile doğrulandığı için adres yalnızca nereden indirileceğini belirler.
+	 *
+	 * @param string $raw Ham adres.
+	 * @return string|null
+	 */
+	public static function sanitize_tts_base( $raw ) {
+		$value = trim( (string) $raw );
+		if ( '' === $value ) {
+			return '';
+		}
+		if ( strlen( $value ) > self::TTS_BASE_MAX ) {
+			return null;
+		}
+		$url = esc_url_raw( $value, array( 'https' ) );
+		// Temizlik adresi değiştirdiyse sessizce kaydedilmez, reddedilir.
+		if ( '' === $url || $url !== $value ) {
+			return null;
+		}
+		$parts = wp_parse_url( $url );
+		if ( ! is_array( $parts ) || empty( $parts['host'] ) || ! isset( $parts['scheme'] ) || 'https' !== strtolower( $parts['scheme'] ) ) {
+			return null;
+		}
+		if ( isset( $parts['query'] ) || isset( $parts['fragment'] ) || isset( $parts['user'] ) || isset( $parts['pass'] ) ) {
+			return null;
+		}
+		if ( ! preg_match( '#^https://[A-Za-z0-9.\-]+(:[0-9]{1,5})?(/[A-Za-z0-9._~\-/]*)?$#', $url ) ) {
+			return null;
+		}
+		return '/' === substr( $url, -1 ) ? $url : $url . '/';
 	}
 
 	/**

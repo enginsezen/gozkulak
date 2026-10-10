@@ -4,7 +4,7 @@ Tags: accessibility, erişilebilirlik, text-to-speech, sesli okuma
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 0.2.7
+Stable tag: 0.2.8
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -20,7 +20,28 @@ GözKulak, temadan bağımsız bir erişilebilirlik menüsü ekler. Menü Shadow
 
 Ayarlar: Ayarlar → GözKulak.
 
+== Harici hizmetler ==
+
+Türkçe doğal ses (EMA Lightning) için gereken model ve ONNX Runtime dosyaları eklenti paketinde yer almaz. Yalnızca ziyaretçi doğal sesle dinlemeyi onayladığında, ziyaretçinin tarayıcısı bu dosyaları indirir:
+
+* Ayarlarda "Ses dosyalarının adresi" yazılıysa önce o sunucudan.
+* Yoksa ya da dosya oradan alınamazsa Hugging Face (huggingface.co, model dosyaları, commit'e sabitli) ve jsDelivr'den (cdn.jsdelivr.net, onnxruntime-web 1.30.0). Kendi sunucu adresi yazılıysa bu yedek kaynaklar "Yedek kaynaklar" ayarıyla kapatılabilir; o zaman ziyaretçinin tarayıcısı üçüncü taraflara hiç bağlanmaz.
+
+Bu isteklerde yalnızca standart HTTP bilgileri (IP adresi, tarayıcı bilgisi) iletilir; sayfa adresi (Referer) ve çerez gönderilmez. Okunan metin ve ziyaretçi tercihleri hiçbir sunucuya gönderilmez. Her dosya SHA-256 ile doğrulanır. Hugging Face: https://huggingface.co/privacy — jsDelivr: https://www.jsdelivr.com/terms/privacy-policy-jsdelivr-net
+
+Üçüncü taraf bileşenler ve lisansları: THIRD-PARTY-NOTICES.txt
+
 == Changelog ==
+
+= 0.2.8 =
+* Faz 2.2: Türkçe doğal ses (EMA Lightning, yapay zekâ). Ses ziyaretçinin cihazında, eklentinin kendi dosyasından açılan bir Web Worker'da üretilir; sayfa donmaz.
+* Model ve ONNX Runtime dosyaları sürüme sabitlidir ve her biri SHA-256 ile doğrulanır; doğrulanan dosyalar tarayıcının önbelleğinde saklanır. Dosya önbellekte değilse ilk kullanımda indirme onayı istenir (yaklaşık 40 MB, bir kez).
+* Yeni ayarlar: "Ses dosyalarının adresi" (kendi sunucunuz) ve "Yedek kaynaklar". Adres boşsa Hugging Face ve jsDelivr kullanılır; her dosya için kaynaklar sırayla denenir, 30 saniye veri gelmeyen indirme bir sonraki kaynağa geçer.
+* İndirme yalnızca onaydan sonra yapılır; önbellekte eksik dosya varsa (ör. WebGPU'dan WASM'a geçişte) yeniden sorulur. Sayfanın güvenlik başlığı (CSP) motoru engelliyorsa bu, indirmeden önce anlaşılır.
+* Cümleler aralıksız okunur: motor çalan sesin önünden gider, ilk parça kısa pencerelerle çabuk başlar. Duraklatınca okuma cümlenin ortasından sürer. Vurgu, cümlenin sesi başladığı anda geçer.
+* Doğal ses yüklenemezse, takılırsa ya da cihazda gerçek zamana yetişmezse okuma bulunduğu cümleden tarayıcının sesiyle sürer (yavaş cihazda bu tercih hatırlanır; duraklatılmış okuma duraklatılmış kalır). Yavaşlık, tamamlanan cümlelerin üretim hızından ve sayfa görünürken yaşanan beklemelerden ölçülür. WebGPU yalnızca masaüstü Chromium tarayıcılarda denenir; sorun çıkarsa WASM'a geçilir.
+* Türkçe sayfadaki başka dilde işaretli bölümler (lang="en" gibi) tarayıcının o dildeki sesiyle okunur.
+* Panelde "Doğal ses (yapay zekâ)" seçeneği, indirme çubuğu ve "Bu ses yapay zekâ ile üretilmiştir" notu.
 
 = 0.2.7 =
 * Faz 2.1: sesli okuma (önce tarayıcının kendi sesiyle). Sayfayı, seçili metni ya da tıklanan yeri okur; okunan cümle sayfada vurgulanır, gerekirse sayfa kaydırılır.

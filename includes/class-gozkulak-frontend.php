@@ -87,8 +87,14 @@ final class GozKulak_Frontend {
 			'color'    => $s['color'],
 			'features' => $features,
 			'selector' => $s['content_selector'],
+			// Doğal ses motoru: Worker dosyası eklentinin kendi klasöründen açılır; motor dosyalarının adresi isteğe bağlı.
+			'tts'      => array(
+				'worker'   => GOZKULAK_URL . 'assets/js/gozkulak-tts-worker.js?ver=' . rawurlencode( GOZKULAK_VERSION ),
+				'base'     => $s['tts_base'],
+				'fallback' => (bool) $s['tts_fallback'],
+			),
 		);
-		$json     = wp_json_encode( $config, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
+		$json = wp_json_encode( $config, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
 		if ( false === $json ) {
 			return;
 		}
