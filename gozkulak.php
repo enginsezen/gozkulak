@@ -22,6 +22,7 @@ define( 'GOZKULAK_URL', plugin_dir_url( __FILE__ ) );
 
 require_once GOZKULAK_DIR . 'includes/class-gozkulak-settings.php';
 require_once GOZKULAK_DIR . 'includes/class-gozkulak-frontend.php';
+require_once GOZKULAK_DIR . 'includes/class-gozkulak-audio.php';
 
 if ( is_admin() ) {
 	require_once GOZKULAK_DIR . 'includes/class-gozkulak-admin.php';
@@ -29,3 +30,4 @@ if ( is_admin() ) {
 }
 
 GozKulak_Frontend::init();
+GozKulak_Audio::init();

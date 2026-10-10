@@ -10,3 +10,4 @@ CLAUDE.local.md
 # Testler
 /tests/node_modules/
 /tests/shots/
+/tests/.phpcs/

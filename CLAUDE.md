@@ -12,12 +12,12 @@ Kişiye özel bilgiler (siteler, sunucu, test cihazları, güncel durum) `CLAUDE
 - Güvenlik:
   - PHP'de her girdi temizlenir, her çıktı escape edilir; ayarlar Settings API ile kaydedilir (nonce + `manage_options`).
   - Ön yüzde `innerHTML`, `outerHTML`, `insertAdjacentHTML` ya da `eval` kullanılmaz; DOM, `h()` / `s()` yardımcılarıyla kurulur.
-  - Ziyaretçiye açık AJAX ya da REST ucu yoktur. Ayarlar sayfaya `wp_json_encode` ile, çalıştırılmayan bir JSON bloğu olarak aktarılır.
+  - Ziyaretçiye açık AJAX ya da REST ucu yoktur. Tek uç, hazır ses yüklemesidir (`gozkulak/v1`): yalnızca yöneticiler (`manage_options` + REST nonce'u), dosya adı ve içerik denetlenir. Ayarlar sayfaya `wp_json_encode` ile, çalıştırılmayan bir JSON bloğu olarak aktarılır.
   - Ziyaretçiden veri toplanmaz; tercihler yalnızca ziyaretçinin tarayıcısında (localStorage) tutulur.
   - Model, WASM ve ONNX Runtime dosyaları sürüme sabitlidir ve SHA-256 ile doğrulanır. Doğrulama tutmazsa motor çalışmaz.
 - Repo herkese açık: anahtar, parola ya da sunucu bilgisi (alan adı, SSH kullanıcısı, yol) koda, belgeye ya da commit'e konmaz. Bunlar `CLAUDE.local.md` dosyasında durur.
 - Kodun asıl kaynağı GitHub reposudur (enginsezen/gozkulak). Proje belgesindeki (`ozel/`) kararlar geçerlidir; yeni bir karar alınınca belge de güncellenir.
-- Eklenti kaldırılınca kendi ayarlarını siler (`uninstall.php`).
+- Eklenti kaldırılınca kendi ayarlarını, hazır ses dosyalarını ve sayfa listelerini siler (`uninstall.php`).
 - Kod yorumları ve kullanıcıya görünen metinler Türkçedir. Menü metinleri sayfanın diline göre Türkçe ya da İngilizcedir (`STR.tr` / `STR.en`).
 
 ## Yapı
@@ -27,6 +27,7 @@ Kişiye özel bilgiler (siteler, sunucu, test cihazları, güncel durum) `CLAUDE
 | `gozkulak.php` | Eklenti başlığı, `GOZKULAK_VERSION` |
 | `includes/class-gozkulak-settings.php` | Tek seçenek (`gozkulak_settings`): varsayılanlar, `sanitize`, `normalize`, seçici ve ses adresi temizleme |
 | `includes/class-gozkulak-admin.php` | Ayarlar → GözKulak sayfası (her çıktı escape edilir) |
+| `includes/class-gozkulak-audio.php` | Hazır ses: `uploads/gozkulak/` altındaki cümle dosyaları (Ogg Opus), sayfa listesi (`_gozkulak_audio` meta), yöneticiye özel REST uçları |
 | `includes/class-gozkulak-frontend.php` | Betiği yükler, ayarları `#gozkulak-config` JSON bloğu olarak yazar. Test modu: yalnızca yöneticiler görür |
 | `assets/js/gozkulak.js` | Menü ve sesli okuma. Tek IIFE, ~3000 satır |
 | `assets/js/gozkulak-tts-worker.js` | Doğal ses motoru (module Worker): sabitlenmiş dosya listesi ve SHA-256, Cache Storage, ORT içe aktarma, EMA (tts.js uyarlaması) |
@@ -58,7 +59,8 @@ Kişiye özel bilgiler (siteler, sunucu, test cihazları, güncel durum) `CLAUDE
 ## Komutlar
 
 ```
-phpcs -q .                                  # WordPress kodlama standardı (phpcs.xml.dist); çıktı boş olmalı
+cd tests && npm run phpcs                   # WordPress kodlama standardı (phpcs.xml.dist); çıktı boş olmalı. PHP gerekmez (WebAssembly)
+cd tests && npm run wp                      # WordPress Playground (http://127.0.0.1:9400); ardından node e2e/wp-audio.mjs
 node --check assets/js/gozkulak.js assets/js/gozkulak-tts-worker.js
 cd tests && npm install && npx playwright install chromium   # ilk kez
 cd tests && npm test                        # temel uçtan uca testler (~6 dk)
@@ -74,7 +76,7 @@ Tanı için tarayıcı konsolunda `GozKulak.sentences()` bir sayfada okunacak c�
    - `assets/js/gozkulak.js`: `SCRIPT_VERSION`.
    - `readme.txt`: `Stable tag`.
 2. `readme.txt` dosyasında Changelog'a kısa Türkçe maddeler ekle.
-3. `phpcs -q .`, `node --check` ve `cd tests && npm test` çalıştır.
+3. `cd tests && npm run phpcs`, `node --check` ve `cd tests && npm test` çalıştır.
 4. Commit'i at, ardından `git push origin main`.
 5. Paketi oluştur: `git archive --prefix=gozkulak/ -o ../gozkulak-X.Y.Z.zip HEAD`. `tools/` ve `tests/` pakete girmez.
 6. Zip'i kullanıcıya mutlaka ver.

@@ -310,6 +310,18 @@ final class GozKulak_Admin {
 							</p>
 						</td>
 					</tr>
+					<tr>
+						<th scope="row"><?php esc_html_e( 'Hazır ses', 'gozkulak' ); ?></th>
+						<td>
+							<label>
+								<input type="checkbox" name="<?php echo esc_attr( $name ); ?>[prepared_audio]" value="1" <?php checked( $s['prepared_audio'] ); ?>>
+								<?php esc_html_e( 'Önceden hazırlanmış ses dosyalarını kullan', 'gozkulak' ); ?>
+							</label>
+							<p class="description">
+								<?php esc_html_e( 'Hazırlanmış cümleler sitenizden ses dosyası olarak çalınır; ziyaretçi modeli indirmez. Hazırlanmamış cümleler ziyaretçinin tarayıcısında üretilir.', 'gozkulak' ); ?>
+							</p>
+						</td>
+					</tr>
 				</table>
 
 				<?php submit_button(); ?>

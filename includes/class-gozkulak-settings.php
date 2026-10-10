@@ -67,6 +67,7 @@ final class GozKulak_Settings {
 			'content_selector' => '',
 			'tts_base'         => '',
 			'tts_fallback'     => true,
+			'prepared_audio'   => true,
 		);
 	}
 
@@ -167,6 +168,12 @@ final class GozKulak_Settings {
 			$out['tts_fallback'] = ! empty( $input['tts_fallback'] );
 		} else {
 			$out['tts_fallback'] = isset( $input['tts_fallback'] ) ? (bool) $input['tts_fallback'] : (bool) $fallback['tts_fallback'];
+		}
+
+		if ( $from_form ) {
+			$out['prepared_audio'] = ! empty( $input['prepared_audio'] );
+		} else {
+			$out['prepared_audio'] = isset( $input['prepared_audio'] ) ? (bool) $input['prepared_audio'] : (bool) $fallback['prepared_audio'];
 		}
 
 		return $out;

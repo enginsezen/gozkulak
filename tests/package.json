@@ -6,7 +6,9 @@
   "scripts": {
     "serve": "node serve.mjs",
     "test": "node run.mjs",
-    "test:all": "node run.mjs --all"
+    "test:all": "node run.mjs --all",
+    "phpcs": "node phpcs.mjs",
+    "wp": "npx -y @wp-playground/cli@3.1.57 server --php=7.4 --port=9400 --workers=1 --mount=..:/wordpress/wp-content/plugins/gozkulak --blueprint=wp/blueprint.json"
   },
   "devDependencies": {
     "axe-core": "4.10.2",

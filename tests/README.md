@@ -45,7 +45,19 @@ Sunucu, motor Worker'ını (`assets/js/gozkulak-tts-worker.js`) her istekte ger�
 - `fb=0`: yedek kaynaklar kapalı
 - `mix=1`: sayfaya `lang="en"` bir paragraf eklenir
 
-## WordPress isteyen testler
+## PHP ve WordPress (sisteme PHP kurmadan)
+
+PHP, WebAssembly ile çalışır (`@php-wasm/cli`, `@wp-playground/cli`); `npx` ilk seferde indirir.
+
+```
+npm run phpcs       # WordPress kodlama standardı; çıktı boşsa sorun yok (ilk seferde WPCS tests/.phpcs/ altına kurulur)
+npm run wp          # WordPress Playground: http://127.0.0.1:9400, PHP 7.4, eklenti etkin (wp/blueprint.json)
+node e2e/wp-audio.mjs   # hazır ses REST uçları (npm run wp açıkken)
+```
+
+Playground'da yönetici `admin` / `password`, abone `abone` / `abone-Parola-123`, yayımlanmış sayfa `?page_id=500`, taslak `501`. Site her açılışta sıfırdan kurulur. `--workers=1` gerekir: birden çok işçide bir istekte silinen klasör öteki işçide görünmeye devam ediyor.
+
+## Eski WordPress testleri
 
 `admin-base.mjs`, `admin-tts.mjs`, `ema2.mjs`, `tara-wp.mjs`, `wp12.mjs`, `wp12m.mjs` yerel bir WordPress ister: `http://localhost:8080`, yönetici `admin` / `admin`, eklenti `wp-content/plugins/gozkulak` olarak bağlı, deneme yazısı `?p=6`. `npm test` bunları çalıştırmaz.
 

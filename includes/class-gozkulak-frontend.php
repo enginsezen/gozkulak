@@ -94,6 +94,11 @@ final class GozKulak_Frontend {
 				'fallback' => (bool) $s['tts_fallback'],
 			),
 		);
+		// Hazır ses: bu sayfa için yüklenmiş cümle dosyalarının listesi (yalnızca dosya adları).
+		$audio = $s['prepared_audio'] ? GozKulak_Audio::for_page() : null;
+		if ( $audio ) {
+			$config['audio'] = $audio;
+		}
 		$json = wp_json_encode( $config, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
 		if ( false === $json ) {
 			return;
