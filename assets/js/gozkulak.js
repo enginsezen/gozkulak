@@ -20,7 +20,7 @@
 
 	// Betik dosyasının kendi sürümü. Eklentinin sürümüyle uyuşmazsa sayfa eski (önbellekteki) bir
 	// betik dosyası kullanıyordur; test modunda menüde uyarı gösterilir.
-	const SCRIPT_VERSION = "0.2.6";
+	const SCRIPT_VERSION = "0.2.7";
 	const doc = document;
 	const htmlEl = doc.documentElement;
 	const enabledFeatures = new Set(Array.isArray(cfg.features) ? cfg.features : []);
@@ -58,6 +58,25 @@
 			shortcut: "Kısayol",
 			stateOn: "açıldı",
 			stateOff: "kapandı",
+			ttsTitle: "Sesli okuma",
+			ttsListen: "Sayfayı dinle",
+			ttsPause: "Duraklat",
+			ttsResume: "Devam et",
+			ttsStop: "Okumayı durdur",
+			ttsPrev: "Önceki cümle",
+			ttsNext: "Sonraki cümle",
+			ttsRate: "Okuma hızı",
+			ttsSlower: "Daha yavaş oku",
+			ttsFaster: "Daha hızlı oku",
+			rates: ["Yavaş", "Normal", "Hızlı", "Çok hızlı"],
+			clickRead: "Tıklayarak dinle",
+			ttsHint: "Bir metin seçtiyseniz yalnızca o okunur. \"Tıklayarak dinle\" açıkken sayfada bir yere tıklayınca okuma oradan başlar.",
+			ttsPos: "Okunuyor: %1 / %2",
+			ttsPaused: "Duraklatıldı: %1 / %2",
+			ttsNothing: "Okunacak metin bulunamadı.",
+			ttsNoVoice: "Bu tarayıcıda bu dil için okuma sesi bulunamadı.",
+			ttsError: "Okuma sırasında bir sorun oldu.",
+			ttsDone: "Okuma bitti.",
 		},
 		en: {
 			open: "Open accessibility menu",
@@ -90,12 +109,33 @@
 			shortcut: "Shortcut",
 			stateOn: "on",
 			stateOff: "off",
+			ttsTitle: "Read aloud",
+			ttsListen: "Listen to this page",
+			ttsPause: "Pause",
+			ttsResume: "Resume",
+			ttsStop: "Stop reading",
+			ttsPrev: "Previous sentence",
+			ttsNext: "Next sentence",
+			ttsRate: "Reading speed",
+			ttsSlower: "Read slower",
+			ttsFaster: "Read faster",
+			rates: ["Slow", "Normal", "Fast", "Very fast"],
+			clickRead: "Click to listen",
+			ttsHint: "If you select some text, only the selection is read. With \"Click to listen\" on, clicking on the page starts reading from there.",
+			ttsPos: "Reading: %1 / %2",
+			ttsPaused: "Paused: %1 / %2",
+			ttsNothing: "No text to read was found.",
+			ttsNoVoice: "This browser has no reading voice for this language.",
+			ttsError: "Something went wrong while reading.",
+			ttsDone: "Finished reading.",
 		},
 	}[lang];
 
 	const SHORTCUT = { code: "KeyG", label: "Alt + Shift + G" };
 	const FONT_STEPS = [1, 1.15, 1.3, 1.5, 1.75];
 	const LEVELS = 3;
+	// Okuma hızları (Yavaş, Normal, Hızlı, Çok hızlı)
+	const RATES = [0.8, 1, 1.2, 1.45];
 
 	// Ayar anahtarı (sunucu) → tercih anahtarı (tarayıcı)
 	const FEATURES = {
@@ -114,6 +154,12 @@
 		hide_images: "hideImages",
 	};
 	const ENABLED = new Set(Object.keys(FEATURES).filter((k) => enabledFeatures.has(k)).map((k) => FEATURES[k]));
+	// Sesli okuma: okuma hızı ve tıklayarak dinleme tercihleri bu özelliğe bağlıdır.
+	const SPEECH = enabledFeatures.has("text_to_speech");
+	if (SPEECH) {
+		ENABLED.add("ttsRate");
+		ENABLED.add("clickRead");
+	}
 
 	// Birbirini dışlayan seçenekler
 	const EXCLUSIVE = { contrast: "darkMode", darkMode: "contrast", readingMask: "readingGuide", readingGuide: "readingMask" };
@@ -179,6 +225,24 @@
 				break;
 			case "grip":
 				add(path("M12 4v16M8 8l4-4 4 4M8 16l4 4 4-4", { "stroke-width": "2.2" }));
+				break;
+			case "play":
+				add(s("path", { d: "M8 5.5v13l10.5-6.5z", fill: "currentColor" }));
+				break;
+			case "pause":
+				add(s("rect", { x: 6.5, y: 5.5, width: 4, height: 13, rx: 1, fill: "currentColor" }), s("rect", { x: 13.5, y: 5.5, width: 4, height: 13, rx: 1, fill: "currentColor" }));
+				break;
+			case "stop":
+				add(s("rect", { x: 6.5, y: 6.5, width: 11, height: 11, rx: 1.5, fill: "currentColor" }));
+				break;
+			case "prev":
+				add(s("path", { d: "M17 6v12L9 12z", fill: "currentColor" }), path("M7 6v12", { "stroke-width": "2.2" }));
+				break;
+			case "next":
+				add(s("path", { d: "M7 6v12l8-6z", fill: "currentColor" }), path("M17 6v12", { "stroke-width": "2.2" }));
+				break;
+			case "speaker":
+				add(path("M4 9.5h3.5L12 6v12l-4.5-3.5H4z"), path("M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"));
 				break;
 			case "close":
 				add(path("M6 6l12 12M18 6L6 18", { "stroke-width": "2" }));
@@ -255,8 +319,10 @@
 		readingGuide: false,
 		stopAnimations: false,
 		hideImages: false,
+		ttsRate: 1,
+		clickRead: false,
 	};
-	const MAX = { fontSize: FONT_STEPS.length - 1, lineHeight: LEVELS - 1, letterSpacing: LEVELS - 1 };
+	const MAX = { fontSize: FONT_STEPS.length - 1, lineHeight: LEVELS - 1, letterSpacing: LEVELS - 1, ttsRate: RATES.length - 1 };
 
 	function cleanPrefs(raw) {
 		const out = Object.assign({}, DEFAULTS);
@@ -1000,6 +1066,726 @@
 	})();
 
 	/*
+	 * ---------- metni okumaya hazırlama ----------
+	 * Ses motoruna gitmeden önce site metinlerindeki sorunlu kalıplar düzeltilir (Faz 0'da EMA'nın
+	 * normalleştiricisiyle doğrulanan kurallar). Sayfadaki metne dokunulmaz; yalnızca okunacak kopya
+	 * değişir. Konsoldan denemek için: GozKulak.prepare("Tel: +90 549 737 20 21")
+	 */
+	const speechText = (() => {
+		const UP = "A-ZÇĞİÖŞÜÂÎÛ";
+		const LOW = "a-zçğıöşüâîû";
+		const VOWEL = /[AEIİOÖUÜÂÎÛaeıioöuüâîû]/;
+		// Harf harf okunması gereken kısaltmalar (ünlü içerse bile)
+		const KEEP = new Set(["MZA", "OSB", "SSL", "SEO", "PDF", "AVM", "KDV", "SGK", "PTT", "TL", "TC", "ABD", "AB", "AŞ", "SMS", "GPS", "USB", "SSD", "CNC", "LED", "TV", "WC", "DNS", "VPN", "PHP", "CSS", "HTML", "URL", "API", "AI", "TDK", "TBMM", "TCDD", "KVKK", "OSB", "ISO", "TSE", "CE", "AR", "GE", "BT", "IT", "HR", "IK", "İK", "ÖSYM", "KPSS", "YKS", "LGS", "TRT", "THY", "SSK", "BAĞ-KUR"]);
+		// Kelime gibi okunan büyük harfli kısaltmalar
+		const AS_WORD = { IP: "ip", UNESCO: "unesco", NATO: "nato", ASELSAN: "aselsan", TÜBİTAK: "tübitak", KARDEMİR: "kardemir", TÜİK: "tüik", İŞKUR: "işkur", AFAD: "afad", WIFI: "vayfay", "WI-FI": "vayfay" };
+		const DAYS = "pazartesi|salı|çarşamba|perşembe|cuma|cumartesi|pazar|monday|tuesday|wednesday|thursday|friday|saturday|sunday";
+
+		// Türkçe sıra sayısı eki: sayının okunuşundaki son kelimeye göre (19 → on dokuz → "uncu")
+		function ordinalSuffix(n) {
+			const ONES = ["", "inci", "nci", "üncü", "üncü", "inci", "ncı", "nci", "inci", "uncu"];
+			const TENS = ["", "uncu", "nci", "uncu", "ıncı", "nci", "ıncı", "inci", "inci", "ıncı"];
+			if (n === 0) return "ıncı";
+			if (n % 10) return ONES[n % 10];
+			if (n % 100) return TENS[(n % 100) / 10];
+			if (n % 1000) return "üncü";
+			if (n % 1000000) return "inci";
+			if (n % 1000000000) return "uncu";
+			return "ıncı";
+		}
+
+		function phone(match) {
+			let digits = match.replace(/\D/g, "");
+			let head = "";
+			if (/^90\d{10}$/.test(digits)) {
+				head = "artı 90, ";
+				digits = digits.slice(2);
+			} else if (/^0\d{10}$/.test(digits)) {
+				head = "0, ";
+				digits = digits.slice(1);
+			} else if (!/^[2-5]\d{9}$/.test(digits)) {
+				return match;
+			}
+			return head + [digits.slice(0, 3), digits.slice(3, 6), digits.slice(6, 8), digits.slice(8, 10)].join(", ");
+		}
+
+		function caps(text, locale) {
+			const isCapsWord = (w) => {
+				const base = w.replace(/['’]\p{Ll}+$/u, "");
+				return new RegExp("^[" + UP + "0-9'’-]+$").test(base) && new RegExp("[" + UP + "]").test(base);
+			};
+			// Büyük harfli kelime öbekleri (ör. "DEMİRYOLU MAKASI İMALATI") birlikte değerlendirilir.
+			const tokens = text.split(/(\s+)/);
+			const isCaps = tokens.map((t) => isCapsWord(t.replace(/[.,;:!?()"]+$/g, "").replace(/^[("]+/, "")));
+			return tokens.map((tok, i) => {
+				if (!isCaps[i]) return tok;
+				const core = tok.replace(/[.,;:!?()"]+$/g, "").replace(/^[("]+/, "");
+				const pre = tok.slice(0, tok.indexOf(core));
+				const post = tok.slice(tok.indexOf(core) + core.length);
+				const word = core.replace(/['’].*$/, "");
+				const suffix = core.slice(word.length).replace(/^['’]/, "");
+				// Harf harf okunan kısaltmanın eki ayrı okunur (KVKK'nın → KVKK nın); kelime gibi okunanda ek bitişik kalır.
+				const spelled = (w) => pre + w + (suffix ? " " + suffix.toLocaleLowerCase(locale) : "") + post;
+				const spoken = (w) => pre + w + (suffix ? "'" + suffix.toLocaleLowerCase(locale) : "") + post;
+				if (AS_WORD[word]) return spoken(AS_WORD[word]);
+				if (KEEP.has(word) || /\d/.test(word) || !VOWEL.test(word)) return spelled(word);
+				const inPhrase = (i >= 2 && isCaps[i - 2]) || (i + 2 < tokens.length && isCaps[i + 2]);
+				if (word.length <= 3 && !inPhrase) return spelled(word);
+				return spoken(word.toLocaleLowerCase(locale));
+			}).join("");
+		}
+
+		// JavaScript'te \b yalnızca ASCII harfleri tanır; Türkçe harfler için harf olmayan bir önceki karakter aranır.
+		const W = "(?<![\\p{L}\\p{N}])";
+		const abbr = (src, flags) => new RegExp(W + src, flags + "u");
+		const ABBR = [
+			[abbr("(?:Mah\\.?|Mh\\.)(?=\\s|,|$)", "gi"), "Mahallesi"],
+			[abbr("(?:Sok\\.?|Sk\\.)(?=\\s|,|$)", "gi"), "Sokak"],
+			[abbr("(?:Cad\\.?|Cd\\.)(?=\\s|,|$)", "gi"), "Caddesi"],
+			[abbr("(?:Bulv?|Blv)\\.(?=\\s)", "gi"), "Bulvarı"],
+			[abbr("Apt\\.(?=\\s)", "gi"), "Apartmanı"],
+			[abbr("vb\\.(?=\\s|,|$)", "g"), "ve benzeri"],
+			[abbr("vs\\.(?=\\s|,|$)", "g"), "vesaire"],
+			[abbr("örn\\.(?=\\s)", "gi"), "örneğin"],
+			[abbr("Dr\\.(?=\\s)", "g"), "Doktor"],
+			[abbr("Prof\\.(?=\\s)", "g"), "Profesör"],
+			[abbr("Doç\\.(?=\\s)", "g"), "Doçent"],
+			[abbr("Tic\\.(?=\\s|,|$)", "g"), "Ticaret"],
+			[abbr("San\\.(?=\\s|,|$)", "g"), "Sanayi"],
+			[abbr("Ltd\\.(?=\\s|,|$)", "g"), "Limited"],
+			[abbr("Şti\\.?(?=\\s|,|$)", "g"), "Şirketi"],
+			[abbr("A\\.Ş\\.?(?=\\s|,|$)", "g"), "Anonim Şirketi"],
+		];
+
+		function tr(input) {
+			let t = " " + String(input) + " ";
+			t = t.replace(/[“”„«»″]/g, '"').replace(/[‘’‚′]/g, "'");
+			t = t.replace(/\p{Extended_Pictographic}|️|‍/gu, "");
+			t = t.replace(/[•·▪►▶→←↗↘✓✔]/g, ", ");
+			// e-posta ve web adresleri
+			t = t.replace(/\b[\w.+-]+@[\w-]+(\.[\w-]+)+\b/g, (m) => m.replace("@", " et ").replace(/\./g, " nokta "));
+			t = t.replace(/\bhttps?:\/\/(www\.)?([\w-]+(\.[\w-]+)+)\S*/gi, (m, w, host) => host.replace(/\./g, " nokta "));
+			t = t.replace(/\bwww\.([\w-]+(\.[\w-]+)+)\b/gi, (m, host) => host.replace(/\./g, " nokta "));
+			// telefon
+			t = t.replace(/\b(Tel|Tlf|Telefon)\s*[.:]\s*/gi, "Telefon: ").replace(/\b(Fax|Faks)\s*[.:]\s*/gi, "Faks: ").replace(/\bGSM\s*[.:]\s*/g, "Cep telefonu: ");
+			t = t.replace(/(\+\s?90|\b0)?[\s(]*\d{3}[\s)]*\d{3}[\s.-]?\d{2}[\s.-]?\d{2}\b/g, (m) => {
+				const lead = m.match(/^\s*/)[0];
+				return lead + phone(m.trim());
+			});
+			// tarih ve saat
+			t = t.replace(/\b(\d{1,2})\/(\d{1,2})\/(\d{4})\b/g, "$1.$2.$3");
+			t = t.replace(/\b(\d{1,2}[:.]\d{2})\s*[-–—]\s*(\d{1,2}[:.]\d{2})\b/g, "$1 ile $2");
+			t = t.replace(new RegExp("\\b(" + DAYS + ")\\s*[-–—]\\s*(" + DAYS + ")\\b", "gi"), "$1 ile $2");
+			t = t.replace(/\b7\s*\/\s*24\b/g, "7 gün 24 saat");
+			// adres ve kısaltmalar
+			for (const [re, out] of ABBR) t = t.replace(re, out);
+			t = t.replace(/\bNo\s*[:.]\s*(?=\d)/gi, "numara ").replace(/\bKat\s*[:.]\s*(?=\d)/gi, "kat ").replace(/\bD\s*:\s*(?=\d)/g, "daire ");
+			// numaralı başlık ve sıra sayıları
+			t = t.replace(/^(\s*)(\d{1,3})[.)]\s+(?=[A-ZÇĞİÖŞÜ])/, "$1$2, ");
+			t = t.replace(new RegExp("\\b(\\d{1,4})\\.(?=\\s+[" + LOW + "])", "g"), (m, n) => n + "'" + ordinalSuffix(parseInt(n, 10)));
+			// birimler ve para
+			t = t.replace(/\b(\d[\d.,]*)\s*km\b/gi, "$1 kilometre").replace(/\bkm\b/g, "kilometre");
+			t = t.replace(/\b(\d[\d.,]*)\s*(m²|m2)(?=\s|[.,;]|$)/gi, "$1 metrekare");
+			t = t.replace(/\b(\d[\d.,]*)\s*cm\b/gi, "$1 santimetre").replace(/\b(\d[\d.,]*)\s*kg\b/gi, "$1 kilogram");
+			t = t.replace(/₺\s*(\d[\d.,]*)/g, "$1 lira").replace(/(\d[\d.,]*)\s*(₺|TL\b)/g, "$1 lira");
+			t = t.replace(/%\s*(\d[\d.,]*)/g, "yüzde $1");
+			const PER = { yıl: "yıllık", ay: "aylık", gün: "günlük", hafta: "haftalık", saat: "saatlik", kişi: "kişi başı" };
+			t = t.replace(/\s*\/\s*(yıl|ay|gün|hafta|saat|kişi)(?![\p{L}])/gu, (m, w) => " " + PER[w]);
+			// Tek başına "+": sonda ya da noktalamadan önce atılır ("₺5.000 +"), kelimeler arasında "ve" olur.
+			t = t.replace(/\s\+\s*(?=[.,;]|\s*$)/g, "").replace(/\s\+\s+(?=\p{L})/gu, " ve ");
+			t = caps(t, "tr");
+			// eğik çizgi ve tire
+			t = t.replace(/(\d)\s*\/\s*([A-Za-zÇĞİÖŞÜçğıöşü])\b/g, "$1 $2");
+			t = t.replace(new RegExp("([" + UP + LOW + "])\\s*/\\s*(?=[" + UP + LOW + "])", "g"), "$1, ");
+			t = t.replace(/\s[-–—]\s/g, ", ");
+			t = t.replace(/\s&\s/g, " ve ");
+			return finish(t);
+		}
+
+		function en(input) {
+			let t = " " + String(input) + " ";
+			t = t.replace(/[“”„«»″]/g, '"').replace(/[‘’‚′]/g, "'");
+			t = t.replace(/\p{Extended_Pictographic}|️|‍/gu, "");
+			t = t.replace(/[•·▪►▶→←↗↘✓✔]/g, ", ");
+			t = t.replace(/\b[\w.+-]+@[\w-]+(\.[\w-]+)+\b/g, (m) => m.replace("@", " at ").replace(/\./g, " dot "));
+			t = t.replace(/\bhttps?:\/\/(www\.)?([\w-]+(\.[\w-]+)+)\S*/gi, (m, w, host) => host.replace(/\./g, " dot "));
+			t = t.replace(/(\+\s?90|\b0)?[\s(]*\d{3}[\s)]*\d{3}[\s.-]?\d{2}[\s.-]?\d{2}\b/g, (m) => {
+				const lead = m.match(/^\s*/)[0];
+				return lead + phone(m.trim()).replace("artı", "plus");
+			});
+			t = t.replace(/^(\s*)(\d{1,3})[.)]\s+(?=[A-Z])/, "$1$2, ");
+			t = caps(t, "en");
+			t = t.replace(/([A-Za-z])\s*\/\s*(?=[A-Za-z])/g, "$1, ");
+			t = t.replace(/\s[-–—]\s/g, ", ");
+			return finish(t);
+		}
+
+		function finish(t) {
+			t = t.replace(/\s+/g, " ").replace(/\s+([,.;:!?])/g, "$1").replace(/,\s*,/g, ",").replace(/^[\s,]+/, "").trim();
+			if (t && !/[.!?…:;]$/.test(t)) t += ".";
+			return t;
+		}
+
+		return { tr, en, ordinalSuffix };
+	})();
+
+	/**
+	 * Bir bloğun metnini cümlelere böler; her cümle için metindeki başlangıç ve bitiş konumunu verir
+	 * (sayfada vurgulamak için). Kısaltmalar, ondalık sayılar, tarihler ve sıra sayıları bölünmez;
+	 * çok uzun cümleler virgüllerden parçalanır.
+	 */
+	const splitSentences = (() => {
+		const NO_SPLIT = /(?:^|[\s(])(?:mah|mh|sok|sk|cad|cd|bulv|blv|apt|no|tel|tic|san|ltd|şti|vb|vs|örn|dr|prof|doç|av|op|uzm|hz|sn|bkz|yy|st|mr|mrs|ms|vs|etc|e\.g|i\.e|a\.ş|t\.c)\.$/i;
+		const MAX = 260;
+		return function split(text) {
+			const out = [];
+			const re = /[.!?…]+["')\]]*(?=\s+["'(\[]?[A-ZÇĞİÖŞÜ0-9]|\s*$)/g;
+			let start = 0;
+			let m;
+			while ((m = re.exec(text))) {
+				const end = m.index + m[0].length;
+				const head = text.slice(start, end);
+				const before = text.slice(0, m.index + 1);
+				if (m[0][0] === "." && (NO_SPLIT.test(before) || /(?:^|\s)[A-ZÇĞİÖŞÜ]\.$/.test(before) || (/^\s*\d{1,3}\.$/.test(head)))) continue;
+				push(start, end);
+				start = end;
+			}
+			if (start < text.length) push(start, text.length);
+			return out;
+
+			function push(a, b) {
+				while (a < b && /\s/.test(text[a])) a++;
+				while (b > a && /\s/.test(text[b - 1])) b--;
+				if (b <= a || !/[\p{L}\p{N}]/u.test(text.slice(a, b))) return;
+				// Uzun cümle: virgül, noktalı virgül ya da tireden bölünür.
+				while (b - a > MAX) {
+					const part = text.slice(a, a + MAX);
+					const cut = Math.max(part.lastIndexOf(", "), part.lastIndexOf("; "), part.lastIndexOf(" – "), part.lastIndexOf(" - "));
+					const at = cut > MAX * 0.4 ? a + cut + 1 : a + Math.max(part.lastIndexOf(" "), Math.floor(MAX * 0.8));
+					out.push([a, at]);
+					a = at;
+					while (a < b && /\s/.test(text[a])) a++;
+				}
+				out.push([a, b]);
+			}
+		};
+	})();
+
+	/*
+	 * ---------- okunacak içerik ----------
+	 * Okunacak alan site ayarındaki seçicilerden (yoksa sayfanın ana bölgesinden) alınır. Yalnızca görünen
+	 * metin okunur; menü, form, düğme ve ekran okuyucuya özel gizli metinler atlanır. Tekrarlanan bloklar
+	 * (ör. mobil kopyalar) ve üst üste aynı başlık bir kez okunur. Her cümle sayfadaki yerini bilir;
+	 * vurgulama DOM'a dokunmadan (CSS Highlight API) yapılır.
+	 */
+	const content = (() => {
+		const SKIP = "nav, form, button, select, textarea, input, script, style, noscript, template, svg, iframe, canvas, video, audio, object, [aria-hidden='true'], [hidden], .screen-reader-text, .sr-only, .visually-hidden, .wpa-test-msg, #wpadminbar, gozkulak-root, gozkulak-overlay";
+		const AUTO = ["main", "[role='main']", ".entry-content", ".post-content", "article", "#content", "#Content", ".site-content", ".content-area"];
+		const INLINE = /^(inline|inline-block|inline-flex|inline-grid|contents|ruby)$/;
+
+		const visible = (el) => (el.checkVisibility ? el.checkVisibility({ checkVisibilityCSS: true }) : !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length));
+		const textLength = (el) => (el.innerText || "").replace(/\s+/g, " ").trim().length;
+
+		function roots() {
+			let list = [];
+			if (cfg.selector) {
+				try {
+					list = [...doc.querySelectorAll(cfg.selector)];
+				} catch (e) {
+					list = [];
+				}
+			}
+			list = list.filter((el) => visible(el) && !el.closest("gozkulak-root"));
+			list = list.filter((el) => !list.some((o) => o !== el && o.contains(el)));
+			if (!list.length) {
+				for (const sel of AUTO) {
+					const found = [...doc.querySelectorAll(sel)].filter(visible).sort((a, b) => textLength(b) - textLength(a))[0];
+					// <main> güvenilir bir işarettir; diğer adaylarda kısa bloklar (ör. tek bir kart) seçilmez.
+					if (found && textLength(found) >= (/main/.test(sel) ? 40 : 200)) {
+						list = [found];
+						break;
+					}
+				}
+			}
+			if (!list.length) list = [doc.body];
+			return list.sort((a, b) => (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1));
+		}
+
+		function blockOf(node, root, cache) {
+			for (let el = node.parentElement; el && el !== root.parentElement; el = el.parentElement) {
+				if (el === root) return el;
+				let display = cache && cache.get(el);
+				if (display === undefined) {
+					display = getComputedStyle(el).display;
+					if (cache) cache.set(el, display);
+				}
+				if (!INLINE.test(display)) return el;
+			}
+			return root;
+		}
+
+		/**
+		 * Kökün içindeki görünen metin düğümlerini bloklara toplar. range verilirse yalnızca seçimin
+		 * içindeki kısım alınır.
+		 */
+		function blocksOf(root, range, seen) {
+			const out = [];
+			// Bütün sayfa okunuyorsa sitenin başlığı, alt bilgisi ve kenar çubukları atlanır.
+			const skip = root === doc.body ? SKIP + ", header, footer, aside, [role='banner'], [role='contentinfo'], [role='complementary']" : SKIP;
+			const okCache = new Map();
+			const allowed = (el) => {
+				if (okCache.has(el)) return okCache.get(el);
+				const ok = !el.closest(skip) && visible(el);
+				okCache.set(el, ok);
+				return ok;
+			};
+			const walker = doc.createTreeWalker(root, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT, {
+				acceptNode(n) {
+					if (n.nodeType === 1) {
+						if (n !== root && n.matches(skip)) return NodeFilter.FILTER_REJECT;
+						return NodeFilter.FILTER_SKIP;
+					}
+					if (!n.nodeValue.trim() || !n.parentElement || !allowed(n.parentElement)) return NodeFilter.FILTER_REJECT;
+					if (range && !range.intersectsNode(n)) return NodeFilter.FILTER_REJECT;
+					return NodeFilter.FILTER_ACCEPT;
+				},
+			});
+			let current = null;
+			let n;
+			const displays = new Map();
+			while ((n = walker.nextNode())) {
+				const block = blockOf(n, root, displays);
+				let from = 0;
+				let to = n.nodeValue.length;
+				if (range) {
+					if (n === range.startContainer) from = range.startOffset;
+					if (n === range.endContainer) to = range.endOffset;
+				}
+				if (to <= from) continue;
+				if (!current || current.el !== block) {
+					if (current) out.push(current);
+					current = { el: block, text: "", segs: [] };
+				} else if (current.segs.length && !/\s$/.test(current.text)) {
+					// Aynı bloktaki düğümler arasında <br> ya da blok sınırı varsa boşluk bırakılır.
+					const prev = current.segs[current.segs.length - 1].node;
+					if (brBetween(prev, n)) current.text += ", ";
+				}
+				current.segs.push({ node: n, from, start: current.text.length, len: to - from });
+				current.text += n.nodeValue.slice(from, to);
+			}
+			if (current) out.push(current);
+			// Tekrarlanan bloklar ve üst üste aynı başlık bir kez okunur.
+			return out.filter((b) => {
+				const key = b.text.replace(/\s+/g, " ").trim();
+				if (!/[\p{L}\p{N}]/u.test(key)) return false;
+				if (key.length > 25 || /^H[1-6]$/.test(b.el.tagName)) {
+					if (seen.has(key)) return false;
+					seen.add(key);
+				}
+				return true;
+			});
+		}
+
+		function brBetween(a, b) {
+			const r = doc.createRange();
+			r.setStartAfter(a);
+			r.setEndBefore(b);
+			const frag = r.cloneContents();
+			return !!frag.querySelector && !!frag.querySelector("br, p, div, li");
+		}
+
+		function langOf(el) {
+			const host = el.closest("[lang]");
+			const l = (host && host.getAttribute("lang")) || htmlEl.lang || "tr";
+			return /^en\b/i.test(l) ? "en" : /^tr\b/i.test(l) ? "tr" : l.slice(0, 2).toLowerCase();
+		}
+
+		function sentencesOf(blocks) {
+			const list = [];
+			for (const block of blocks) {
+				const lang = langOf(block.el);
+				for (const [a, b] of splitSentences(block.text)) {
+					const raw = block.text.slice(a, b);
+					const speech = lang === "tr" ? speechText.tr(raw) : speechText.en(raw);
+					if (!/[\p{L}\p{N}]/u.test(speech)) continue;
+					list.push({ block, a, b, text: raw.replace(/\s+/g, " ").trim(), speech, lang });
+				}
+			}
+			return list;
+		}
+
+		/** Sayfanın okunacak alanındaki tüm cümleler. */
+		function page() {
+			const seen = new Set();
+			return sentencesOf(roots().flatMap((root) => blocksOf(root, null, seen)));
+		}
+
+		/** Seçili metnin cümleleri (seçim yoksa boş). */
+		function selection() {
+			const sel = window.getSelection && window.getSelection();
+			if (!sel || sel.isCollapsed || !sel.rangeCount) return [];
+			const range = sel.getRangeAt(0);
+			if (!range.toString().trim()) return [];
+			let root = range.commonAncestorContainer;
+			if (root.nodeType !== 1) root = root.parentElement;
+			if (!root || root.closest("gozkulak-root")) return [];
+			return sentencesOf(blocksOf(root, range, new Set()));
+		}
+
+		/** Ekrandaki bir noktadan (tıklama) başlayarak okunacak cümleler ve başlangıç sırası. */
+		function fromPoint(x, y) {
+			let node = null;
+			let offset = 0;
+			if (doc.caretPositionFromPoint) {
+				const p = doc.caretPositionFromPoint(x, y);
+				if (p) {
+					node = p.offsetNode;
+					offset = p.offset;
+				}
+			} else if (doc.caretRangeFromPoint) {
+				const r = doc.caretRangeFromPoint(x, y);
+				if (r) {
+					node = r.startContainer;
+					offset = r.startOffset;
+				}
+			}
+			if (!node || node.nodeType !== 3) return null;
+			let list = page();
+			let at = list.findIndex((s) => s.block.segs.some((g) => g.node === node && offset >= g.from && offset <= g.from + g.len && withinSentence(s, g, offset)));
+			if (at < 0) {
+				// Okunacak alanın dışına tıklandı: yalnızca o blok okunur.
+				const el = blockOf(node, doc.body);
+				list = sentencesOf(blocksOf(el, null, new Set()));
+				at = list.findIndex((s) => s.block.segs.some((g) => g.node === node && withinSentence(s, g, offset)));
+				if (at < 0) at = 0;
+			}
+			return list.length ? { list, at } : null;
+		}
+
+		function withinSentence(s, g, offset) {
+			const pos = g.start + (offset - g.from);
+			return pos >= s.a && pos <= s.b;
+		}
+
+		/** Cümlenin sayfadaki aralığı (vurgulama ve kaydırma için). */
+		function rangeOf(s) {
+			const segs = s.block.segs;
+			const find = (pos, end) => {
+				for (const g of segs) {
+					if (end ? pos <= g.start + g.len && pos > g.start : pos < g.start + g.len) {
+						const inner = Math.max(0, Math.min(g.len, pos - g.start));
+						return [g.node, g.from + inner];
+					}
+				}
+				const last = segs[segs.length - 1];
+				return [last.node, last.from + last.len];
+			};
+			try {
+				const r = doc.createRange();
+				const [sn, so] = find(s.a, false);
+				const [en, eo] = find(s.b, true);
+				r.setStart(sn, so);
+				r.setEnd(en, eo);
+				return r;
+			} catch (e) {
+				return null;
+			}
+		}
+
+		return { page, selection, fromPoint, rangeOf };
+	})();
+
+	/*
+	 * ---------- tarayıcının kendi sesi (Web Speech API) ----------
+	 * Duraklatma, tarayıcılar arasında güvenilir olmadığı için okumayı kesip yerini hatırlayarak yapılır.
+	 */
+	const browserVoice = (() => {
+		const synth = window.speechSynthesis;
+		let token = 0;
+		let watchdog = 0;
+
+		function voices() {
+			return synth ? synth.getVoices() : [];
+		}
+
+		function waitVoices() {
+			if (!synth || voices().length) return Promise.resolve();
+			return new Promise((resolve) => {
+				const done = () => {
+					synth.removeEventListener("voiceschanged", done);
+					resolve();
+				};
+				synth.addEventListener("voiceschanged", done);
+				setTimeout(done, 1500);
+			});
+		}
+
+		function voiceFor(lang) {
+			const list = voices().filter((v) => v.lang && v.lang.toLowerCase().replace("_", "-").startsWith(lang));
+			return list.find((v) => v.localService && v.default) || list.find((v) => v.localService) || list[0] || null;
+		}
+
+		async function available(lang) {
+			if (!synth || !window.SpeechSynthesisUtterance) return false;
+			await waitVoices();
+			return !!voiceFor(lang);
+		}
+
+		function cancel() {
+			token++;
+			window.clearInterval(watchdog);
+			if (synth && (synth.speaking || synth.pending)) synth.cancel();
+		}
+
+		function speak(text, { lang, rate, onEnd, onError }) {
+			cancel();
+			const mine = token;
+			const u = new window.SpeechSynthesisUtterance(text);
+			const v = voiceFor(lang);
+			if (v) u.voice = v;
+			u.lang = v ? v.lang : lang === "tr" ? "tr-TR" : "en-US";
+			u.rate = rate;
+			let started = 0;
+			const finish = () => {
+				if (mine !== token) return;
+				window.clearInterval(watchdog);
+				token++;
+				onEnd();
+			};
+			u.onstart = () => {
+				started = Date.now();
+			};
+			u.onend = finish;
+			u.onerror = (e) => {
+				if (mine !== token || e.error === "interrupted" || e.error === "canceled") return;
+				window.clearInterval(watchdog);
+				onError(e.error || "error");
+			};
+			// Bazı Android tarayıcıları "bitti" olayını göndermiyor; ses sustuysa cümle bitmiş sayılır.
+			watchdog = window.setInterval(() => {
+				if (mine !== token) return;
+				if (started && !synth.speaking && !synth.pending && Date.now() - started > 800) finish();
+			}, 700);
+			// Hemen önceki cancel() ile aynı anda çağrılınca bazı tarayıcılar sesi yutuyor.
+			window.setTimeout(() => {
+				if (mine === token) synth.speak(u);
+			}, 60);
+		}
+
+		return { available, speak, cancel, name: "browser" };
+	})();
+
+	/*
+	 * ---------- okunan cümlenin vurgulanması ----------
+	 * CSS Highlight API ile sayfaya hiç dokunmadan yapılır; desteklemeyen tarayıcıda cümlenin bloğu
+	 * çerçevelenir. Okunan cümle ekran dışına çıkarsa sayfa kaydırılır (ziyaretçi kendisi kaydırıyorsa
+	 * birkaç saniye beklenir).
+	 */
+	const readMark = (() => {
+		const supported = !!(window.CSS && CSS.highlights && window.Highlight);
+		let ready = false;
+		let block = null;
+		let userScroll = 0;
+
+		function init() {
+			if (ready) return;
+			ready = true;
+			runtime.add("::highlight(gk-read) { background-color: #ffe066; color: #111111; }");
+			runtime.add(".gk-reading:not(#gk-z) { outline: 3px solid #ffbf00 !important; outline-offset: 3px !important; }");
+			const mark = () => {
+				userScroll = Date.now();
+			};
+			for (const ev of ["wheel", "touchmove"]) window.addEventListener(ev, mark, { passive: true });
+			window.addEventListener("keydown", (e) => {
+				if (/^(ArrowUp|ArrowDown|PageUp|PageDown|Home|End| )$/.test(e.key)) mark();
+			}, { passive: true });
+		}
+
+		function show(s) {
+			init();
+			const range = content.rangeOf(s);
+			clear();
+			if (supported && range) CSS.highlights.set("gk-read", new window.Highlight(range));
+			else {
+				block = s.block.el;
+				block.classList.add("gk-reading");
+			}
+			const r = range ? range.getBoundingClientRect() : s.block.el.getBoundingClientRect();
+			if ((r.top < 70 || r.bottom > window.innerHeight - 140) && Date.now() - userScroll > 4000) {
+				const calm = prefs.stopAnimations || (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+				window.scrollBy({ top: r.top - window.innerHeight * 0.35, behavior: calm ? "auto" : "smooth" });
+			}
+		}
+
+		function clear() {
+			if (supported) CSS.highlights.delete("gk-read");
+			if (block) block.classList.remove("gk-reading");
+			block = null;
+		}
+
+		return { show, clear };
+	})();
+
+	/*
+	 * ---------- okuyucu ----------
+	 * Cümleleri sırayla sese verir, okunanı vurgular; duraklatma, devam, önceki/sonraki cümle ve hız.
+	 */
+	const reader = (() => {
+		let queue = [];
+		let index = 0;
+		let state = "idle";
+		let engine = browserVoice;
+		const listeners = new Set();
+
+		const emit = () => listeners.forEach((fn) => fn());
+		const rate = () => RATES[prefs.ttsRate] || 1;
+
+		async function start(list, from) {
+			stop(true);
+			if (!list || !list.length) {
+				emitMessage(STR.ttsNothing);
+				return;
+			}
+			const lang = list[from || 0].lang;
+			if (!(await engine.available(lang))) {
+				emitMessage(STR.ttsNoVoice);
+				return;
+			}
+			queue = list;
+			index = Math.max(0, Math.min(list.length - 1, from || 0));
+			state = "playing";
+			speakCurrent();
+			emit();
+		}
+
+		let message = "";
+		function emitMessage(text) {
+			message = text;
+			emit();
+			announce(text);
+		}
+
+		function speakCurrent() {
+			const s = queue[index];
+			if (!s) return finish();
+			message = "";
+			readMark.show(s);
+			engine.speak(s.speech, {
+				lang: s.lang,
+				rate: rate(),
+				onEnd: () => {
+					if (state !== "playing") return;
+					index++;
+					if (index >= queue.length) finish();
+					else {
+						speakCurrent();
+						emit();
+					}
+				},
+				onError: () => {
+					state = "paused";
+					emitMessage(STR.ttsError);
+				},
+			});
+		}
+
+		function finish() {
+			state = "idle";
+			engine.cancel();
+			readMark.clear();
+			queue = [];
+			index = 0;
+			emit();
+			announce(STR.ttsDone);
+		}
+
+		function pause() {
+			if (state !== "playing") return;
+			state = "paused";
+			engine.cancel();
+			emit();
+		}
+
+		function resume() {
+			if (state !== "paused") return;
+			state = "playing";
+			speakCurrent();
+			emit();
+		}
+
+		function stop(silent) {
+			if (state === "idle" && !queue.length) return;
+			state = "idle";
+			engine.cancel();
+			readMark.clear();
+			queue = [];
+			index = 0;
+			if (!silent) emit();
+		}
+
+		function step(delta) {
+			if (state === "idle") return;
+			index = Math.max(0, Math.min(queue.length - 1, index + delta));
+			engine.cancel();
+			if (state === "playing") speakCurrent();
+			else readMark.show(queue[index]);
+			emit();
+		}
+
+		function rateChanged() {
+			if (state === "playing") speakCurrent();
+		}
+
+		// Sayfadan ayrılınca okuma durur (bazı tarayıcılar sesi sonraki sayfada da sürdürüyor).
+		window.addEventListener("pagehide", () => stop(true));
+
+		return {
+			start,
+			pause,
+			resume,
+			stop: () => stop(false),
+			step,
+			rateChanged,
+			on: (fn) => listeners.add(fn),
+			get state() {
+				return state;
+			},
+			get position() {
+				return queue.length ? [index + 1, queue.length] : [0, 0];
+			},
+			get message() {
+				return message;
+			},
+		};
+	})();
+
+	/*
+	 * Tıklayarak dinleme: açıkken sayfadaki bir metne tıklanınca okuma oradan başlar. Bağlantılar,
+	 * düğmeler ve form alanları her zamanki gibi çalışır; metin seçmek için sürükleme okumayı başlatmaz.
+	 */
+	const clickRead = (() => {
+		let on = false;
+		function onClick(e) {
+			if (e.button !== 0 || e.defaultPrevented) return;
+			const t = e.target;
+			if (!t || t.nodeType !== 1 || e.composedPath().includes(rootHost)) return;
+			if (t.closest("a[href], button, input, select, textarea, label, summary, [role='button'], [role='link'], [contenteditable='true'], gozkulak-overlay")) return;
+			const sel = window.getSelection && window.getSelection();
+			if (sel && !sel.isCollapsed && sel.toString().trim()) return;
+			const found = content.fromPoint(e.clientX, e.clientY);
+			if (found) reader.start(found.list, found.at);
+		}
+		return {
+			set(next) {
+				if (next === on) return;
+				on = next;
+				if (on) doc.addEventListener("click", onClick, true);
+				else doc.removeEventListener("click", onClick, true);
+			},
+		};
+	})();
+
+	/*
 	 * ---------- okuma maskesi ve cetveli ----------
 	 * Ayrı bir katmandır; tıklamalar ve dokunuşlar altındaki sayfaya geçer.
 	 * Fareyle imleci, klavyeyle odaklanan öğeyi izler. Dokunmatik ekranda katman ekranda sabit kalır,
@@ -1148,6 +1934,7 @@
 		paint.set(prefs.contrast ? "contrast" : prefs.darkMode ? "dark" : null);
 		fontScale.set(FONT_STEPS[prefs.fontSize], prefs.lineHeight);
 		overlay.set(prefs.readingMask ? "mask" : prefs.readingGuide ? "guide" : null);
+		if (SPEECH) clickRead.set(!!prefs.clickRead);
 		media.set(prefs.stopAnimations);
 	}
 
@@ -1265,6 +2052,91 @@
 		{ id: "reading", label: STR.reading, tiles: [["readingMask", "readingMask"], ["readingGuide", "readingGuide"], ["stopAnimations", "stopAnimations"], ["hideImages", "hideImages"]] },
 	];
 
+	// ---------- sesli okuma: panel bölümü ve küçük oynatıcı ----------
+	const speechUi = (() => {
+		if (!SPEECH) return null;
+		const control = (cls, label, iconName, fn) => {
+			const b = h("button", { type: "button", class: cls, "aria-label": label }, icon(iconName));
+			b.addEventListener("click", fn);
+			return b;
+		};
+		const setIcon = (btn, name) => btn.replaceChildren(icon(name));
+
+		function toggle() {
+			if (reader.state === "playing") reader.pause();
+			else if (reader.state === "paused") reader.resume();
+			else {
+				const picked = content.selection();
+				reader.start(picked.length ? picked : content.page(), 0);
+			}
+		}
+
+		// Panel
+		const playIcon = h("span", { class: "gk-play-icon" });
+		const playLabel = h("span", { class: "gk-play-label" });
+		const play = h("button", { type: "button", class: "gk-play" }, playIcon, playLabel);
+		play.addEventListener("click", toggle);
+		const prev = control("gk-ctl", STR.ttsPrev, "prev", () => reader.step(-1));
+		const next = control("gk-ctl", STR.ttsNext, "next", () => reader.step(1));
+		const stop = control("gk-ctl", STR.ttsStop, "stop", () => reader.stop());
+		const status = h("p", { class: "gk-tts-status" });
+
+		const rateValue = h("span", { class: "gk-step-value gk-rate-value" });
+		const slower = h("button", { type: "button", class: "gk-step-btn", "aria-label": STR.ttsSlower }, "−");
+		const faster = h("button", { type: "button", class: "gk-step-btn gk-step-up", "aria-label": STR.ttsFaster }, "+");
+		const changeRate = (delta) => {
+			const nextRate = Math.max(0, Math.min(MAX.ttsRate, prefs.ttsRate + delta));
+			if (nextRate === prefs.ttsRate) return;
+			prefs.ttsRate = nextRate;
+			update("ttsRate");
+			reader.rateChanged();
+			announce(STR.ttsRate + ": " + STR.rates[prefs.ttsRate]);
+		};
+		slower.addEventListener("click", () => changeRate(-1));
+		faster.addEventListener("click", () => changeRate(1));
+		const rateRow = h("div", { class: "gk-step", role: "group", "aria-labelledby": "gk-rate-label" },
+			h("span", { id: "gk-rate-label", class: "gk-step-label", text: STR.ttsRate }),
+			h("span", { class: "gk-step-controls" }, slower, rateValue, faster));
+
+		const section = h("section", { class: "gk-group gk-speech", "aria-labelledby": "gk-g-speech" },
+			h("h3", { id: "gk-g-speech", class: "gk-group-title", text: STR.ttsTitle }),
+			h("div", { class: "gk-tts-row" }, play, prev, next, stop),
+			rateRow,
+			h("div", { class: "gk-grid" }, tile("clickRead", "speaker", STR.clickRead)),
+			status);
+
+		// Panel kapalıyken okuma sürerse düğmenin üstünde küçük bir oynatıcı görünür.
+		const miniPlay = control("gk-mini-btn", STR.ttsPause, "pause", toggle);
+		const miniPos = h("span", { class: "gk-mini-pos", "aria-live": "off" });
+		const mini = h("div", { class: "gk-mini", role: "group", "aria-label": STR.ttsTitle, hidden: true },
+			control("gk-mini-btn", STR.ttsPrev, "prev", () => reader.step(-1)),
+			miniPlay,
+			control("gk-mini-btn", STR.ttsNext, "next", () => reader.step(1)),
+			control("gk-mini-btn", STR.ttsStop, "stop", () => reader.stop()),
+			miniPos);
+
+		function render() {
+			const st = reader.state;
+			const [at, total] = reader.position;
+			const busy = st !== "idle";
+			setIcon(playIcon, st === "playing" ? "pause" : "play");
+			playLabel.textContent = st === "playing" ? STR.ttsPause : st === "paused" ? STR.ttsResume : STR.ttsListen;
+			for (const b of [prev, next, stop]) b.hidden = !busy;
+			const pos = (st === "paused" ? STR.ttsPaused : STR.ttsPos).replace("%1", at).replace("%2", total);
+			status.textContent = reader.message || (busy ? pos : STR.ttsHint);
+			rateValue.textContent = STR.rates[prefs.ttsRate];
+			slower.disabled = prefs.ttsRate === 0;
+			faster.disabled = prefs.ttsRate === MAX.ttsRate;
+			setIcon(miniPlay, st === "playing" ? "pause" : "play");
+			miniPlay.setAttribute("aria-label", st === "playing" ? STR.ttsPause : STR.ttsResume);
+			miniPos.textContent = busy ? at + " / " + total : "";
+			mini.hidden = !busy || isOpen();
+		}
+		reader.on(render);
+
+		return { section, mini, render };
+	})();
+
 	const body = h("div", { class: "gk-body" });
 	if (cfg.testMode) body.append(h("p", { class: "gk-test", text: STR.test }));
 	if (cfg.version !== SCRIPT_VERSION) {
@@ -1272,6 +2144,7 @@
 		if (cfg.testMode) body.append(h("p", { class: "gk-test", text: msg }));
 		window.console.warn("GözKulak: " + msg);
 	}
+	if (speechUi) body.append(speechUi.section);
 	for (const group of GROUPS) {
 		const items = group.tiles.filter(([key]) => ENABLED.has(key));
 		const hasFont = group.id === "vision" && ENABLED.has("fontSize");
@@ -1317,6 +2190,7 @@
 	function render() {
 		for (const c of Object.values(controls)) c.render();
 		resetButton.disabled = isDefault(prefs);
+		if (speechUi) speechUi.render();
 	}
 
 	function update() {
@@ -1330,6 +2204,7 @@
 	function open() {
 		panel.hidden = false;
 		button.setAttribute("aria-expanded", "true");
+		if (speechUi) speechUi.render();
 		title.focus();
 	}
 
@@ -1337,6 +2212,7 @@
 		if (!isOpen()) return;
 		panel.hidden = true;
 		button.setAttribute("aria-expanded", "false");
+		if (speechUi) speechUi.render();
 		if (returnFocus) button.focus();
 	}
 
@@ -1363,7 +2239,9 @@
 		}
 	});
 
-	shadow.append(sheet, panel, button, live);
+	shadow.append(sheet, panel);
+	if (speechUi) shadow.append(speechUi.mini);
+	shadow.append(button, live);
 
 	// Kayıtlı tercihler sayfa açılır açılmaz uygulanır.
 	// Menü sayfanın en başına eklenir: klavyeyle gelen ziyaretçi ilk sekmede menü düğmesine ulaşır.
@@ -1377,6 +2255,9 @@
 			open,
 			close: () => close(false),
 			reset: () => resetButton.click(),
+			// Tanı için: bir metnin nasıl okunacağı ve bu sayfada okunacak cümleler
+			prepare: (text, language) => (language === "en" ? speechText.en(text) : speechText.tr(text)),
+			sentences: () => content.page().map((x) => ({ text: x.text, speech: x.speech, lang: x.lang })),
 		};
 	};
 	if (doc.body) start();

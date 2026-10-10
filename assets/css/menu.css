@@ -337,6 +337,123 @@ button:focus-visible {
 	content: "✓ ";
 }
 
+/* Sesli okuma */
+.gk-tts-row {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: 8px;
+}
+
+.gk-play {
+	flex: 1 1 auto;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	min-height: 48px;
+	padding: 0 14px;
+	border: 0;
+	border-radius: 10px;
+	background: var(--gk-color);
+	color: var(--gk-ink);
+	font-size: 17px;
+	font-weight: 700;
+	cursor: pointer;
+}
+
+.gk-play:hover {
+	filter: brightness(1.08);
+}
+
+.gk-play-icon {
+	flex: none;
+	width: 22px;
+	height: 22px;
+}
+
+.gk-ctl {
+	flex: none;
+	width: 44px;
+	height: 44px;
+	padding: 9px;
+	border: 2px solid #b9c2cc;
+	border-radius: 8px;
+	background: #ffffff;
+	cursor: pointer;
+}
+
+.gk-rate-value {
+	min-width: 76px;
+}
+
+.gk-speech .gk-grid {
+	grid-template-columns: minmax(0, 1fr);
+}
+
+.gk-speech .gk-tile {
+	min-height: 0;
+	flex-direction: row;
+	align-items: center;
+	gap: 10px;
+}
+
+.gk-speech .gk-tile-state {
+	margin-left: auto;
+}
+
+.gk-tts-status {
+	margin: 8px 0 0;
+	font-size: 13px;
+	color: #4a5562;
+}
+
+/* Panel kapalıyken okuma denetimi */
+.gk-mini {
+	position: absolute;
+	bottom: calc(var(--gk-size) + 12px);
+	display: flex;
+	align-items: center;
+	gap: 2px;
+	padding: 4px 6px;
+	border: 2px solid #ffffff;
+	border-radius: 999px;
+	background: #18212b;
+	color: #ffffff;
+	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+	font: 600 13px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+	white-space: nowrap;
+}
+
+:host([data-position$="right"]) .gk-mini {
+	right: 0;
+}
+
+:host([data-position$="left"]) .gk-mini {
+	left: 0;
+}
+
+.gk-mini-btn {
+	width: 44px;
+	height: 44px;
+	padding: 11px;
+	border: 0;
+	border-radius: 50%;
+	background: transparent;
+	color: inherit;
+	cursor: pointer;
+}
+
+.gk-mini-btn:hover {
+	background: rgba(255, 255, 255, 0.16);
+}
+
+.gk-mini-pos {
+	padding: 0 8px 0 2px;
+	font-variant-numeric: tabular-nums;
+	color: #dfe6ee;
+}
+
 /* Alt bölüm */
 .gk-foot {
 	flex: none;

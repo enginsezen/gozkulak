@@ -117,6 +117,7 @@ final class GozKulak_Admin {
 			'reading_guide'   => __( 'Okuma cetveli', 'gozkulak' ),
 			'stop_animations' => __( 'Animasyonları durdurma', 'gozkulak' ),
 			'hide_images'     => __( 'Görselleri gizleme', 'gozkulak' ),
+			'text_to_speech'  => __( 'Sesli okuma (sayfayı, seçili metni ya da tıklanan yeri okur)', 'gozkulak' ),
 		);
 	}
 
@@ -134,6 +135,7 @@ final class GozKulak_Admin {
 		$name   = GozKulak_Settings::OPTION;
 		$labels = self::feature_labels();
 		$groups = array(
+			'speech'  => __( 'Sesli okuma', 'gozkulak' ),
 			'vision'  => __( 'Görme', 'gozkulak' ),
 			'reading' => __( 'Okuma ve dikkat', 'gozkulak' ),
 		);

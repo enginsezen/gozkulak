@@ -4,7 +4,7 @@ Tags: accessibility, erişilebilirlik, text-to-speech, sesli okuma
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 0.2.6
+Stable tag: 0.2.7
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -21,6 +21,13 @@ GözKulak, temadan bağımsız bir erişilebilirlik menüsü ekler. Menü Shadow
 Ayarlar: Ayarlar → GözKulak.
 
 == Changelog ==
+
+= 0.2.7 =
+* Faz 2.1: sesli okuma (önce tarayıcının kendi sesiyle). Sayfayı, seçili metni ya da tıklanan yeri okur; okunan cümle sayfada vurgulanır, gerekirse sayfa kaydırılır.
+* Duraklat, devam, önceki/sonraki cümle, durdur ve dört okuma hızı; panel kapalıyken düğmenin üstünde küçük bir oynatıcı.
+* Okunacak alan "Okunacak alan" ayarındaki seçicilerden, yoksa sayfanın ana bölgesinden alınır; yalnızca görünen metin okunur, tekrarlanan bloklar bir kez okunur.
+* Metin okumaya hazırlanır: saat aralıkları, telefonlar, adres kısaltmaları, sıra sayıları, büyük harfli başlıklar, kısaltma ekleri, tarih, para birimi, e-posta ve web adresleri.
+* Ayarlar sayfasında "Sesli okuma" özelliği açılıp kapatılabilir.
 
 = 0.2.6 =
 * Telefon: panel ekranın genişliğini kullanır ve görünen ekran yüksekliğine göre sınırlanır; başlık ve kapat düğmesi her zaman görünür (düğmenin kenar uzaklığı hesaba katılır).

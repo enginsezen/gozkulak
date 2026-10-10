@@ -42,6 +42,7 @@ final class GozKulak_Settings {
 			'reading_guide'   => 'reading',
 			'stop_animations' => 'reading',
 			'hide_images'     => 'reading',
+			'text_to_speech'  => 'speech',
 		);
 	}
 
