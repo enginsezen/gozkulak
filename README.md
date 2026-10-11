@@ -5,6 +5,17 @@ WordPress için erişilebilirlik menüsü ve Türkçe sesli okuma eklentisi. Ad�
 - **Temadan bağımsız:** menü Shadow DOM içinde çizilir; tema stilleri menüyü, menünün stilleri temayı etkilemez.
 - **Ses tarayıcıda üretilir:** Türkçe ses [EMA Lightning](https://huggingface.co/canberkkkkkk/ema-lightning) modeliyle tarayıcıda üretilir. Hazırlanmış sayfalarda yöneticinin tarayıcısında bir kez üretilip sitede ses dosyası olarak saklanır; diğer sayfalarda ziyaretçinin cihazında üretilir. Sunucuya paket kurulmaz; okunan metin hiçbir ses servisine gönderilmez.
 - **Ziyaretçiden veri toplanmaz:** tercihler yalnızca ziyaretçinin tarayıcısında saklanır; ziyaretçiye açık AJAX ya da REST ucu yoktur.
+- **İmzalı güncelleme:** yeni sürümler GitHub'dan gelir ve kurulmadan önce Ed25519 imzasıyla doğrulanır.
+
+## Menü
+
+Menü metinleri sayfanın diline göre Türkçe ya da İngilizcedir. Yönetici, hangi özelliklerin sunulacağını seçer.
+
+- **Görme:** yazı boyutu, satır aralığı, harf aralığı, yüksek kontrast, koyu mod, gri tonlama, okunaklı yazı tipi ([Atkinson Hyperlegible Next](https://github.com/googlefonts/atkinson-hyperlegible-next), eklentiyle gelir), bağlantıları vurgulama, büyük imleç.
+- **Okuma ve dikkat:** okuma maskesi, okuma cetveli, animasyonları durdurma, görselleri gizleme.
+- **Sesli okuma:** sayfayı, seçili metni ya da tıklanan yerden itibaren okur; okunan cümle sayfada vurgulanır. Okuma hızı ayarlanır, cümleler arasında ileri ve geri gidilir; menü kapatılınca okuma, ekranda kalan küçük bir oynatıcıdan yönetilir.
+
+Koyu mod ve yüksek kontrast renkleri filtreyle değil, öğe öğe dönüştürür; görseller ve videolar olduğu gibi kalır.
 
 ## Durum
 
@@ -22,34 +33,46 @@ Beş faz tamamlandı (2026-10-11); eklenti üç sitede ziyaretçilere açık, g�
 
 ## Kurulum
 
-1. Depoyu zip olarak indirin ya da `git archive --prefix=gozkulak/ -o gozkulak.zip HEAD` ile paketleyin (geliştirme dosyaları pakete girmez).
+1. Paketi oluşturun: `git archive --prefix=gozkulak/ -o gozkulak.zip vX.Y.Z` (en son sürüm etiketi; geliştirme dosyaları pakete girmez).
 2. WordPress panelinde Eklentiler → Yeni Eklenti Ekle → Eklenti Yükle.
-3. Ayarlar → GözKulak.
+3. Ayarlar → GözKulak. Eklenti önce test modunda açılır; denedikten sonra "Kimler görsün: Herkes" seçilir.
+
+Zip'in içindeki klasörün adı `gozkulak` olmalıdır. GitHub'ın "Download ZIP" ve etiket arşivleri klasörü `gozkulak-main` ya da `gozkulak-X.Y.Z` adıyla verir; bu arşivlerden kuracaksanız klasörü `gozkulak` olarak yeniden adlandırıp sıkıştırın. Yoksa ilk panel güncellemesinde eklentinin klasörü değişir.
 
 Gereksinimler: WordPress 6.4+, PHP 7.4+.
 
 ### Güncellemeler
 
-0.4.0'dan sonra yeni sürümler WordPress panelindeki Güncellemeler listesinde görünür (GitHub etiketleri, `vX.Y.Z`; 6 saatte bir ya da "Tekrar denetle" ile denetlenir). Paket GitHub'ın etiket arşividir. Kurulmadan önce eklenti paketteki `gozkulak.sig` dosyasını doğrular: dosya listesinin Ed25519 imzası eklentiye gömülü açık anahtarla tutmalı, her dosya listeyle birebir aynı olmalı ve sürüm kurulu olandan yeni olmalı. Doğrulama tutmazsa güncelleme kurulmaz, eski sürüm yerinde ve etkin kalır. Gizli anahtar repoda değil, sürümü çıkaranın bilgisayarındadır; GitHub hesabı ele geçirilse bile sitelere imzasız kod kurulamaz.
+0.4.0'dan sonra yeni sürümler WordPress panelindeki Güncellemeler listesinde görünür (GitHub etiketleri, `vX.Y.Z`). WordPress güncellemeleri kendi denetimlerinde (en geç 12 saatte bir) görür; Güncellemeler → "Tekrar denetle" ya da Ayarlar → GözKulak → "Şimdi denetle" hemen denetler. Paket GitHub'ın etiket arşividir. Kurulmadan önce eklenti paketteki `gozkulak.sig` dosyasını doğrular: dosya listesinin Ed25519 imzası eklentiye gömülü açık anahtarla tutmalı, her dosya listeyle birebir aynı olmalı ve sürüm kurulu olandan yeni olmalı. Doğrulama tutmazsa güncelleme kurulmaz, eski sürüm yerinde ve etkin kalır. Gizli anahtar repoda değil, sürümü çıkaranın bilgisayarındadır; GitHub hesabı ele geçirilse bile sitelere imzasız kod kurulamaz. Eski bir imzalı sürüm yeni bir etiketle sunulsa da kurulmaz.
+
+Ayarlar → GözKulak → Güncelleme satırı kurulu sürümü, GitHub'daki en yeni sürümü ve son denetimin sonucunu gösterir.
 
 ## Ayarlar
 
 - Kimler görsün: yalnızca yöneticiler (test modu) ya da herkes
 - Konum, kenardan uzaklık, düğme boyutu, simge, renk
-- Menüde sunulacak özellikler (görme; okuma ve dikkat)
+- Menüde sunulacak özellikler (yukarıdaki liste)
 - Okunacak alan: virgülle ayrılmış CSS seçicileri; eşleşme yoksa ana içerik otomatik bulunur
-- Ses dosyalarının adresi: model ve ONNX Runtime dosyalarını barındıran kendi sunucunuz (isteğe bağlı). Dosyalar bu adresin altında `ema-lightning-onnx/13c431d/` ve `onnxruntime-web/1.30.0/` klasörlerinde aranır; boşsa ya da dosya alınamazsa sürüme sabitli Hugging Face ve jsDelivr adresleri kullanılır (adres yazılıysa "Yedek kaynaklar" ile kapatılabilir). Her dosya tarayıcıda SHA-256 ile doğrulanır.
-- Okunuş sözlüğü: sitenize özel kelimelerin okunuşu, her satırda `kelime = okunuş` (ör. `Wireless = vayırlıs`). Büyük-küçük harf fark etmez, bütün kelime eşleşir. Büyük harfli bir kısaltma kendisiyle eşleştirilirse (`ABC = ABC`) harf harf okunur; bu İngilizce sayfalarda da geçerlidir, diğer okunuşlar yalnızca Türkçe sayfalarda.
+- Ses dosyalarının adresi: model ve ONNX Runtime dosyalarını barındıran kendi sunucunuz (isteğe bağlı; `tools/vps/tts-dosyalari.sh` ile hazırlanır). Dosyalar bu adresin altında `ema-lightning-onnx/13c431d/` ve `onnxruntime-web/1.30.0/` klasörlerinde aranır; boşsa ya da dosya alınamazsa sürüme sabitli Hugging Face ve jsDelivr adresleri kullanılır (adres yazılıysa "Yedek kaynaklar" ile kapatılabilir). Her dosya tarayıcıda SHA-256 ile doğrulanır.
+- Okunuş sözlüğü: sitenize özel kelimelerin okunuşu, her satırda `kelime = okunuş` (ör. `Wireless = vayırlıs`; kısaltmalarda sonda nokta olabilir: `Doç. = doçent`). Büyük-küçük harf fark etmez, bütün kelime eşleşir. Büyük harfli bir kısaltma kendisiyle eşleştirilirse (`ABC = ABC`) harf harf okunur; bu İngilizce sayfalarda da geçerlidir, diğer okunuşlar yalnızca Türkçe sayfalarda.
 - Hazır ses: seçilen sayfaların sesi yönetici panelinde bir kez üretilip sitede saklanır (aşağıda).
 
 ## Sesli okuma nasıl çalışır
 
+- Okunan metin sayfada değişmez; yalnızca okunacak kopyası hazırlanır: saat, tarih, telefon, adres kısaltmaları (Mah., Cad., Şti.…), sıra sayıları, yüzde ve para okunur biçime çevrilir. Sayaçlar (0'dan sayan rakamlar) son değerleriyle okunur. Siteye özel okunuşlar sözlükten gelir; koda siteye özel kural yazılmaz.
 - Türkçe sayfalar, ziyaretçi kapatmadıysa doğal sesle (EMA Lightning) okunur. Motor, eklentinin kendi klasöründeki `assets/js/gozkulak-tts-worker.js` dosyasından açılan bir Web Worker'da çalışır.
 - Dosyalar önbellekte değilse ilk kullanımda indirme onayı istenir (yaklaşık 40 MB, bir kez). Doğrulanan dosyalar tarayıcının önbelleğinde (Cache Storage) saklanır.
 - WebGPU yalnızca masaüstündeki Chromium tabanlı tarayıcılarda denenir; telefon ve tabletlerde, Safari ve Firefox'ta WASM kullanılır.
 - Doğal ses yüklenemezse ya da cihazda gerçek zamana yetişmezse okuma tarayıcının kendi sesiyle sürer. İngilizce sayfalar tarayıcının sesiyle okunur.
-- **Hazır ses:** Ayarlar → GözKulak → Hazır ses bölümünde seçilen sayfaların sesi, yöneticinin tarayıcısında cümle cümle bir kez üretilir ve `wp-content/uploads/gozkulak/` altına Ogg Opus dosyaları olarak yüklenir. Tamamı hazır bir sayfada ziyaretçi modeli indirmez ve onay sorulmaz; eksik cümleler ziyaretçinin tarayıcısında üretilir. Sayfa geniş masaüstü, dizüstü, tablet ve telefon genişliklerinde taranır. Şifreli ve herkese açık olmayan sayfalar hazırlanmaz.
+- **Hazır ses:** Ayarlar → GözKulak → Hazır ses bölümünde seçilen sayfaların sesi, yöneticinin tarayıcısında cümle cümle bir kez üretilir ve `wp-content/uploads/gozkulak/` altına Ogg Opus dosyaları olarak yüklenir. Tamamı hazır bir sayfada ziyaretçi modeli indirmez ve onay sorulmaz; eksik cümleler ziyaretçinin tarayıcısında üretilir. Sayfa geniş masaüstü, dizüstü, tablet ve telefon genişliklerinde taranır; açılıp kapanan bölümler (akordeon, sık sorulan sorular, sekmeler, `<details>`) açılmış hâlleriyle de hazırlanır. Hazırla yalnızca eksik cümleleri üretir; "Kullanılmayan dosyaları sil" artık kullanılmayanları kaldırır. Şifreli ve herkese açık olmayan sayfalar hazırlanmaz.
+- Kapalı bölümlerin içeriği, ekran okuyucularda olduğu gibi okunmaz; ziyaretçi bölümü açınca okunur.
 - Üçüncü taraf bileşenler ve lisansları: `THIRD-PARTY-NOTICES.txt`.
+
+## Dış bağlantılar
+
+- **Ziyaretçinin tarayıcısı:** yalnızca doğal sesle dinlemeyi onaylayınca model ve ONNX Runtime dosyalarını indirir. Önce ayarlardaki ses sunucusundan; yoksa ya da dosya alınamazsa (yedek kaynaklar açıksa) Hugging Face ve jsDelivr'den. Sayfa adresi (Referer) ve çerez gönderilmez; okunan metin ve tercihler hiçbir yere gönderilmez. Hazır ses dosyaları sitenin kendisinden gelir.
+- **Sitenin sunucusu:** güncelleme denetiminde GitHub'a (api.github.com) en yeni sürümü sorar, güncelleme kurulurken paketi github.com'dan indirir. İsteklerin kimliği `GozKulak/<sürüm>`dür; sitenin adresi gönderilmez.
+- Okunaklı yazı tipi eklentinin kendi klasöründen gelir; Google Fonts kullanılmaz.
 
 ## Güvenlik başlığı (CSP)
 
@@ -83,8 +106,10 @@ script-src 'self' 'wasm-unsafe-eval' blob:; worker-src 'self'; connect-src 'self
 
 - Kodlama standardı: [WordPress Coding Standards](https://github.com/WordPress/WordPress-Coding-Standards), ayarlar `phpcs.xml.dist` içinde. Statik analiz: PHPStan en sıkı düzeyde ve WordPress Plugin Check. Komutlar ve uçtan uca testler `tests/README.md` içinde (PHP kurmadan, WebAssembly ile çalışır).
 - Güvenlik kuralları: ayar sayfasında yetki (`manage_options`) ve nonce denetimi; her girdi temizlenir, her çıktı escape edilir; ön yüzde `innerHTML` kullanılmaz; ayarlar sayfaya çalıştırılmayan bir JSON bloğu olarak aktarılır.
+- `tools/surum/`: sürüm imzalama (`imzala.mjs`, gizli anahtar repo dışında) ve GitHub arşivini eklentinin yaptığı gibi doğrulama (`dogrula.mjs`).
 - `tools/faz0/`: Faz 0 ölçüm sayfası ve okunacak alanı bulan tarayıcı konsolu betiği.
 - `tools/tarama/`: sitelerin erişilebilirlik taraması için tarayıcı konsolu betiği.
+- `tools/hazir-ses/`, `tools/tani/`: hazır ses dinleme denemesi ve tanı betikleri.
 - `tools/vps/tts-dosyalari.sh`: doğal ses dosyalarını kendi sunucunuza indirip SHA-256 ile doğrulayan betik (yalnızca curl, sha256sum, gzip; paket kurmaz). Sitenin kök klasöründe çalıştırılır; `.wasm`/`.mjs` için nginx `gzip_static` kopyaları da hazırlar.
 
 ## Lisans
