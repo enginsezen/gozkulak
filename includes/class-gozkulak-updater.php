@@ -53,6 +53,26 @@ final class GozKulak_Updater {
 		// "Tekrar denetle": WordPress eklentileri son denetimden bir dakika geçmediyse yeniden denetlemez;
 		// liste, WordPress'in denetiminden (öncelik 10) hemen önce silinir.
 		add_action( 'load-update-core.php', array( __CLASS__, 'force_check' ), 9 );
+		add_filter( 'http_request_args', array( __CLASS__, 'request_args' ), 10, 2 );
+	}
+
+	/**
+	 * GitHub'a giden isteklerde (etiket listesi, paket) sitenin adresi gönderilmez: WordPress'in varsayılan
+	 * tarayıcı kimliği "WordPress/x; https://site" biçimindedir.
+	 *
+	 * @param mixed $args İstek ayarları.
+	 * @param mixed $url  Adres.
+	 * @return mixed
+	 */
+	public static function request_args( $args, $url ) {
+		if ( ! is_array( $args ) || ! is_string( $url ) ) {
+			return $args;
+		}
+		$src = self::source();
+		if ( 0 === strpos( $url, $src['tags'] ) || 0 === strpos( $url, $src['archive'] ) ) {
+			$args['user-agent'] = 'GozKulak/' . GOZKULAK_VERSION;
+		}
+		return $args;
 	}
 
 	/**
@@ -357,7 +377,8 @@ final class GozKulak_Updater {
 		}
 		try {
 			$valid = sodium_crypto_sign_verify_detached( $signature, $sig['manifest'], $key );
-		} catch ( Exception $e ) {
+		} catch ( Throwable $e ) {
+			// sodium eklentisi yoksa WordPress'in sodium_compat kütüphanesi Error da fırlatabilir.
 			$valid = false;
 		}
 		if ( ! $valid ) {

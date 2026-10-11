@@ -78,8 +78,10 @@ ZIPS["v9.9.9"] = pkg("9.9.9", { version: "9.9.0", sigVersion: "9.9.0", header: "
 // ---------- GitHub'ın yerine geçen sunucu ----------
 let tags = [];
 let broken = false;
+const agents = new Set();
 const src = createServer((req, res) => {
 	const u = new globalThis.URL(req.url, SRC);
+	agents.add(req.headers["user-agent"] || "");
 	if (u.pathname === "/tags" && broken) {
 		res.writeHead(500);
 		return res.end();
@@ -230,5 +232,9 @@ try {
 	src.close();
 	rmSync(work, { recursive: true, force: true });
 }
+// GitHub'a giden isteklerde sitenin adresi yok (WordPress'in varsayılanı "WordPress/x; https://site")
+// ("node": testin kendi istekleri)
+const wpAgents = [...agents].filter((a) => a !== "node");
+check("GitHub'a sitenin adresi gönderilmez", wpAgents.length > 0 && wpAgents.every((a) => /^GozKulak\/[0-9.]+$/.test(a)), JSON.stringify(wpAgents));
 console.log("HATA SAYISI:", errs.length, errs.join(" | "));
 process.exit(errs.length ? 1 : 0);

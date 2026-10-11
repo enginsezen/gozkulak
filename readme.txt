@@ -4,7 +4,7 @@ Tags: accessibility, erişilebilirlik, text-to-speech, sesli okuma
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 0.4.7
+Stable tag: 0.4.8
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -29,6 +29,8 @@ Türkçe doğal ses (EMA Lightning) için gereken model ve ONNX Runtime dosyalar
 
 Bu isteklerde yalnızca standart HTTP bilgileri (IP adresi, tarayıcı bilgisi) iletilir; sayfa adresi (Referer) ve çerez gönderilmez. Okunan metin ve ziyaretçi tercihleri hiçbir sunucuya gönderilmez. Her dosya SHA-256 ile doğrulanır. Hugging Face: https://huggingface.co/privacy — jsDelivr: https://www.jsdelivr.com/terms/privacy-policy-jsdelivr-net
 
+Güncellemeler: sitenin sunucusu, WordPress'in güncelleme denetimlerinde (günde iki kez ve Güncellemeler sayfasında) GitHub'a (api.github.com) en yeni sürümü sorar; güncelleme kurulurken paketi github.com'dan indirir. Bu isteklerde sitenin IP adresi iletilir; sitenin adresi ve ziyaretçilere ait hiçbir bilgi gönderilmez. GitHub: https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement
+
 Üçüncü taraf bileşenler ve lisansları: THIRD-PARTY-NOTICES.txt
 
 == Güvenlik başlığı (CSP) ==
@@ -46,6 +48,10 @@ Sitede Content-Security-Policy başlığı varsa gereken izinler:
 Hazır ses hazırlanırken site sayfaları aynı siteden çerçevede açılır; X-Frame-Options: DENY gönderilmemelidir. İzin eksikse menü çalışır, okuma bir sonraki sese (doğal ses ya da tarayıcının sesi) geçer.
 
 == Changelog ==
+
+= 0.4.8 =
+* Güvenlik incelemesi (0.4.7): GitHub'a giden güncelleme isteklerinde sitenin adresi artık gönderilmez (WordPress'in varsayılan kimliği yerine "GozKulak/sürüm"). "Harici hizmetler" bölümüne GitHub bağlantısı eklendi.
+* İmza doğrulaması, sodium eklentisi olmayan sunucularda da hatasız sonuçlanır.
 
 = 0.4.7 =
 * Hazır ses: açılıp kapanan bölümler (akordeon, sık sorulan sorular, sekmeler, <details>) de hazırlanır. Eskiden yalnızca sayfa açıldığında görünen panel hazırlanıyordu; ziyaretçi başka bir soruyu açınca indirme onayı soruluyordu. Bölümler sitenin kendi erişilebilirlik işaretlerinden (aria-controls) tanınır.
