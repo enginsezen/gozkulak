@@ -7,6 +7,12 @@ WordPress için erişilebilirlik menüsü ve Türkçe sesli okuma eklentisi. Ad�
 - **Ziyaretçiden veri toplanmaz:** tercihler yalnızca ziyaretçinin tarayıcısında saklanır; ziyaretçiye açık AJAX ya da REST ucu yoktur.
 - **İmzalı güncelleme:** yeni sürümler GitHub'dan gelir ve kurulmadan önce Ed25519 imzasıyla doğrulanır.
 
+**[Tarayıcıda deneyin →](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/enginsezen/gozkulak/main/docs/playground.json)**
+
+WordPress Playground, tarayıcınızda eklentinin son sürümü kurulu geçici bir WordPress sitesi açar: deneme sayfası ve yönetici paneli (Ayarlar → GözKulak) hazırdır. Bilgisayarınıza bir şey kurulmaz; sekme kapanınca site silinir. Doğal ses ilk kullanımda yaklaşık 40 MB indirir (Hugging Face, jsDelivr). Sitenin kurulumu: `docs/playground.json`.
+
+<img src="docs/img/okuma.png" alt="Doğal sesle okuma: okunan cümle sarıyla vurgulanmış, sağ altta önceki, duraklat, sonraki ve durdur düğmeleriyle 7 / 18 yazan küçük oynatıcı." width="800">
+
 ## Menü
 
 Menü metinleri sayfanın diline göre Türkçe ya da İngilizcedir. Yönetici, hangi özelliklerin sunulacağını seçer.
@@ -16,6 +22,8 @@ Menü metinleri sayfanın diline göre Türkçe ya da İngilizcedir. Yönetici, 
 - **Sesli okuma:** sayfayı, seçili metni ya da tıklanan yerden itibaren okur; okunan cümle sayfada vurgulanır. Okuma hızı ayarlanır, cümleler arasında ileri ve geri gidilir; menü kapatılınca okuma, ekranda kalan küçük bir oynatıcıdan yönetilir.
 
 Koyu mod ve yüksek kontrast renkleri filtreyle değil, öğe öğe dönüştürür; görseller ve videolar olduğu gibi kalır.
+
+<img src="docs/img/menu.png" alt="Açık menü: Sesli okuma bölümünde Sayfayı dinle düğmesi, okuma hızı, Tıklayarak dinle ve Doğal ses seçenekleri; altında Görme bölümü ve yazı boyutu." width="600"> <img src="docs/img/telefon.png" alt="Telefonda koyu mod ve büyütülmüş yazıyla aynı sayfa." width="186">
 
 ## Durum
 
@@ -57,6 +65,8 @@ Ayarlar → GözKulak → Güncelleme satırı kurulu sürümü, GitHub'daki en 
 - Okunuş sözlüğü: sitenize özel kelimelerin okunuşu, her satırda `kelime = okunuş` (ör. `Wireless = vayırlıs`; kısaltmalarda sonda nokta olabilir: `Doç. = doçent`). Büyük-küçük harf fark etmez, bütün kelime eşleşir. Büyük harfli bir kısaltma kendisiyle eşleştirilirse (`ABC = ABC`) harf harf okunur; bu İngilizce sayfalarda da geçerlidir, diğer okunuşlar yalnızca Türkçe sayfalarda.
 - Hazır ses: seçilen sayfaların sesi yönetici panelinde bir kez üretilip sitede saklanır (aşağıda).
 
+<img src="docs/img/ayarlar.png" alt="Ayarlar → GözKulak, Sesli okuma bölümü: okunacak alan, okunuş sözlüğü, ses dosyalarının adresi, yedek kaynaklar ve hazır ses seçenekleri." width="800">
+
 ## Sesli okuma nasıl çalışır
 
 - Okunan metin sayfada değişmez; yalnızca okunacak kopyası hazırlanır: saat, tarih, telefon, adres kısaltmaları (Mah., Cad., Şti.…), sıra sayıları, yüzde ve para okunur biçime çevrilir. Sayaçlar (0'dan sayan rakamlar) son değerleriyle okunur. Siteye özel okunuşlar sözlükten gelir; koda siteye özel kural yazılmaz.
@@ -67,6 +77,8 @@ Ayarlar → GözKulak → Güncelleme satırı kurulu sürümü, GitHub'daki en 
 - **Hazır ses:** Ayarlar → GözKulak → Hazır ses bölümünde seçilen sayfaların sesi, yöneticinin tarayıcısında cümle cümle bir kez üretilir ve `wp-content/uploads/gozkulak/` altına Ogg Opus dosyaları olarak yüklenir. Tamamı hazır bir sayfada ziyaretçi modeli indirmez ve onay sorulmaz; eksik cümleler ziyaretçinin tarayıcısında üretilir. Sayfa geniş masaüstü, dizüstü, tablet ve telefon genişliklerinde taranır; açılıp kapanan bölümler (akordeon, sık sorulan sorular, sekmeler, `<details>`) açılmış hâlleriyle de hazırlanır. Hazırla yalnızca eksik cümleleri üretir; "Kullanılmayan dosyaları sil" artık kullanılmayanları kaldırır. Şifreli ve herkese açık olmayan sayfalar hazırlanmaz.
 - Kapalı bölümlerin içeriği, ekran okuyucularda olduğu gibi okunmaz; ziyaretçi bölümü açınca okunur.
 - Üçüncü taraf bileşenler ve lisansları: `THIRD-PARTY-NOTICES.txt`.
+
+<img src="docs/img/hazir-ses.png" alt="Hazır ses bölümü: Seçilenleri hazırla ve Kullanılmayan dosyaları sil düğmeleri; sayfa listesinde deneme sayfası için 17 dosya." width="800">
 
 ## Dış bağlantılar
 
@@ -110,6 +122,7 @@ script-src 'self' 'wasm-unsafe-eval' blob:; worker-src 'self'; connect-src 'self
 - `tools/faz0/`: Faz 0 ölçüm sayfası ve okunacak alanı bulan tarayıcı konsolu betiği.
 - `tools/tarama/`: sitelerin erişilebilirlik taraması için tarayıcı konsolu betiği.
 - `tools/hazir-ses/`, `tools/tani/`: hazır ses dinleme denemesi ve tanı betikleri.
+- `docs/`: "Tarayıcıda deneyin" sitesinin kurulumu (`playground.json`) ve README görselleri. Görseller aynı deneme sitesinden `cd tests && npm run gorseller` ile yeniden üretilir; pakete girmez.
 - `tools/vps/tts-dosyalari.sh`: doğal ses dosyalarını kendi sunucunuza indirip SHA-256 ile doğrulayan betik (yalnızca curl, sha256sum, gzip; paket kurmaz). Sitenin kök klasöründe çalıştırılır; `.wasm`/`.mjs` için nginx `gzip_static` kopyaları da hazırlar.
 
 ## Lisans

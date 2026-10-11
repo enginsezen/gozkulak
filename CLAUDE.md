@@ -36,6 +36,7 @@ Kişiye özel bilgiler (siteler, sunucu, test cihazları, güncel durum) `CLAUDE
 | `assets/fonts/` | Okunaklı yazı tipi: Atkinson Hyperlegible Next, değişken, latin + latin-ext (SIL OFL 1.1, `licenses/OFL-1.1.txt`) |
 | `tools/` | Faz 0 ölçüm sayfası, tarama ve tanı betikleri, `tools/vps/tts-dosyalari.sh`. Pakete girmez |
 | `tests/` | Uçtan uca testler, deneme sayfaları, yerel test sunucusu (`tests/README.md`). Pakete girmez |
+| `docs/` | "Tarayıcıda deneyin" Playground kurulumu (`playground.json`: son sürümün zip'i + deneme sayfası) ve README görselleri (`img/`, `cd tests && npm run gorseller` ile üretilir). Pakete girmez |
 
 `gozkulak.js` içindeki modüller, sırayla:
 
@@ -69,6 +70,7 @@ node --check assets/js/gozkulak.js assets/js/gozkulak-tts-worker.js
 cd tests && npm install && npx playwright install chromium   # ilk kez
 cd tests && npm test                        # temel uçtan uca testler (~6 dk)
 cd tests && npm run serve                   # deneme sayfaları: http://127.0.0.1:8080/gk-oku/hours.html vb.
+cd tests && npm run gorseller               # README görselleri (docs/img/), Playground'daki deneme sitesinden
 ```
 
 Tanı için tarayıcı konsolunda `GozKulak.sentences()` bir sayfada okunacak cümleleri, `GozKulak.prepare("metin")` bir metnin nasıl okunacağını verir.

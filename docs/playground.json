@@ -1,0 +1,34 @@
+{
+	"$schema": "https://playground.wordpress.net/blueprint-schema.json",
+	"meta": {
+		"title": "GözKulak",
+		"description": "Erişilebilirlik menüsü ve Türkçe sesli okuma: son sürüm, deneme sayfasıyla.",
+		"author": "enginsezen"
+	},
+	"landingPage": "/",
+	"preferredVersions": {
+		"php": "8.3",
+		"wp": "latest"
+	},
+	"login": true,
+	"steps": [
+		{
+			"step": "installPlugin",
+			"pluginData": {
+				"resource": "url",
+				"url": "https://github.com/enginsezen/gozkulak/releases/latest/download/gozkulak.zip"
+			},
+			"options": {
+				"activate": true
+			}
+		},
+		{
+			"step": "setSiteLanguage",
+			"language": "tr_TR"
+		},
+		{
+			"step": "runPHP",
+			"code": "<?php require '/wordpress/wp-load.php'; $s = get_option('gozkulak_settings'); $s = is_array($s) ? $s : array(); $s['visibility'] = 'everyone'; update_option('gozkulak_settings', $s); update_option('blogname', 'GözKulak deneme'); update_option('blogdescription', ''); wp_delete_post(1, true); wp_delete_post(2, true); $id = wp_insert_post(array('post_title' => 'GözKulak’ı deneyin', 'post_status' => 'publish', 'post_type' => 'page', 'post_content' => '<!-- wp:paragraph --><p>Sağ alttaki düğmeye basarak erişilebilirlik menüsünü açın. Yazıyı büyütebilir, satır aralığını açabilir, koyu modu ya da yüksek kontrastı seçebilir, okuma maskesini kullanabilirsiniz. Seçimleriniz yalnızca bu tarayıcıda saklanır.</p><!-- /wp:paragraph --><!-- wp:heading --><h2>Sesli okuma</h2><!-- /wp:heading --><!-- wp:paragraph --><p>Menünün Sesli okuma bölümünde “Sayfayı dinle” düğmesine basın. Türkçe ses, tarayıcınızda çalışan bir yapay zekâ modeliyle üretilir; okunan metin hiçbir ses servisine gönderilmez. Model ilk kullanımda yaklaşık 40 MB indirilir ve tarayıcıda saklanır.</p><!-- /wp:paragraph --><!-- wp:paragraph --><p>Okunan cümle sayfada vurgulanır. Bir metni seçip yalnızca onu okutabilir; “Tıklayarak dinle” açıkken bir paragrafa tıklayıp okumayı oradan başlatabilirsiniz.</p><!-- /wp:paragraph --><!-- wp:heading --><h2>Okunuş örnekleri</h2><!-- /wp:heading --><!-- wp:list --><ul><li>Çalışma saatleri: hafta içi 09:00 - 18:00, cumartesi 10:00 - 14:00.</li><li>Tel: 0212 555 01 23</li><li>Adres: Atatürk Cad. No: 12 Kat: 3</li><li>Bu hafta tüm ürünlerde %20 indirim var.</li></ul><!-- /wp:list --><!-- wp:heading --><h2>Hazır ses</h2><!-- /wp:heading --><!-- wp:paragraph --><p>Yönetici, Ayarlar → GözKulak sayfasından sayfaları önceden hazırlayabilir. Hazırlanmış sayfalar ziyaretçiye model indirtmeden, sitede saklanan ses dosyalarıyla okunur.</p><!-- /wp:paragraph -->')); update_option('show_on_front', 'page'); update_option('page_on_front', $id);"
+		}
+	]
+}

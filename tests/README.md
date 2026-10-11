@@ -29,6 +29,7 @@ node e2e/ema.mjs    # tek bir test (sunucu açık olmalı: npm run serve)
 - `ema-csp.mjs`: güvenlik başlığı (CSP) ve Trusted Types altında doğal ses, hazır ses ve geri dönüşler.
 - `ema-limit.mjs`: beklenenden büyük motor dosyasının kesilmesi.
 - `npm run lighthouse`: başarım karşılaştırması (aynı sayfa eklentili / eklentisiz, mobil ve masaüstü, Lighthouse). Test sunucusu metinleri gerçek sunucular gibi gzip ile gönderir. Gözlenen (0.3.4): başarım 100 / 100, FCP aynı, TBT 0, CLS 0, aktarım +48 KB; benzetimde LCP mobilde +0,45 sn (gerçek yavaşlatmada fark yok).
+- `npm run gorseller`: README görselleri (`docs/img/`). "Tarayıcıda deneyin" sitesinin aynısını (`docs/playground.json`, eklenti depodan) yerel Playground'da (port 9404) açar, deneme sayfasını hazırlar ve menü, okuma, telefon, ayarlar ve hazır ses görüntülerini alır (~3 dk). Doğal ses `GK_TTS` adresinden, verilmezse yedek kaynaklardan iner. Sitelerden görüntü alınmaz.
 
 `run.mjs` test sunucusu kapalıysa kendisi açar. Sonuçta her test için ✓/✗ yazar. Test çıktısında `HATALAR: yok` ya da `HATA SAYISI: 0` yoksa test başarısız sayılır. Ekran görüntüleri `tests/shots/` klasörüne düşer.
 
