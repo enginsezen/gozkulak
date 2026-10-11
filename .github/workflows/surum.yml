@@ -1,0 +1,60 @@
+# Sürüm etiketi (vX.Y.Z) gönderilince GitHub Releases'a kurulum zip'i eklenir. Zip, etiketin
+# `git archive --prefix=gozkulak/` çıktısıdır (tools/, tests/ ve geliştirme dosyaları girmez; gozkulak.sig girer).
+# Sitelerdeki eklenti güncellemeyi bu zip'ten değil, etiketin arşivinden alır ve imzasını doğrular.
+# Var olan bir etiket için: Actions → Sürüm → Run workflow → etiket.
+name: Sürüm
+
+on:
+  push:
+    tags: ["v*.*.*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Etiket (ör. v0.4.8)"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      TAG: ${{ github.event.inputs.tag || github.ref_name }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          fetch-depth: 0
+
+      - name: Etiket ve sürüm denetimi
+        run: |
+          [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "Geçersiz etiket: $TAG"; exit 1; }
+          git rev-parse -q --verify "refs/tags/$TAG" >/dev/null || { echo "Etiket yok: $TAG"; exit 1; }
+          V="${TAG#v}"
+          HEADER=$(git show "$TAG:gozkulak.php" | sed -n 's/^ \* Version: *//p')
+          SIG=$(git show "$TAG:gozkulak.sig" | sed -n 's/^\t"version": "\(.*\)",$/\1/p')
+          [ "$HEADER" = "$V" ] && [ "$SIG" = "$V" ] || { echo "Sürüm uyuşmuyor: başlık $HEADER, imza $SIG, etiket $V"; exit 1; }
+          echo "V=$V" >> "$GITHUB_ENV"
+
+      - name: Kurulum zip'i
+        run: |
+          git archive --prefix=gozkulak/ -o gozkulak.zip "$TAG"
+          sha256sum gozkulak.zip | tee gozkulak.zip.sha256
+
+      - name: Sürüm notu (readme.txt → Changelog)
+        run: |
+          git show "$TAG:readme.txt" | awk -v v="= $V =" '$0 == v { on = 1; next } on && /^= / { exit } on' > notlar.md
+          {
+            echo
+            echo "**Kurulum:** \`gozkulak.zip\` → WordPress → Eklentiler → Yeni Eklenti Ekle → Eklenti Yükle. Sonraki sürümler panelden, imza doğrulamasıyla gelir."
+          } >> notlar.md
+          cat notlar.md
+
+      - name: Release
+        run: |
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" gozkulak.zip gozkulak.zip.sha256 --clobber
+          else
+            gh release create "$TAG" gozkulak.zip gozkulak.zip.sha256 --title "GözKulak $V" --notes-file notlar.md --verify-tag
+          fi

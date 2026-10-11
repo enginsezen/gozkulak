@@ -33,11 +33,11 @@ Beş faz tamamlandı (2026-10-11); eklenti üç sitede ziyaretçilere açık, g�
 
 ## Kurulum
 
-1. Paketi oluşturun: `git archive --prefix=gozkulak/ -o gozkulak.zip vX.Y.Z` (en son sürüm etiketi; geliştirme dosyaları pakete girmez).
+1. Son sürümün kurulum zip'ini indirin: [Releases → gozkulak.zip](https://github.com/enginsezen/gozkulak/releases/latest/download/gozkulak.zip). Her sürümde yanında zip'in SHA-256 özeti (`gozkulak.zip.sha256`) de vardır.
 2. WordPress panelinde Eklentiler → Yeni Eklenti Ekle → Eklenti Yükle.
 3. Ayarlar → GözKulak. Eklenti önce test modunda açılır; denedikten sonra "Kimler görsün: Herkes" seçilir.
 
-Zip'in içindeki klasörün adı `gozkulak` olmalıdır. GitHub'ın "Download ZIP" ve etiket arşivleri klasörü `gozkulak-main` ya da `gozkulak-X.Y.Z` adıyla verir; bu arşivlerden kuracaksanız klasörü `gozkulak` olarak yeniden adlandırıp sıkıştırın. Yoksa ilk panel güncellemesinde eklentinin klasörü değişir.
+Kurulum zip'i, sürüm etiketi gönderilince GitHub Actions tarafından oluşturulur (`.github/workflows/surum.yml`): `git archive --prefix=gozkulak/ -o gozkulak.zip vX.Y.Z`. Aynı komutla kendiniz de oluşturabilirsiniz. Zip'in içindeki klasörün adı `gozkulak` olmalıdır; GitHub'ın "Download ZIP" ve "Source code" arşivleri klasörü `gozkulak-main` ya da `gozkulak-X.Y.Z` adıyla verir, bunlarla kurulursa ilk panel güncellemesinde eklentinin klasörü değişir.
 
 Gereksinimler: WordPress 6.4+, PHP 7.4+.
 

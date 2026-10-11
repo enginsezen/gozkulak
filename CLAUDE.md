@@ -84,7 +84,7 @@ Tanı için tarayıcı konsolunda `GozKulak.sentences()` bir sayfada okunacak c�
 4. Commit'i at.
 5. İmzala: `node tools/surum/imzala.mjs` (gizli anahtar `~/.config/gozkulak/imza-anahtari.pem`; repoya girmez). Ardından `git add gozkulak.sig && git commit -m "X.Y.Z imzası" && git tag vX.Y.Z && git push origin main --tags`.
 6. Doğrula: `node tools/surum/dogrula.mjs X.Y.Z` (GitHub'ın arşivini indirip eklentinin yaptığı denetimi yapar). Tutmazsa sürümü sitelere duyurma.
-7. Paketi oluştur: `git archive --prefix=gozkulak/ -o ../gozkulak-X.Y.Z.zip HEAD`. `tools/` ve `tests/` pakete girmez. Siteler 0.4.0'dan sonra güncellemeyi panelden alır; zip elle kurulum ve yedek içindir. Zip'i kullanıcıya mutlaka ver.
+7. Paketi oluştur: `git archive --prefix=gozkulak/ -o ../gozkulak-X.Y.Z.zip HEAD`. `tools/` ve `tests/` pakete girmez. Siteler 0.4.0'dan sonra güncellemeyi panelden alır; zip elle kurulum ve yedek içindir. Zip'i kullanıcıya mutlaka ver. GitHub Releases'a aynı zip etiket gönderilince kendiliğinden eklenir (`.github/workflows/surum.yml`, notlar readme.txt Changelog'dan); Actions sayfasında işin geçtiğini kullanıcı denetler.
 8. Kullanıcıya her güncellemeden sonra sitenin önbelleğini temizlemesini hatırlat. Eski betik önbellekten gelebilir; betik kendi sürümünü eklentiyle karşılaştırır ve uyuşmazsa test modunda uyarı verir.
 
 ## Bilinen tuzaklar
