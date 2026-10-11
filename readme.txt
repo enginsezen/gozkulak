@@ -4,7 +4,7 @@ Tags: accessibility, erişilebilirlik, text-to-speech, sesli okuma
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 0.4.8
+Stable tag: 0.4.9
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -48,6 +48,9 @@ Sitede Content-Security-Policy başlığı varsa gereken izinler:
 Hazır ses hazırlanırken site sayfaları aynı siteden çerçevede açılır; X-Frame-Options: DENY gönderilmemelidir. İzin eksikse menü çalışır, okuma bir sonraki sese (doğal ses ya da tarayıcının sesi) geçer.
 
 == Changelog ==
+
+= 0.4.9 =
+* Hazır ses: "Bütün hazır sesleri sil" sonrasında Hazırla hiçbir dosya üretmiyor, sayfalar "0 / N hazır (N eksik)" kalıyordu. Eksik dosyalar sitenin genel adresinden denetleniyordu; Cloudflare ya da önbellek eklentisi silinen dosyayı önbellekten verince dosya var sayılıyordu. Artık eksikleri sunucu kendi diskinde denetler.
 
 = 0.4.8 =
 * Güvenlik incelemesi (0.4.7): GitHub'a giden güncelleme isteklerinde sitenin adresi artık gönderilmez (WordPress'in varsayılan kimliği yerine "GozKulak/sürüm"). "Harici hizmetler" bölümüne GitHub bağlantısı eklendi.

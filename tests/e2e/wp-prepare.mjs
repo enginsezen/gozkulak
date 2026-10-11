@@ -1,6 +1,7 @@
 // Hazır ses hazırlama (Ayarlar → GözKulak → Hazır ses), WordPress Playground'da gerçek modelle.
 // Sayfa ekran dışı çerçevede açılır, birimler üretilip yüklenir, liste ön yüze gider; ikinci
-// hazırlamada yeni dosya üretilmez; metin değişince yalnızca değişen birim üretilir; temizleme ve silme.
+// hazırlamada yeni dosya üretilmez; metin değişince yalnızca değişen birim üretilir; temizleme, silme ve
+// silmeden sonra yeniden hazırlama.
 // Sunucu: npm run wp. Model dosyaları GK_TTS adresindeki ses sunucusundan iner; verilmezse sürüme
 // sabitlenmiş yedek kaynaklardan (Hugging Face, jsDelivr). Sunucu adresi repoya yazılmaz.
 import { chromium } from "playwright";
@@ -132,6 +133,15 @@ fr = await front();
 check("silmeden sonra ön yüzde liste yok", fr.files.length === 0);
 await p.reload();
 check("silmeden sonra satırda dosya yok", (await state(500)) === "—", await state(500));
+
+// Silinen dosyayı Cloudflare ya da önbellek eklentisi hâlâ veriyor olabilir: eksikler genel adresten değil,
+// sunucudaki diskten belirlenmeli. Hazırlama sayfasındaki .ogg istekleri önbellekteymiş gibi 200 döner.
+await p.route(/\/uploads\/gozkulak\/.+\.ogg/, (r) => r.fulfill({ status: 200, contentType: "audio/ogg", body: "" }));
+s = await run(500);
+check("silmeden sonra yeniden hazırlama dosyaları üretir (önbellek 200 dönse de)", /^Bitti\. [1-9]\d* yeni ses dosyası/.test(s), s);
+st = await state(500);
+check("silmeden sonra satırda bütün birimler hazır", /^(\d+) \/ \1 hazır$/.test(st), st);
+await p.unroute(/\/uploads\/gozkulak\/.+\.ogg/);
 
 console.log("HATA SAYISI:", errs.length, errs.join(" | "));
 await b.close();

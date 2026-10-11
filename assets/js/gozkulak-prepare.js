@@ -68,15 +68,6 @@
 		return data || {};
 	}
 
-	async function exists(hash) {
-		try {
-			const r = await fetch(cfg.uploads + hash.slice(0, 2) + "/" + hash + ".ogg", { method: "HEAD", cache: "no-store", credentials: "same-origin" });
-			return r.ok;
-		} catch (e) {
-			return false;
-		}
-	}
-
 	// ---------- doğal ses motoru ----------
 
 	let worker = null;
@@ -257,8 +248,11 @@
 		const units = await unitsOf(row.dataset.url);
 		const seen = new Set();
 		const unique = units.filter((u) => !seen.has(u.hash) && seen.add(u.hash));
-		const missing = [];
-		for (const u of unique) if (!(await exists(u.hash))) missing.push(u);
+		// Eksik dosyaları sunucu diskte denetler. Genel adres güvenilmez: Cloudflare ya da önbellek eklentisi
+		// silinmiş dosyayı önbellekten verebilir.
+		const before = await rest("page/" + row.dataset.id, null, { files: unique.map((u) => u.hash) });
+		const absent = new Set(before.missing || []);
+		const missing = unique.filter((u) => absent.has(u.hash));
 		let done = 0;
 		let audio = 0;
 		let spent = 0;

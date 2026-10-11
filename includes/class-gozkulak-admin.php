@@ -441,7 +441,6 @@ final class GozKulak_Admin {
 		$config = array(
 			'rest'     => esc_url_raw( rest_url( GozKulak_Audio::NS . '/' ) ),
 			'nonce'    => wp_create_nonce( 'wp_rest' ),
-			'uploads'  => GozKulak_Audio::base_url(),
 			'worker'   => GOZKULAK_URL . 'assets/js/gozkulak-tts-worker.js?ver=' . rawurlencode( GOZKULAK_VERSION ),
 			'base'     => $s['tts_base'],
 			'fallback' => (bool) $s['tts_fallback'],
