@@ -27,7 +27,7 @@ Koyu mod ve yüksek kontrast renkleri filtreyle değil, öğe öğe dönüştür
 
 ## Durum
 
-Beş faz tamamlandı (2026-10-11); eklenti üç sitede ziyaretçilere açık, güncellemeler GitHub'dan imzalı olarak gelir. Yol haritası:
+Beş faz tamamlandı (11.10.2026); eklenti üç sitede ziyaretçilere açık, güncellemeler GitHub'dan imzalı olarak gelir. Yol haritası:
 
 | Faz | İçerik | Durum |
 | --- | --- | --- |
